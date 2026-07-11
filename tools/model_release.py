@@ -32,6 +32,8 @@ def run(args: list[str], capture_output: bool = False) -> subprocess.CompletedPr
 
 
 def download(args: argparse.Namespace) -> None:
+    if args.all and args.members:
+        raise SystemExit("--all cannot be combined with model members")
     members = list(dict.fromkeys(args.members or MEMBERS))
     expected = ["dft.bin", *(f"{member}.onnx" for member in members)]
     MODELS_DIR.parent.mkdir(parents=True, exist_ok=True)
@@ -119,7 +121,8 @@ def main() -> None:
 
     download_parser = subparsers.add_parser("download", help="download release assets")
     download_parser.add_argument("tag")
-    download_parser.add_argument("members", nargs="*", choices=MEMBERS)
+    download_parser.add_argument("--all", action="store_true", help="download all shipped models")
+    download_parser.add_argument("members", nargs="*", metavar="MODEL")
     download_parser.set_defaults(func=download)
 
     release_parser = subparsers.add_parser("release", help="create or update a release")
@@ -128,6 +131,9 @@ def main() -> None:
     release_parser.set_defaults(func=release)
 
     args = parser.parse_args()
+    invalid_members = [member for member in getattr(args, "members", []) if member not in MEMBERS]
+    if invalid_members:
+        parser.error(f"unknown model member: {invalid_members[0]}")
     args.func(args)
 
 
