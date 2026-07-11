@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config",
-    "bass-cover": "node examples/bass-cover.ts",
+    "bass-cover": "python3 examples/bass-cover.py",
     "build:model": "uv run python tools/model-export/build_models.py",
     "build:wasm": "wasm-pack build crates/wasm --target web --release",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
