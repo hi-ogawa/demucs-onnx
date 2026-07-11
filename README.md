@@ -6,7 +6,7 @@ The model artifacts are derived from the [upstream Demucs models](https://github
 
 ## Usage
 
-Prerequisites: Rust, Python, `pnpm`, and the GitHub CLI (`gh`).
+Prerequisites: Rust, Python, `uv`, `pnpm`, and the GitHub CLI (`gh`).
 
 Install dependencies and download the standard model using the current tag from the [releases page](https://github.com/hi-ogawa/demucs-onnx/releases):
 
@@ -38,13 +38,13 @@ Other options:
 
 ## Build Models Locally
 
-Building models requires `uv` in addition to the usage prerequisites:
+Build models locally with:
 
 ```bash
-pnpm build:model htdemucs
+pnpm build-model htdemucs
 ```
 
-Run `pnpm build:model --all` to build the standard model and all fine-tuned specialists.
+Run `pnpm build-model --all` to build the standard model and all fine-tuned specialists.
 
 ## Web App
 
@@ -53,7 +53,7 @@ Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) and ensur
 Build the WASM binding and start the fully client-side app:
 
 ```bash
-pnpm build:wasm
+pnpm build-wasm
 pnpm dev
 ```
 

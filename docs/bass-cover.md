@@ -11,8 +11,14 @@ Run the one-time setup from the repository root:
 ```bash
 pnpm install
 
-# Install the pinned export environment and build the fine-tuned bass specialist.
-pnpm build:model htdemucs_ft_bass
+# Download the fine-tuned bass specialist from the current model release.
+pnpm model-release download models-2026-07-11 htdemucs_ft_bass
+```
+
+Alternatively, build the model locally using the pinned export environment:
+
+```bash
+pnpm build-model htdemucs_ft_bass
 ```
 
 ## Run

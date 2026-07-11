@@ -51,7 +51,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm build:model htdemucs
+      - run: pnpm build-model htdemucs
 
       - run: |
           pnpm cli-separate \
@@ -62,7 +62,7 @@ jobs:
           test -s data/ci-output/bass.wav
           test -s data/ci-output/no_bass.wav
 
-      - run: pnpm build:wasm
+      - run: pnpm build-wasm
 
       - run: pnpm lint-check
 

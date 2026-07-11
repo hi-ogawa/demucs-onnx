@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Download or publish the shipped Demucs model artifacts."""
 
 import argparse
@@ -75,7 +74,7 @@ def release(args: argparse.Namespace) -> None:
         raise SystemExit("\n".join([
             "missing release assets:",
             *missing,
-            "build the complete set with: pnpm build:model --all",
+            "build the complete set with: pnpm build-model --all",
         ]))
 
     paths = [str(MODELS_DIR / name) for name in ASSETS]

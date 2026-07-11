@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Verify an exported ONNX graph against the original PyTorch forward path.
 
 The comparison that matters: ONNX output vs the *original* torch path

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Export and size-optimize an exact set of shipped Demucs ONNX models."""
 
 import argparse
