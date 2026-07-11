@@ -2,6 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "demucs-onnx",
   "compatibility_date": "2026-07-12",
+  "preview_urls": true,
   "assets": {
     "directory": "packages/app/dist",
   },
