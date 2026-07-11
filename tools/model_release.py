@@ -122,9 +122,7 @@ def main() -> None:
 
     release_parser = subparsers.add_parser("release", help="create or update a release")
     release_parser.add_argument("tag")
-    action = release_parser.add_mutually_exclusive_group(required=True)
-    action.add_argument("--create", action="store_true")
-    action.add_argument("--update", action="store_true")
+    release_parser.add_argument("--update", action="store_true")
     release_parser.set_defaults(func=release)
 
     args = parser.parse_args()

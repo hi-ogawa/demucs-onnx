@@ -36,7 +36,7 @@ pnpm build:model --all
 Create a release and upload the six model assets by choosing an explicit tag:
 
 ```bash
-pnpm model-release release models-v1 --create
+pnpm model-release release models-v1
 ```
 
 Update an existing release by explicitly replacing its same-named assets:
