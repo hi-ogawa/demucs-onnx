@@ -60,18 +60,9 @@ def download(args: argparse.Namespace) -> None:
             if not (staging / name).is_file():
                 raise SystemExit(f"release {args.tag} is missing asset: {name}")
 
-        backup = Path(tempfile.mkdtemp(prefix=".onnx-lean.old-", dir=MODELS_DIR.parent))
-        backup.rmdir()
         if MODELS_DIR.exists():
-            os.replace(MODELS_DIR, backup)
-        try:
-            os.replace(staging, MODELS_DIR)
-        except BaseException:
-            if backup.exists():
-                os.replace(backup, MODELS_DIR)
-            raise
-        if backup.exists():
-            shutil.rmtree(backup)
+            shutil.rmtree(MODELS_DIR)
+        os.replace(staging, MODELS_DIR)
 
     print(f"downloaded {len(members)} model(s) and dft.bin to {MODELS_DIR}")
 
