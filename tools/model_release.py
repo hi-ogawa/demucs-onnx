@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -22,6 +23,7 @@ MODELS_DIR = REPO_DIR / "data/onnx-lean"
 
 
 def run(args: list[str], capture_output: bool = False) -> subprocess.CompletedProcess[str]:
+    print(shlex.join(args), flush=True)
     return subprocess.run(
         args,
         check=True,
