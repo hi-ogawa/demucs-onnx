@@ -18,7 +18,7 @@ pnpm model-release download models-2026-07-11 htdemucs_ft_bass
 Alternatively, build the model locally using the pinned export environment:
 
 ```bash
-pnpm build:model htdemucs_ft_bass
+pnpm build-model htdemucs_ft_bass
 ```
 
 ## Run

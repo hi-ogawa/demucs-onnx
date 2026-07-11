@@ -1,6 +1,6 @@
 packages:
   - packages/*
-managePackageManagerVersions: false
+verifyDepsBeforeRun: false
 allowBuilds:
   esbuild: false
   protobufjs: false
