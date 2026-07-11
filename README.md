@@ -48,8 +48,6 @@ Run `pnpm build-model --all` to build the standard model and all fine-tuned spec
 
 ## Web App
 
-Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) and ensure it is available on `PATH`.
-
 Build the WASM binding and start the fully client-side app:
 
 ```bash
