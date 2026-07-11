@@ -1,22 +1,20 @@
-//! demucs CLI: ort-backed driver over demucs-core's separation engine.
+//! demucs CLI: ONNX Runtime-backed driver over demucs-core's separation engine.
 //!
 //! Usage:
-//!   demucs-rs-proto separate --models <dir> [--name htdemucs|htdemucs_ft]
+//!   demucs separate --models <dir> [--name htdemucs|htdemucs_ft]
 //!       [--two-stems <src>] [--method add|minus] [--shifts N] <input.wav> <out_dir>
-//!   demucs-rs-proto compare <a.wav> <b.wav>
 
 use anyhow::{anyhow, bail, Context, Result};
 use demucs_core as core;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("separate") => separate(&args[1..]),
-        Some("compare") if args.len() == 3 => compare(&args[1], &args[2]),
         _ => bail!(
             "usage: separate --models <dir> [--name htdemucs|htdemucs_ft] [--two-stems <src>] \
-             [--method add|minus] [--shifts N] <input.wav> <out_dir> | compare <a.wav> <b.wav>"
+             [--method add|minus] [--shifts N] <input.wav> <out_dir>"
         ),
     }
 }
@@ -83,11 +81,15 @@ fn separate(argv: &[String]) -> Result<()> {
     );
 
     let (members, bag) = core::vocab::select(&args.name, args.mode)?;
-    let opts = core::Options { bag, shifts: args.shifts, mode: args.mode };
+    let opts = core::Options {
+        bag,
+        shifts: args.shifts,
+        mode: args.mode,
+    };
 
     // the progress line updates in place via \r; end it before other output
     let mid_line = std::cell::Cell::new(false);
-    let outputs = demucs_ort_driver::run_all(
+    let outputs = run_all(
         &args.models_dir,
         &members,
         wav,
@@ -113,7 +115,11 @@ fn separate(argv: &[String]) -> Result<()> {
             .zip(stems)
             .map(|(s, p)| (s.name().to_string(), p))
             .collect(),
-        core::Outputs::TwoStems { source, target, complement } => vec![
+        core::Outputs::TwoStems {
+            source,
+            target,
+            complement,
+        } => vec![
             (source.name().to_string(), target),
             (format!("no_{}", source.name()), complement),
         ],
@@ -127,26 +133,80 @@ fn separate(argv: &[String]) -> Result<()> {
     Ok(())
 }
 
-fn compare(a: &str, b: &str) -> Result<()> {
-    let (wa, ra) = core::decode_wav(&std::fs::read(a).with_context(|| format!("open {a}"))?)?;
-    let (wb, rb) = core::decode_wav(&std::fs::read(b).with_context(|| format!("open {b}"))?)?;
-    if ra != rb || wa[0].len() != wb[0].len() || wa.len() != wb.len() {
-        bail!("format mismatch: {}Hz/{} vs {}Hz/{}", ra, wa[0].len(), rb, wb[0].len());
+fn ort_err<R>(e: ort::Error<R>) -> anyhow::Error {
+    anyhow!("ort: {e}")
+}
+
+fn member_file(member: core::vocab::Member) -> &'static str {
+    use core::vocab::Member;
+    match member {
+        Member::Htdemucs => "htdemucs.onnx",
+        Member::HtdemucsFt(core::Source::Drums) => "htdemucs_ft_drums.onnx",
+        Member::HtdemucsFt(core::Source::Bass) => "htdemucs_ft_bass.onnx",
+        Member::HtdemucsFt(core::Source::Other) => "htdemucs_ft_other.onnx",
+        Member::HtdemucsFt(core::Source::Vocals) => "htdemucs_ft_vocals.onnx",
     }
-    let mut max_abs = 0f64;
-    let mut sq = 0f64;
-    let mut ref_sq = 0f64;
-    let n = wa[0].len() * wa.len();
-    for ch in 0..wa.len() {
-        for i in 0..wa[0].len() {
-            let d = (wa[ch][i] - wb[ch][i]) as f64;
-            max_abs = max_abs.max(d.abs());
-            sq += d * d;
-            ref_sq += (wa[ch][i] as f64).powi(2);
+}
+
+fn run_all(
+    models_dir: &Path,
+    members: &[core::vocab::Member],
+    wav: [Vec<f32>; core::CHANNELS],
+    opts: core::Options,
+    mut on_member: impl FnMut(&str),
+    mut on_progress: impl FnMut(usize, usize),
+) -> Result<core::Outputs> {
+    let mut separation = core::Separation::new(wav, opts)?;
+    if members.len() != separation.plan.members.len() {
+        bail!(
+            "{} models for {} bag members",
+            members.len(),
+            separation.plan.members.len()
+        );
+    }
+    let total = separation.plan.total_chunks();
+    let mut done = 0;
+    let mut input = vec![0f32; core::CHANNELS * core::SEGMENT];
+    for (member_index, &member) in members.iter().enumerate() {
+        let member_plan = &separation.plan.members[member_index];
+        let file = member_file(member);
+        on_member(file);
+        let path = models_dir.join(file);
+        let mut session = ort::session::Session::builder()
+            .map_err(ort_err)?
+            .with_intra_threads(4)
+            .map_err(ort_err)?
+            .commit_from_file(&path)
+            .map_err(ort_err)
+            .with_context(|| format!("load {}", path.display()))?;
+        let mut shift_merger =
+            core::ShiftMerger::new(separation.plan.track_len, member_plan.shifts.len());
+        for shift in &member_plan.shifts {
+            let mut chunk_processor = separation.plan.create_chunk_processor(shift);
+            for &chunk in &shift.chunks {
+                chunk_processor.prepare_input(chunk, &mut input)?;
+                let value = ort::value::TensorRef::from_array_view((
+                    [1usize, core::CHANNELS, core::SEGMENT],
+                    input.as_slice(),
+                ))
+                .map_err(ort_err)?;
+                let run = session
+                    .run(ort::inputs!["input" => value])
+                    .map_err(ort_err)?;
+                let (shape, data) = run["output"].try_extract_tensor::<f32>().map_err(ort_err)?;
+                let dims: Vec<usize> = shape.iter().map(|&d| d as usize).collect();
+                if dims != [1, core::NUM_SOURCES, core::CHANNELS, core::SEGMENT] {
+                    bail!("unexpected output shape {dims:?}");
+                }
+                chunk_processor.process_output(chunk, data)?;
+                done += 1;
+                on_progress(done, total);
+            }
+            shift_merger.add(chunk_processor.finish());
         }
+        separation
+            .stem_finalizer
+            .add(member_index, shift_merger.finish());
     }
-    let rms = (sq / n as f64).sqrt();
-    let snr = 10.0 * (ref_sq / sq.max(1e-30)).log10();
-    println!("max abs diff: {max_abs:.3e}  rms: {rms:.3e}  snr: {snr:.1} dB");
-    Ok(())
+    separation.stem_finalizer.finish()
 }

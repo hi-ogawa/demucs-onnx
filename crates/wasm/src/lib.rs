@@ -5,8 +5,7 @@
 //! Decode/resample remain the platform's job (decodeAudioData at 44.1k), so separation
 //! takes raw per-channel f32.
 //!
-//! Note: prototype uses wasm-bindgen rather than the napi-rs wasm target (emnapi) — the napi
-//! crate depends on ort, which doesn't compile to wasm; unification is a later concern.
+//! The browser interface uses wasm-bindgen while inference is delegated to onnxruntime-web.
 
 use demucs_core as demucs;
 use js_sys::{Float32Array, Promise};
