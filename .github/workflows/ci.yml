@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 60
     env:
       # Model export otherwise uses every available CPU thread.
+      # https://docs.pytorch.org/docs/stable/threading_environment_variables.html
       OMP_NUM_THREADS: 2
 
     steps:
@@ -50,7 +51,7 @@ jobs:
       - run: pnpm build:model
 
       - run: |
-          pnpm separate \
+          pnpm cli-separate \
             --name htdemucs \
             --two-stems bass \
             --method minus \

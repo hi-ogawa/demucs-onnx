@@ -19,7 +19,7 @@ pnpm build:model
 Separate a WAV file into four stems:
 
 ```bash
-pnpm separate \
+pnpm cli-separate \
   --name htdemucs \
   data/input/song.wav data/output/song
 ```

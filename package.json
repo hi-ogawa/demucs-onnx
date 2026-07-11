@@ -4,8 +4,8 @@
   "scripts": {
     "build:model": "uv run python tools/model-export/build_models.py htdemucs",
     "build:wasm": "wasm-pack build crates/wasm --target web --release",
+    "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
-    "separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "test-e2e": "pnpm -C packages/app test-e2e"
   }
 }
