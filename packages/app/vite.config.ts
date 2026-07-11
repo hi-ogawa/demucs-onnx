@@ -5,9 +5,11 @@ import { defineConfig } from "vite";
 const repoDir = resolve(__dirname, "../..");
 const modelsDir = resolve(repoDir, "data/onnx-lean");
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   define: {
-    __MODELS_URL__: JSON.stringify(`/@fs${modelsDir}`),
+    __MODELS_URL__: JSON.stringify(
+      command === "serve" ? `/@fs${modelsDir}` : null,
+    ),
   },
   optimizeDeps: {
     // keep ort un-prebundled so its internal import.meta.url asset resolution works in dev
@@ -24,4 +26,4 @@ export default defineConfig({
       allow: [repoDir],
     },
   },
-});
+}));
