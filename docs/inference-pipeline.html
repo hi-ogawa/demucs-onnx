@@ -6,7 +6,7 @@
     <title>Demucs ONNX inference pipeline</title>
     <style>
       :root {
-        --user: #2563eb; /* blue: user data */
+        --user: #2563eb; /* blue: pipeline i/o */
         --user-bg: #eff6ff;
         --model: #b45309; /* amber: model artifacts */
         --model-bg: #fffbeb;
@@ -63,74 +63,49 @@
       }
 
       .wrap {
-        display: flex;
-        gap: 2.2rem;
-        align-items: flex-start;
+        position: relative;
       }
       nav.toc {
-        position: sticky;
+        position: fixed;
         top: 1.2rem;
-        flex: none;
-        width: 140px;
+        right: max(1.25rem, calc((100vw - 1160px) / 2 + 1.25rem));
+        z-index: 1;
+        width: max-content;
         font-size: 0.8rem;
-        border-right: 1px solid var(--line);
-        padding-right: 1rem;
       }
-      nav.toc .t {
+      nav.toc summary {
+        cursor: pointer;
         font-weight: 600;
-        margin-bottom: 0.35rem;
+        color: var(--muted);
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0.35rem 0.6rem;
+      }
+      nav.toc .links {
+        position: absolute;
+        right: 0;
+        width: max-content;
+        margin-top: 0.3rem;
+        padding: 0.45rem 0.65rem;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        box-shadow: 0 6px 18px rgb(15 23 42 / 12%);
       }
       nav.toc a {
         display: block;
         color: var(--muted);
         padding: 0.18rem 0;
+        white-space: nowrap;
       }
       nav.toc a:hover {
         color: #2563eb;
       }
       main {
-        flex: 1;
         min-width: 0;
         max-width: 980px;
-      }
-      @media (max-width: 920px) {
-        .wrap {
-          display: block;
-        }
-        nav.toc {
-          position: static;
-          width: auto;
-          border-right: 0;
-          border-bottom: 1px solid var(--line);
-          padding: 0 0 0.5rem;
-          margin-bottom: 1.2rem;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.2rem 1.1rem;
-        }
-        nav.toc .t {
-          width: 100%;
-          margin: 0;
-        }
-      }
-
-      .legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem 1.2rem;
-        font-size: 0.8rem;
-        background: #f8fafc;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 0.6rem 0.9rem;
-      }
-      .chip {
-        display: inline-block;
-        width: 0.85em;
-        height: 0.85em;
-        border-radius: 3px;
-        vertical-align: -0.1em;
-        margin-right: 0.35em;
+        margin: 0 auto;
       }
 
       .row {
@@ -305,59 +280,48 @@
       th {
         background: #f8fafc;
       }
-
-      .foot {
-        color: var(--muted);
-        font-size: 0.8rem;
-        margin-top: 2.2rem;
-        border-top: 1px solid var(--line);
-        padding-top: 0.6rem;
-      }
     </style>
   </head>
   <body>
     <div class="wrap">
       <nav class="toc">
-        <div class="t">pipeline</div>
-        <a href="#product">1 · product i/o</a>
-        <a href="#bbox">2 · black box</a>
-        <a href="#flow">3 · the flow</a>
-        <a href="#idea">4 · the idea</a>
-        <a href="#cost">5 · the cost</a>
+        <details>
+          <summary>TOC</summary>
+          <div class="links">
+            <a href="#product">1 · split into stems</a>
+            <a href="#bbox">2 · run the fixed graph</a>
+            <a href="#flow">3 · loop at three scales</a>
+            <a href="#idea">4 · run many, average</a>
+            <a href="#cost">5 · pay per pass</a>
+          </div>
+        </details>
       </nav>
       <main>
         <h1>Demucs ONNX inference pipeline</h1>
+        <p class="sub">
+          The pipeline takes any song and returns its stems (§1), while the
+          computation underneath is a single rigid, fixed-size black box (§2).
+          This page is about the gap between those two facts: the inference flow
+          that closes it (§3), the single pattern that flow repeats at three
+          scales (§4), and the multiplicative bill for the repetition (§5).
+        </p>
 
-        <div class="legend">
-          <span
-            ><span class="chip" style="background: var(--user)"></span>user
-            data</span
-          >
-          <span
-            ><span class="chip" style="background: var(--model)"></span>model
-            artifacts (disk)</span
-          >
-          <span
-            ><span class="chip" style="background: var(--core)"></span
-            >orchestration (<code>crates/core</code>)</span
-          >
-          <span
-            ><span class="chip" style="background: var(--bb)"></span>inference
-            black box (ONNX graph via runtime)</span
-          >
-        </div>
-
-        <h2 id="product">1 · Product view: what goes in, what comes out</h2>
+        <h2 id="product">1 · Split a song into stems</h2>
+        <p class="sub">
+          The job is music source separation, meaning the pipeline takes one
+          mixed song and returns the same audio split into instrument stems, as
+          if each part had been recorded alone. The rest of the page is how.
+        </p>
 
         <div class="row">
           <div class="card user">
             <h4>In</h4>
             <ul>
+              <li><b>One song</b> — a stereo wav file</li>
               <li>
-                <b>One audio file</b> — wav (CLI/Node) or anything the browser
-                decodes (web)
+                Preprocessing aligns it with the format the models were trained
+                on (stereo, 44.1&nbsp;kHz)
               </li>
-              <li>Any sample rate / channel count (conformed internally)</li>
             </ul>
           </div>
           <div class="card user">
@@ -376,10 +340,12 @@
           </div>
         </div>
 
-        <h2 id="bbox">2 · The black box: fixed graph, swappable weights</h2>
+        <h2 id="bbox">2 · Run one fixed graph, swap only the weights</h2>
         <p class="sub">
-          One computation, rigid on every axis: fixed input length, fixed output
-          shape, stateless, deterministic. The only degree of freedom is
+          Everything §1 promises is more than the computation underneath can do.
+          It is one computation, rigid on every axis. The input length is fixed,
+          the output shape is fixed, and every run is stateless and
+          deterministic. Its only degree of freedom is
           <b>which weight set is plugged in</b>.
         </p>
 
@@ -566,12 +532,6 @@
             >[drums, bass, other, vocals]</code
           >), ideally summing back to the input chunk.
         </p>
-        <p class="sub">
-          The graph runs through ONNX Runtime natively and ONNX Runtime Web in
-          the browser. The inference host changes at this seam while
-          orchestration remains shared. Internals are out of scope here.
-        </p>
-
         <p>
           The five weight sets specialize over that stem axis. The diagrams
           abbreviate the <code>htdemucs_ft_*</code> artifact names as
@@ -781,6 +741,13 @@
           </text>
         </svg>
 
+        <p class="sub">
+          Hosts appear at exactly one seam, which is the box itself. The graph
+          runs through ONNX Runtime natively (CLI, Node) and ONNX Runtime Web in
+          the browser, and the host swaps there while everything around the box
+          stays shared. The graph's internals are out of scope here.
+        </p>
+
         <h3>On disk</h3>
         <table>
           <tr>
@@ -822,8 +789,9 @@
           block out.
         </p>
 
-        <h2 id="flow">3 · The flow (<code>crates/core</code>)</h2>
+        <h2 id="flow">3 · Loop at three scales</h2>
         <p class="sub">
+          This is how the gap between §1's promise and §2's box gets closed.
           Track-level conforming wraps three nested loops, each closing with its
           own average. The numbered rings are the same move at three scales,
           which §4 unpacks.
@@ -887,7 +855,7 @@
           </div>
         </div>
 
-        <h2 id="idea">4 · The idea: run many times, average</h2>
+        <h2 id="idea">4 · Run many times, average</h2>
         <p class="sub">
           The box does one fixed-size computation, so every ring in §3 is the
           same move:
@@ -1101,10 +1069,10 @@
           </div>
         </div>
 
-        <h2 id="cost">5 · The cost: the scales multiplied</h2>
+        <h2 id="cost">5 · Pay per pass</h2>
         <p class="sub">
-          Every pass is one full trip through the box, so the multiplication is
-          the runtime you feel.
+          Every pass is one full trip through the box, so the multiplication
+          from §4 is the runtime you feel.
         </p>
         <table>
           <tr>
@@ -1139,7 +1107,7 @@
 
         <h3 id="modes">Two-stems methods (bass example)</h3>
         <p class="sub">
-          <b>Method</b> is arithmetic outside the idea. It decides how
+          <b>Method</b> is plain arithmetic outside §4's pattern. It decides how
           <code>no_bass</code> is built, and it composes freely with model
           choice:
         </p>
@@ -1192,17 +1160,6 @@
             target specialist.
           </li>
         </ul>
-
-        <p class="foot">
-          Sources: <code>crates/core/src/lib.rs</code> (engine),
-          <code>tools/model-export/export_onnx.py</code> /
-          <code>strip_dft.py</code> (artifacts); upstream math refs in
-          <code>docs/demucs.md</code>. Performance measurements were captured on
-          the development laptop during the initial prototype on 2026-07-09;
-          architecture and artifact descriptions reflect the current
-          implementation. The inference host (CLI ort / Node napi / browser
-          ort-web) swaps at the black-box seam only.
-        </p>
       </main>
     </div>
   </body>
