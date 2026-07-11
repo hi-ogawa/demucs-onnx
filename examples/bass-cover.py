@@ -3,7 +3,7 @@
 
 Port of 2026-06-20-bass-stem-separation/run.py with the Docker Compose demucs
 step replaced by the Rust CLI (settled config: htdemucs_ft, two-stems bass,
-minus method — see plan.md §8 for the A/B that fixed these defaults).
+minus method — see docs/development.md §8 for the A/B that fixed these defaults).
 """
 
 import argparse
@@ -15,9 +15,9 @@ import sys
 import time
 from pathlib import Path
 
-TASK_DIR = Path(__file__).resolve().parent
-CLI = TASK_DIR / "target/release/demucs-rs-proto"
-MODELS = TASK_DIR / "data/onnx-lean"
+REPO_DIR = Path(__file__).resolve().parent.parent
+CLI = REPO_DIR / "target/release/demucs-rs-proto"
+MODELS = REPO_DIR / "data/onnx-lean"
 
 
 def run(label, command):
@@ -68,11 +68,13 @@ def main():
             parser.error("--end must be greater than --start")
 
     if not CLI.exists():
-        sys.exit(f"missing {CLI}\nbuild it first: cd rust && cargo build --release")
+        sys.exit(f"missing {CLI}\nbuild it first: cargo build --release")
     if not MODELS.is_dir():
-        sys.exit(f"missing {MODELS}\nregeneration chain: plan.md §2 (export) + §7 (strip_dft)")
+        sys.exit(
+            f"missing {MODELS}\nregeneration chain: docs/development.md §2 (export) + §7 (strip_dft)"
+        )
 
-    os.chdir(TASK_DIR)
+    os.chdir(REPO_DIR)
     name = slugify(args.name or args.youtube)
     url = youtube_url(args.youtube)
 

@@ -7,11 +7,11 @@ Everything here happened on 2026-07-09 on the home laptop (8 cores, 16G; heavy r
 
 ## 1. Workspace
 
-`scripts/` is a uv project, CPU-only torch (the export doesn't need CUDA; keeps the venv ~1 GB
+`tools/model-export/` is a uv project, CPU-only torch (the export doesn't need CUDA; keeps the venv ~1 GB
 instead of multi-GB):
 
 ```bash
-cd scripts && uv sync
+uv sync --project tools/model-export
 ```
 
 `pyproject.toml` pins torch/torchaudio 2.1.2 (newest line the demucs fork supports) and installs
@@ -22,15 +22,15 @@ clean on the first try.
 ## 2. Export (PyTorch → ONNX)
 
 PR #10's own `convert-pth-to-onnx.py` hardcodes `htdemucs` and silently exports only `models[0]`
-of a bag — it cannot produce the ft specialists. `scripts/export_onnx.py` is our adaptation: it
+of a bag — it cannot produce the ft specialists. `tools/model-export/export_onnx.py` is our adaptation: it
 iterates bag members, names each by its one-hot source specialty, handles single-member bags
 (plain `htdemucs`) without a suffix, and takes `--sources bass` to export a subset. Export
 mechanics are unchanged from the PR: set the `onnx_exportable` flag, trace with a fixed
 `(1, 2, 343980)` input, opset 17.
 
 ```bash
-uv run python export_onnx.py --model htdemucs --out ../data/onnx
-uv run python export_onnx.py --model htdemucs_ft --sources bass --out ../data/onnx
+uv run --project tools/model-export python tools/model-export/export_onnx.py --model htdemucs --out data/onnx
+uv run --project tools/model-export python tools/model-export/export_onnx.py --model htdemucs_ft --sources bass --out data/onnx
 ```
 
 Both produced 304.4 MB files. Checkpoints download to `~/.cache/torch/hub/checkpoints/` (81 MB
@@ -43,11 +43,11 @@ shouldn't trust declared output shape (the Rust side checks the actual shape at 
 The identical file sizes are structural, not a bug: an ft "specialist" is a complete htdemucs
 (same topology, same 4-stem output) with fine-tuned weight _values_; the bag's one-hot weight
 just selects which output row to keep downstream. Graph anatomy (168 MB weights + 136 MB
-deterministic DFT tables per file) is in `notes/design.md`.
+deterministic DFT tables per file) is in `architecture.md`.
 
 ## 3. Tensor-level parity (Python)
 
-`scripts/verify_parity.py` runs the same chunk through the exported graph (ORT CPU) and through
+`tools/model-export/verify_parity.py` runs the same chunk through the exported graph (ORT CPU) and through
 the _original_ torch path (`onnx_exportable=False`, real `torch.stft/istft`), so it validates the
 PR's STFT/iSTFT rewrite and the export in one comparison. Input is a seeded random chunk —
 harsher than music numerically. `--index` picks the bag member (ft order: 0=drums 1=bass 2=other
@@ -55,8 +55,8 @@ harsher than music numerically. `--index` picks the bag member (ft order: 0=drum
 confirms `models[1]` = bass empirically.
 
 ```bash
-uv run python verify_parity.py --onnx ../data/onnx/htdemucs.onnx --model htdemucs --index 0
-uv run python verify_parity.py --onnx ../data/onnx/htdemucs_ft_bass.onnx --model htdemucs_ft --index 1
+uv run --project tools/model-export python tools/model-export/verify_parity.py --onnx data/onnx/htdemucs.onnx --model htdemucs --index 0
+uv run --project tools/model-export python tools/model-export/verify_parity.py --onnx data/onnx/htdemucs_ft_bass.onnx --model htdemucs_ft --index 1
 ```
 
 | Artifact                | Parity (max abs / MSE)                    |
@@ -72,7 +72,7 @@ our own harness — the point of the exercise.
 Working artifact for the port is **plain `htdemucs` in one 304 MB binary**: one model, all 4
 stems in one forward pass, simplest possible Rust bring-up. Known and accepted gap, to be closed
 in follow-up: the existing bass workflow runs `htdemucs_ft` (~9.2 dB tier vs ~9.0), so the four
-ft specialist exports are required for workflow parity — see `notes/design.md`.
+ft specialist exports are required for workflow parity — see `architecture.md`.
 
 ## 5. Rust end-to-end prototype
 
@@ -98,19 +98,19 @@ ffmpeg -y -f lavfi \
   comparison:
 
 ```bash
-cd scripts && uv run demucs --shifts 0 --float32 -n htdemucs -o ../data/reference ../data/input/test-clip.wav
+uv run --project tools/model-export demucs --shifts 0 --float32 -n htdemucs -o data/reference data/input/test-clip.wav
 ```
 
 The crates (`crates/`, `demucs-rs-proto`; deps: `ort`, `hound`, `anyhow`) reimplement the
 orchestration layer — global loudness normalization (Bessel-corrected std, matching
 `torch.std()`), fixed-size chunking with `TensorChunk`-style centered padding, `center_trim`,
 triangular weighted overlap-add, denormalization — around an ORT session. The upstream logic it
-mirrors is mapped with line refs in `notes/demucs.md` ("Orchestration Layer"); the doc comment in
+mirrors is mapped with line refs in `demucs.md` ("Orchestration Layer"); the doc comment in
 `crates/cli/src/main.rs` states scope. Build friction worth remembering: the `ort` crate resolved to
 2.0.0-rc.12, whose typed errors aren't `Send+Sync` — they need stringifying before anyhow.
 
 ```bash
-cd rust && cargo build --release && cd ..
+cargo build --release
 ./target/release/demucs-rs-proto separate data/onnx/htdemucs.onnx data/input/test-clip.wav data/rust-out
 for s in drums bass other vocals; do
   echo -n "$s: "
@@ -195,13 +195,14 @@ Content-hash across all 5 exports found **4** identical tensors (not 3): the two
 kernels, the 67.1 MB iSTFT basis, and a 1.4 MB window-sum envelope — same names, same hashes
 everywhere (the shared-trace assumption held).
 
-`scripts/strip_dft.py`: Constant nodes ≥ 1 MB → initializers with external-data references
+`tools/model-export/strip_dft.py`: Constant nodes ≥ 1 MB → initializers with external-data references
 into one shared `dft.bin` (64-byte aligned offsets; layout recorded from the first model,
 hash-verified by the rest).
 
 ```bash
-uv run python strip_dft.py --models htdemucs htdemucs_ft_drums htdemucs_ft_bass \
-    htdemucs_ft_other htdemucs_ft_vocals --src ../data/onnx --out ../data/onnx-lean
+uv run --project tools/model-export python tools/model-export/strip_dft.py \
+    --models htdemucs htdemucs_ft_drums htdemucs_ft_bass \
+    htdemucs_ft_other htdemucs_ft_vocals --src data/onnx --out data/onnx-lean
 ```
 
 Result: **5 × 304 MB → 5 × 168.7 MB + one 135.7 MB `dft.bin`** (1.5 GB → 934 MB on disk; the
@@ -214,7 +215,7 @@ remaining bytes are all unique learned weights). Verification:
 
 ## 8. Real-music verification
 
-The synthetic-sines caveat closed with a real track, mirroring the old `run.py` flow: yt-dlp
+The synthetic-sines caveat closed with a real track, mirroring the old `examples/bass-cover.py` flow: yt-dlp
 download (TripleS "Baby Flower", the June task's test song), 10s trim conformed to 44.1k stereo
 f32 in the same ffmpeg step (one shared input for both pipelines, so their different resamplers
 stay out of the measurement).
@@ -402,7 +403,7 @@ paragraph is deleted — the API no longer needs one.
 Proven chain: official checkpoints → our export (all 5 models) → tensor parity → Rust e2e at wav
 level → workflow-replacement CLI (ft bag, two-stems, both methods, resampling, deterministic
 shifts) → deduped lean artifacts (`data/onnx-lean`: 934 MB, zero redundant bytes) → Node CLI via
-napi. Disk: `data/` ~3 GB (baked + lean models + clips + stems), `scripts/.venv` ~1 GB,
+napi. Disk: `data/` ~3 GB (baked + lean models + clips + stems), `tools/model-export/.venv` ~1 GB,
 `target/` ~1 GB — all gitignored. Plus rustup (~700 MB, system-level) and 4×81 MB checkpoint
 cache in `~/.cache/torch/`. Baked `data/onnx` can be deleted once lean is the trusted working
 set.
@@ -418,7 +419,7 @@ set.
 Other threads:
 
 - Retire the Docker workflow (`2026-06-20-bass-stem-separation/`): the substantive step landed
-  2026-07-10 — `run.py` here ports the old wrapper (yt-dlp → trim → separate) onto the Rust CLI
+  2026-07-10 — `examples/bass-cover.py` ports the old wrapper (yt-dlp → trim → separate) onto the Rust CLI
   with the settled config (ft, two-stems bass, minus; A/Bs resolved, see §8), verified e2e on
   the test song (10s clip separated in 16.6s). Remaining housekeeping: supersede notice in the
   old task's README, and the ~1.4 GB image lives on the Docker Desktop side (docker isn't
@@ -428,6 +429,6 @@ Other threads:
   `--segment`, progress); rigorous per-chunk benchmark; optionally the shared-graph pack +
   manifest (requires verifying trace-generated tensor names line up across independent exports)
 
-Deferred (details in `notes/design.md`): fp16 weight variants (precision trade, not
+Deferred (details in `architecture.md`): fp16 weight variants (precision trade, not
 duplication — ~840 MB → ~420 MB ≈ upstream's `.th` distribution), `tract` pure-Rust experiment,
 `htdemucs_6s`.

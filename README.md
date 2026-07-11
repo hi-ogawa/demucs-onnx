@@ -30,7 +30,7 @@ optimization, never an artifact-level shortcut.
        output matches the Python CLI at 92–94 dB SNR; minus mode loads 1 of 4 models (the 4×
        fast path upstream doesn't have). Replaces the Docker/PyTorch setup for the bass
        workflow (2026-07-09).
-4. [x] **DFT kernel dedupe** — `scripts/strip_dft.py` post-processes the exports: the 4
+4. [x] **DFT kernel dedupe** — `tools/model-export/strip_dft.py` post-processes the exports: the 4
        deterministic tensors (135.7 MB, byte-identical across all 5 models) move to one shared
        external `dft.bin`. 1.5 GB → 934 MB (`data/onnx-lean`), zero redundant bytes, zero Rust
        changes (ORT loads external data natively); parity digits identical to baked
@@ -76,14 +76,14 @@ One-time setup from this directory:
 ```bash
 # Install the pinned export environment and export the bass specialist needed by the default
 # ft/minus workflow. This downloads the upstream checkpoints and writes a ~304 MB ONNX model.
-cd scripts
+cd tools/model-export
 uv sync
-uv run python export_onnx.py --model htdemucs_ft --sources bass --out ../data/onnx
+uv run python export_onnx.py --model htdemucs_ft --sources bass --out ../../data/onnx
 
 # Move the shared DFT tensors into an external data file, matching the production layout.
 uv run python strip_dft.py --models htdemucs_ft_bass \
-  --src ../data/onnx --out ../data/onnx-lean
-cd ..
+  --src ../../data/onnx --out ../../data/onnx-lean
+cd ../..
 
 # Build the Rust CLI.
 cargo build --release -p demucs-cli
@@ -107,15 +107,15 @@ A successful run creates `data/output/triples-baby-flower-clip/bass.wav` and
 `data/output/triples-baby-flower-clip/no_bass.wav`.
 
 The setup above creates the minimal size-optimized `data/onnx-lean/` model set needed by the
-default bass/minus flow and `run.py`. See `plan.md` §2/§7 to export all five models for the other
+default bass/minus flow and `examples/bass-cover.py`. See `docs/development.md` §2/§7 to export all five models for the other
 model, stem, and add-method variants while deduplicating their shared DFT data.
 
-`run.py` is the one-command flow, a port of the old task's wrapper with the docker step
+`examples/bass-cover.py` is the one-command flow, a port of the old task's wrapper with the docker step
 replaced by the Rust CLI (settled defaults baked in: ft, two-stems bass, minus):
 
 ```bash
-./run.py 6q8UMVXhXsE --name triples-baby-flower                       # whole song
-./run.py 6q8UMVXhXsE --name triples-baby-flower --start 10 --end 20   # test clip
+./examples/bass-cover.py 6q8UMVXhXsE --name triples-baby-flower                       # whole song
+./examples/bass-cover.py 6q8UMVXhXsE --name triples-baby-flower --start 10 --end 20   # test clip
 # -> data/output/<name>/bass.wav + no_bass.wav
 ```
 
@@ -146,22 +146,22 @@ ffmpeg -ss 10 -to 20 -i data/input/song.wav data/input/song-clip.wav
 # node flavor (same flags): node crates/napi/cli.mjs separate ...
 ```
 
-Listening A/B set: `data/real-rust-*`, regenerable with the commands above (`data/` is gitignored; see `plan.md` §8).
+Listening A/B set: `data/real-rust-*`, regenerable with the commands above (`data/` is gitignored; see `docs/development.md` §8).
 
 ## Files
 
-- `run.py` — bass-cover workflow wrapper (yt-dlp → trim → Rust CLI), replaces the old task's
+- `examples/bass-cover.py` — bass-cover workflow wrapper (yt-dlp → trim → Rust CLI), replaces the old task's
   docker-based `run.py`
-- `plan.md` — the whole process in flow (each stage with its commands, results, and lessons)
+- `docs/development.md` — the whole process in flow (each stage with its commands, results, and lessons)
   plus next steps at the bottom
-- `notes/demucs.md` — upstream: demucs mechanism, ONNX export problem, existing ports and
+- `docs/demucs.md` — upstream: demucs mechanism, ONNX export problem, existing ports and
   artifact landscape, references
-- `notes/design.md` — ours: stance, export choice, graph anatomy, lean artifact format,
+- `docs/architecture.md` — ours: stance, export choice, graph anatomy, lean artifact format,
   orchestration port choices, open product questions
-- `notes/pipeline.html` — visual review companion: entities, black-box contract, orchestration flow, mode contrast
-- `notes/postmortem-2026-07-09.md` — iteration 1 (export + parity) postmortem
+- `docs/pipeline.html` — visual review companion: entities, black-box contract, orchestration flow, mode contrast
+- `docs/postmortems/2026-07-09-initial-port.md` — iteration 1 (export + parity) postmortem
 - `crates/` — Rust workspace crates: `core` (sans-inference engine), `ort-driver` (shared native ort
   driver), `cli`, `napi` (Node), `wasm` (browser)
-- `packages/app/` — fully client-side Vite prototype (see plan.md §12)
-- `scripts/` — uv-managed export + parity harness (CPU-only torch)
+- `packages/app/` — fully client-side Vite prototype (see `docs/development.md` §12)
+- `tools/model-export/` — uv-managed export + parity harness (CPU-only torch)
 - `data/` — gitignored artifacts (exported .onnx, ~300 MB each)

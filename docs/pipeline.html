@@ -335,7 +335,7 @@
           >
           <span
             ><span class="chip" style="background: var(--core)"></span>orchestration
-            (<code>rust/core</code>)</span
+            (<code>crates/core</code>)</span
           >
           <span
             ><span class="chip" style="background: var(--bb)"></span>inference black box (ONNX graph
@@ -551,7 +551,7 @@
             <td>baked <code>.onnx</code></td>
             <td>304 MB × 5</td>
             <td>graph + weights (fp32) + deterministic DFT tables</td>
-            <td><code>scripts/export_onnx.py</code></td>
+            <td><code>tools/model-export/export_onnx.py</code></td>
           </tr>
           <tr>
             <td>lean <code>.onnx</code> + shared <code>dft.bin</code></td>
@@ -559,7 +559,7 @@
             <td>
               same graph, with the DFT tables (byte-identical across all 5) moved to one shared file
             </td>
-            <td><code>scripts/strip_dft.py</code></td>
+            <td><code>tools/model-export/strip_dft.py</code></td>
           </tr>
         </table>
         <div class="bytes" style="max-width: 480px">
@@ -570,7 +570,7 @@
           Byte anatomy of one baked model. The strip moves the shared right block out.
         </p>
 
-        <h2 id="flow">3 · The flow (<code>rust/core</code>)</h2>
+        <h2 id="flow">3 · The flow (<code>crates/core</code>)</h2>
         <p class="sub">
           Track-level conforming wraps three nested loops, each closing with its own average. The
           numbered rings are the same move at three scales, which §4 unpacks.
@@ -848,8 +848,8 @@
         </ul>
 
         <p class="foot">
-          Sources: <code>rust/core/src/lib.rs</code> (engine), <code>scripts/export_onnx.py</code> /
-          <code>strip_dft.py</code> (artifacts); upstream math refs in <code>notes/demucs.md</code>.
+          Sources: <code>crates/core/src/lib.rs</code> (engine), <code>tools/model-export/export_onnx.py</code> /
+          <code>strip_dft.py</code> (artifacts); upstream math refs in <code>docs/demucs.md</code>.
           Numbers (sizes, shapes, strides, dB) reflect the delivered code as of journal PR #39,
           2026-07-09. Inference host (CLI ort / Node napi / browser ort-web) swaps at the black-box
           seam only.

@@ -15,7 +15,7 @@ natively at session load — consumers (Python ORT, Rust ort crate) need no chan
 
 Usage:
     uv run python strip_dft.py --models htdemucs htdemucs_ft_drums htdemucs_ft_bass \
-        htdemucs_ft_other htdemucs_ft_vocals --src ../data/onnx --out ../data/onnx-lean
+        htdemucs_ft_other htdemucs_ft_vocals --src ../../data/onnx --out ../../data/onnx-lean
 """
 
 import argparse

@@ -1,7 +1,7 @@
 # Design: What We Build on Top
 
 Our port's choices, layered over the upstream mechanism documented in `demucs.md`.
-How each piece came to be is in `plan.md`.
+How each piece came to be is in `development.md`.
 
 ## Stance
 

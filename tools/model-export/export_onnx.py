@@ -7,9 +7,9 @@ exports every bag member, naming each by its one-hot source specialty so that
 htdemucs_ft yields htdemucs_ft_{drums,bass,other,vocals}.onnx.
 
 Usage:
-    uv run python export_onnx.py --model htdemucs_ft --out ../data/onnx
-    uv run python export_onnx.py --model htdemucs_ft --sources bass --out ../data/onnx
-    uv run python export_onnx.py --model htdemucs --out ../data/onnx
+    uv run python export_onnx.py --model htdemucs_ft --out ../../data/onnx
+    uv run python export_onnx.py --model htdemucs_ft --sources bass --out ../../data/onnx
+    uv run python export_onnx.py --model htdemucs --out ../../data/onnx
 
 Graph contract (per exported file):
     input:  float32 (1, 2, 343980)   stereo 44.1kHz, exactly segment*samplerate samples

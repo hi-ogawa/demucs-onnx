@@ -1,6 +1,6 @@
 data/
 node_modules/
-scripts/.venv/
+tools/model-export/.venv/
 target/
 crates/napi/demucs.node
 crates/wasm/pkg/
