@@ -59,6 +59,6 @@ jobs:
 
       - run: pnpm build:wasm
 
-      - run: pnpm --filter demucs-onnx-app exec playwright install --with-deps chromium
+      - run: pnpm -C packages/app exec playwright install --with-deps chromium
 
-      - run: pnpm test
+      - run: pnpm test-e2e
