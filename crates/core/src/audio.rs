@@ -8,18 +8,15 @@ use crate::CHANNELS;
 pub fn conform_channels(planar: Vec<Vec<f32>>) -> [Vec<f32>; CHANNELS] {
     let mut it = planar.into_iter();
     match (it.next(), it.next()) {
-        (Some(l), Some(r)) => [l, r],          // channels beyond two are dropped
-        (Some(l), None) => [l.clone(), l],     // mono replicated
+        (Some(l), Some(r)) => [l, r],      // channels beyond two are dropped
+        (Some(l), None) => [l.clone(), l], // mono replicated
         (None, _) => [Vec::new(), Vec::new()], // empty input; the engine rejects it
     }
 }
 
 /// High-quality sinc resample to 44.1kHz, delay-compensated and trimmed to exact length.
 #[cfg(feature = "resample")]
-pub fn resample(
-    planar: [Vec<f32>; CHANNELS],
-    from: u32,
-) -> anyhow::Result<[Vec<f32>; CHANNELS]> {
+pub fn resample(planar: [Vec<f32>; CHANNELS], from: u32) -> anyhow::Result<[Vec<f32>; CHANNELS]> {
     use crate::SAMPLERATE;
     use anyhow::{anyhow, bail};
     use rubato::{
@@ -36,9 +33,14 @@ pub fn resample(
         window: WindowFunction::BlackmanHarris2,
     };
     let chunk = 1024;
-    let mut rs =
-        SincFixedIn::<f32>::new(SAMPLERATE as f64 / from as f64, 2.0, params, chunk, CHANNELS)
-            .map_err(|e| anyhow!("rubato: {e}"))?;
+    let mut rs = SincFixedIn::<f32>::new(
+        SAMPLERATE as f64 / from as f64,
+        2.0,
+        params,
+        chunk,
+        CHANNELS,
+    )
+    .map_err(|e| anyhow!("rubato: {e}"))?;
     let mut out: [Vec<f32>; CHANNELS] = Default::default();
     let mut pos = 0;
     let len = planar[0].len();
@@ -48,7 +50,9 @@ pub fn resample(
             break;
         }
         let waves: Vec<&[f32]> = planar.iter().map(|ch| &ch[pos..pos + need]).collect();
-        let done = rs.process(&waves, None).map_err(|e| anyhow!("rubato: {e}"))?;
+        let done = rs
+            .process(&waves, None)
+            .map_err(|e| anyhow!("rubato: {e}"))?;
         for (ch, d) in out.iter_mut().zip(done) {
             ch.extend(d);
         }
@@ -81,7 +85,10 @@ pub fn resample(
         ch[delay.min(ch.len())..end].to_vec()
     });
     if out[0].len() < expected {
-        bail!("resampler produced {} of {expected} expected samples", out[0].len());
+        bail!(
+            "resampler produced {} of {expected} expected samples",
+            out[0].len()
+        );
     }
     Ok(out)
 }

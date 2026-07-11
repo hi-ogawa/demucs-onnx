@@ -4,3 +4,5 @@ verifyDepsBeforeRun: false
 allowBuilds:
   esbuild: false
   protobufjs: false
+  sharp: false
+  workerd: false

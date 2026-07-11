@@ -1,6 +1,6 @@
 # Demucs ONNX
 
-Portable Demucs v4 (`htdemucs`) inference using exported ONNX models and a Rust orchestration layer. The repository includes a native CLI, Node binding, and a fully client-side WASM web app. Model export requires PyTorch, but inference uses Rust and ONNX Runtime.
+Portable Demucs v4 (`htdemucs`) inference using exported ONNX models and a Rust orchestration layer. The repository includes a native CLI and a fully client-side WASM web app. Model export requires PyTorch, but inference uses Rust and ONNX Runtime.
 
 The model artifacts are derived from the [upstream Demucs models](https://github.com/adefossez/demucs), and the export builds on the ONNX work in [adefossez/demucs#10](https://github.com/adefossez/demucs/pull/10).
 
@@ -59,9 +59,17 @@ pnpm dev
 
 Open `http://localhost:5173`, choose a local audio file, and run separation. Audio and models stay in the browser. During development, Vite serves the generated models from `data/onnx-lean/`.
 
+Build the static app with:
+
+```bash
+pnpm build
+```
+
+The output in `packages/app/dist/` is configured for Cloudflare Workers static assets by `wrangler.jsonc`. Configure the Cloudflare build command as `pnpm build`; production users select model files locally, so model artifacts are not included in the deployment.
+
 ## Repository
 
-- [`crates/`](crates/) contains the Rust workspace: orchestration core, ONNX Runtime driver, CLI, Node binding, and WASM binding.
+- [`crates/`](crates/) contains the Rust workspace: orchestration core, native ONNX Runtime CLI, and WASM binding.
 - [`packages/app/`](packages/app/) contains the fully client-side Vite app.
 - [`tools/model-export/`](tools/model-export/) contains the `uv`-managed model export, DFT stripping, and parity tools.
 - [`docs/`](docs/) contains documentation about Demucs architecture, the model release process, and implementation history.

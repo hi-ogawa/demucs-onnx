@@ -1,21 +1,16 @@
-//! Shared ort driver for the native bindings (cli, napi): for each bag member, load its
-//! session (one model in memory at a time) and run its shifts and chunks. Per-chunk i/o is
-//! allocation-free — one reusable input buffer (borrowed by the input tensor), and the
-//! model's output slice fed back to the engine without a copy.
+//! ONNX Runtime inference driver for the native CLI.
 
 use anyhow::{anyhow, bail, Context, Result};
 use demucs_core as core;
 use std::path::Path;
 
-/// ort errors are not Send+Sync; stringify them for anyhow.
 fn ort_err<R>(e: ort::Error<R>) -> anyhow::Error {
     anyhow!("ort: {e}")
 }
 
-/// This driver's file naming for a bag member (the export scripts' artifact convention).
-fn member_file(m: core::vocab::Member) -> &'static str {
+fn member_file(member: core::vocab::Member) -> &'static str {
     use core::vocab::Member;
-    match m {
+    match member {
         Member::Htdemucs => "htdemucs.onnx",
         Member::HtdemucsFt(core::Source::Drums) => "htdemucs_ft_drums.onnx",
         Member::HtdemucsFt(core::Source::Bass) => "htdemucs_ft_bass.onnx",
@@ -24,8 +19,6 @@ fn member_file(m: core::vocab::Member) -> &'static str {
     }
 }
 
-/// Drive a separation start to finish. `members[m]` identifies bag member `m`'s model;
-/// `on_member(file)` fires once per model load, `on_progress(done, total)` once per chunk.
 pub fn run_all(
     models_dir: &Path,
     members: &[core::vocab::Member],
@@ -68,7 +61,9 @@ pub fn run_all(
                     input.as_slice(),
                 ))
                 .map_err(ort_err)?;
-                let run = session.run(ort::inputs!["input" => value]).map_err(ort_err)?;
+                let run = session
+                    .run(ort::inputs!["input" => value])
+                    .map_err(ort_err)?;
                 let (shape, data) = run["output"].try_extract_tensor::<f32>().map_err(ort_err)?;
                 let dims: Vec<usize> = shape.iter().map(|&d| d as usize).collect();
                 if dims != [1, core::NUM_SOURCES, core::CHANNELS, core::SEGMENT] {

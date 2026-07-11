@@ -1,12 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-  "crates/core",
-  "crates/ort-driver",
-  "crates/cli",
-  "crates/napi",
-  "crates/wasm",
-]
+members = ["crates/core", "crates/cli", "crates/wasm"]
 
 [profile.release]
 debug = false
