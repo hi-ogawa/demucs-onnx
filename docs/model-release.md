@@ -4,7 +4,7 @@ GitHub Releases distribute the size-optimized ONNX models separately from the ap
 
 ## Download for local development
 
-Prerequisites are `gh`, authenticated with access to the repository, and `pnpm`:
+Prerequisites are Python, `gh` authenticated with access to the repository, and `pnpm`:
 
 ```bash
 gh auth status
