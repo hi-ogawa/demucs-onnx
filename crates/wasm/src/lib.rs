@@ -85,10 +85,8 @@ pub async fn separate(
         let session = JsFuture::from(host.load_model(member_model, source)?).await?;
 
         let member_plan = &separation.plan.members[member_index];
-        let mut shift_merger = demucs::ShiftMerger::new(
-            separation.plan.track_len,
-            member_plan.shifts.len(),
-        );
+        let mut shift_merger =
+            demucs::ShiftMerger::new(separation.plan.track_len, member_plan.shifts.len());
         for shift in &member_plan.shifts {
             let mut chunk_processor = separation.plan.create_chunk_processor(shift);
             for &chunk in &shift.chunks {
@@ -101,7 +99,9 @@ pub async fn separate(
                     output.as_mut_ptr() as usize,
                 )?)
                 .await?;
-                chunk_processor.process_output(chunk, &output).map_err(js_err)?;
+                chunk_processor
+                    .process_output(chunk, &output)
+                    .map_err(js_err)?;
                 done += 1;
                 host.progress_event("progress", done, total);
             }
@@ -113,16 +113,13 @@ pub async fn separate(
         JsFuture::from(host.release_model(&session)?).await?;
     }
 
-    let tracks: Vec<[Vec<f32>; demucs::CHANNELS]> = match separation
-        .stem_finalizer
-        .finish()
-        .map_err(js_err)?
-    {
-        demucs::Outputs::Full(stems) => stems.into(),
-        demucs::Outputs::TwoStems {
-            target, complement, ..
-        } => vec![target, complement],
-    };
+    let tracks: Vec<[Vec<f32>; demucs::CHANNELS]> =
+        match separation.stem_finalizer.finish().map_err(js_err)? {
+            demucs::Outputs::Full(stems) => stems.into(),
+            demucs::Outputs::TwoStems {
+                target, complement, ..
+            } => vec![target, complement],
+        };
     Ok(tracks
         .iter()
         .flat_map(|track| {

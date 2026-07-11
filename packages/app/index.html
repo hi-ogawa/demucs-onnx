@@ -25,6 +25,10 @@
         font-size: 0.9rem;
         white-space: pre-line;
       }
+      #modelFilesStatus {
+        color: #555;
+        font-size: 0.9rem;
+      }
     </style>
   </head>
   <body>
@@ -32,6 +36,19 @@
     <fieldset>
       <legend>input</legend>
       <input type="file" id="file" accept="audio/*" />
+    </fieldset>
+    <fieldset>
+      <legend>models</legend>
+      <p>
+        Download model assets from the
+        <a
+          href="https://github.com/hi-ogawa/demucs-onnx/releases"
+          target="_blank"
+          >GitHub Releases page</a
+        >, then select the required files.
+      </p>
+      <input type="file" id="modelFiles" accept=".bin,.onnx" multiple />
+      <p id="modelFilesStatus"></p>
     </fieldset>
     <fieldset>
       <legend>options</legend>

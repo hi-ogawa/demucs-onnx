@@ -1,20 +1,80 @@
+import {
+  isModelFilename,
+  requiredModelFiles,
+  type ModelSource,
+} from "./audio/models";
 import type { SeparateRequest } from "./audio/separate";
 // Main thread: decode (platform does format + resample to 44.1k), hand planar f32 to the
 // worker, render progress and resulting stems as players + downloads.
 import { encodeWavF32 } from "./wav";
 import type { WorkerResponse } from "./worker";
 
-declare const __MODELS_URL__: string;
+declare const __MODELS_URL__: string | null;
 
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const fileInput = $<HTMLInputElement>("file");
+const modelFilesInput = $<HTMLInputElement>("modelFiles");
+const modelFilesStatus = $<HTMLParagraphElement>("modelFilesStatus");
+const modelSelect = $<HTMLSelectElement>("model");
+const twoStemsSelect = $<HTMLSelectElement>("twoStems");
+const methodSelect = $<HTMLSelectElement>("method");
 const runBtn = $<HTMLButtonElement>("run");
 const progress = $<HTMLProgressElement>("progress");
 const status = $<HTMLParagraphElement>("status");
 const stemsDiv = $<HTMLDivElement>("stems");
 
 let decoded: { left: Float32Array; right: Float32Array } | null = null;
+let selectedModelFiles: File[] | null = null;
+let running = false;
+
+function getModelSource(): ModelSource | null {
+  if (selectedModelFiles) {
+    return { kind: "files", files: selectedModelFiles };
+  }
+  return __MODELS_URL__ ? { kind: "url", baseUrl: __MODELS_URL__ } : null;
+}
+
+function updateAvailability() {
+  const source = getModelSource();
+  let modelsReady = false;
+  if (source?.kind === "url") {
+    modelFilesStatus.textContent = "Using development model files.";
+    modelsReady = true;
+  } else {
+    const required = requiredModelFiles(
+      modelSelect.value,
+      twoStemsSelect.value || undefined,
+      twoStemsSelect.value
+        ? (methodSelect.value as "add" | "minus")
+        : undefined,
+    );
+    const selected = new Set(selectedModelFiles?.map((file) => file.name));
+    const missing = required.filter((filename) => !selected.has(filename));
+    if (missing.length) {
+      modelFilesStatus.textContent = `Missing model files: ${missing.join(", ")}`;
+    } else {
+      modelFilesStatus.textContent = "Required model files selected.";
+      modelsReady = true;
+    }
+  }
+  runBtn.disabled = running || !decoded || !modelsReady;
+}
+
+modelFilesInput.onchange = () => {
+  const files = [...(modelFilesInput.files ?? [])];
+  const unsupported = files.filter((file) => !isModelFilename(file.name));
+  selectedModelFiles = files.filter((file) => isModelFilename(file.name));
+  updateAvailability();
+  if (unsupported.length) {
+    modelFilesStatus.textContent += ` Unsupported files: ${unsupported.map((file) => file.name).join(", ")}`;
+  }
+};
+
+modelSelect.onchange = updateAvailability;
+twoStemsSelect.onchange = updateAvailability;
+methodSelect.onchange = updateAvailability;
+updateAvailability();
 
 fileInput.onchange = async () => {
   const file = fileInput.files?.[0];
@@ -34,14 +94,15 @@ fileInput.onchange = async () => {
   const right = buf.numberOfChannels > 1 ? buf.getChannelData(1) : left;
   decoded = { left, right };
   status.textContent = `decoded: ${(buf.length / 44100).toFixed(2)}s, ${buf.numberOfChannels}ch @44.1k`;
-  runBtn.disabled = false;
+  updateAvailability();
 };
 
 runBtn.onclick = () => {
   if (!decoded) {
     return;
   }
-  runBtn.disabled = true;
+  running = true;
+  updateAvailability();
   stemsDiv.innerHTML = "";
   progress.hidden = false;
   progress.value = 0;
@@ -53,7 +114,8 @@ runBtn.onclick = () => {
   worker.onerror = (e) => {
     status.textContent = `error: worker failed: ${e.message ?? e}`;
     progress.hidden = true;
-    runBtn.disabled = false;
+    running = false;
+    updateAvailability();
   };
   worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
     const msg = e.data;
@@ -82,12 +144,14 @@ runBtn.onclick = () => {
         div.append(label, audio, " ", a);
         stemsDiv.append(div);
       }
-      runBtn.disabled = false;
+      running = false;
+      updateAvailability();
       worker.terminate();
     } else if (msg.type === "error") {
       status.textContent = `error: ${msg.message}`;
       progress.hidden = true;
-      runBtn.disabled = false;
+      running = false;
+      updateAvailability();
       worker.terminate();
     }
   };
@@ -96,20 +160,24 @@ runBtn.onclick = () => {
   // copy: the decoded buffers stay usable for re-runs
   const l = left.slice();
   const r = right.slice();
-  const twoStemsSource = $<HTMLSelectElement>("twoStems").value;
+  const twoStemsSource = twoStemsSelect.value;
+  const modelSource = getModelSource();
+  if (!modelSource) {
+    return;
+  }
   const request: SeparateRequest = {
     left: l,
     right: r,
-    model: $<HTMLSelectElement>("model").value,
+    model: modelSelect.value,
     twoStems: twoStemsSource
       ? {
           source: twoStemsSource,
           // the select's only options are add and minus
-          method: $<HTMLSelectElement>("method").value as "add" | "minus",
+          method: methodSelect.value as "add" | "minus",
         }
       : undefined,
     shifts: Number($<HTMLInputElement>("shifts").value),
-    modelsUrl: __MODELS_URL__,
+    modelSource,
   };
   worker.postMessage(request, [l.buffer, r.buffer]);
 };
