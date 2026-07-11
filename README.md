@@ -59,6 +59,14 @@ pnpm dev
 
 Open `http://localhost:5173`, choose a local audio file, and run separation. Audio and models stay in the browser. During development, Vite serves the generated models from `data/onnx-lean/`.
 
+Build the static app with:
+
+```bash
+pnpm build
+```
+
+The output in `packages/app/dist/` is configured for Cloudflare Workers static assets by `wrangler.jsonc`. Configure the Cloudflare build command as `pnpm build`; production users select model files locally, so model artifacts are not included in the deployment.
+
 ## Repository
 
 - [`crates/`](crates/) contains the Rust workspace: orchestration core, ONNX Runtime driver, CLI, Node binding, and WASM binding.
