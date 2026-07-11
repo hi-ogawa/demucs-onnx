@@ -11,8 +11,8 @@
     "build": "pnpm build-wasm && pnpm -C packages/app build",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
-    "lint": "vp check --fix && pnpm -C packages/app lint",
-    "lint-check": "vp check && pnpm -C packages/app lint",
+    "lint": "cargo fmt --all && vp check --fix && pnpm -C packages/app lint",
+    "lint-check": "cargo fmt --all -- --check && vp check && pnpm -C packages/app lint",
     "test-e2e": "pnpm -C packages/app test-e2e"
   },
   "devDependencies": {

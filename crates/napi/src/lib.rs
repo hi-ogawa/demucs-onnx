@@ -33,8 +33,8 @@ pub fn separate(
     options: Option<SeparateOptions>,
 ) -> napi::Result<Vec<String>> {
     let opts = options.unwrap_or_default();
-    let mode = core::Mode::parse(opts.two_stems.as_deref(), opts.method.as_deref())
-        .map_err(js_err)?;
+    let mode =
+        core::Mode::parse(opts.two_stems.as_deref(), opts.method.as_deref()).map_err(js_err)?;
     let shifts = opts.shifts.unwrap_or(1);
 
     run(&models_dir, &model_name, &input, &out_dir, mode, shifts).map_err(js_err)
@@ -69,7 +69,11 @@ fn run(
             .zip(stems)
             .map(|(s, p)| (s.name().to_string(), p))
             .collect(),
-        core::Outputs::TwoStems { source, target, complement } => vec![
+        core::Outputs::TwoStems {
+            source,
+            target,
+            complement,
+        } => vec![
             (source.name().to_string(), target),
             (format!("no_{}", source.name()), complement),
         ],

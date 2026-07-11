@@ -83,7 +83,11 @@ fn separate(argv: &[String]) -> Result<()> {
     );
 
     let (members, bag) = core::vocab::select(&args.name, args.mode)?;
-    let opts = core::Options { bag, shifts: args.shifts, mode: args.mode };
+    let opts = core::Options {
+        bag,
+        shifts: args.shifts,
+        mode: args.mode,
+    };
 
     // the progress line updates in place via \r; end it before other output
     let mid_line = std::cell::Cell::new(false);
@@ -113,7 +117,11 @@ fn separate(argv: &[String]) -> Result<()> {
             .zip(stems)
             .map(|(s, p)| (s.name().to_string(), p))
             .collect(),
-        core::Outputs::TwoStems { source, target, complement } => vec![
+        core::Outputs::TwoStems {
+            source,
+            target,
+            complement,
+        } => vec![
             (source.name().to_string(), target),
             (format!("no_{}", source.name()), complement),
         ],
@@ -131,7 +139,13 @@ fn compare(a: &str, b: &str) -> Result<()> {
     let (wa, ra) = core::decode_wav(&std::fs::read(a).with_context(|| format!("open {a}"))?)?;
     let (wb, rb) = core::decode_wav(&std::fs::read(b).with_context(|| format!("open {b}"))?)?;
     if ra != rb || wa[0].len() != wb[0].len() || wa.len() != wb.len() {
-        bail!("format mismatch: {}Hz/{} vs {}Hz/{}", ra, wa[0].len(), rb, wb[0].len());
+        bail!(
+            "format mismatch: {}Hz/{} vs {}Hz/{}",
+            ra,
+            wa[0].len(),
+            rb,
+            wb[0].len()
+        );
     }
     let mut max_abs = 0f64;
     let mut sq = 0f64;
