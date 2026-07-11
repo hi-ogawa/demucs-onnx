@@ -1,8 +1,10 @@
 {
   "name": "demucs-onnx",
   "private": true,
+  "type": "module",
   "scripts": {
     "prepare": "vp config",
+    "bass-cover": "python3 tools/bass-cover.py",
     "build:model": "uv run python tools/model-export/build_models.py",
     "download:models": "python tools/models.py download",
     "release:models": "python tools/models.py release",
