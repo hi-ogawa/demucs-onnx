@@ -1,0 +1,34 @@
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 640px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+fieldset {
+  border: 1px solid #ccc;
+  margin-bottom: 1rem;
+}
+
+#stems div {
+  margin: 0.5rem 0;
+}
+
+progress {
+  width: 100%;
+}
+
+#status {
+  color: #555;
+  font-size: 0.9rem;
+  white-space: pre-line;
+}
+
+#modelFilesStatus {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+#shifts {
+  width: 3em;
+}
