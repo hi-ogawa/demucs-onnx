@@ -5,6 +5,7 @@ import init, {
   separate as separateWasm,
   type Host,
 } from "../../../../crates/wasm/pkg/demucs_wasm.js";
+import { readModelFile, type ModelFilename, type ModelSource } from "./models";
 
 const SEGMENT = 343980;
 const IN_LEN = 2 * SEGMENT; // (1, 2, SEGMENT)
@@ -21,7 +22,7 @@ export interface SeparateRequest {
   model: string;
   twoStems?: TwoStems;
   shifts: number;
-  modelsUrl: string;
+  modelSource: ModelSource;
 }
 
 export interface SeparatedStem {
@@ -53,21 +54,19 @@ export async function separate(
     },
 
     async initialize() {
-      this.event("status", "fetching dft.bin...");
-      dft = new Uint8Array(
-        await (await fetch(`${req.modelsUrl}/dft.bin`)).arrayBuffer(),
-      );
+      this.event("status", "loading dft.bin...");
+      dft = await readModelFile(req.modelSource, "dft.bin");
     },
 
     async loadModel(model, source) {
       if (!dft) {
         throw new Error("host not initialized");
       }
-      const file = source ? `${model}_${source}.onnx` : `${model}.onnx`;
+      const file = (
+        source ? `${model}_${source}.onnx` : `${model}.onnx`
+      ) as ModelFilename;
       this.event("status", `loading model ${file}...`);
-      const bytes = new Uint8Array(
-        await (await fetch(`${req.modelsUrl}/${file}`)).arrayBuffer(),
-      );
+      const bytes = await readModelFile(req.modelSource, file);
       return ort.InferenceSession.create(bytes, {
         executionProviders: ["wasm"],
         externalData: [{ data: dft, path: "dft.bin" }],
