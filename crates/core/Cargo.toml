@@ -1,0 +1,17 @@
+[package]
+name = "demucs-core"
+version = "0.0.0"
+edition = "2021"
+description = "Sans-inference demucs orchestration: audio conform, chunking, OLA, bag weighting"
+
+[features]
+default = ["wav", "resample"]
+# wav file io (native drivers; the browser tier decodes via decodeAudioData)
+wav = ["dep:hound"]
+# sinc resampling (native drivers; the browser tier resamples via a 44.1k audio context)
+resample = ["dep:rubato"]
+
+[dependencies]
+anyhow = "1"
+hound = { version = "3.5", optional = true }
+rubato = { version = "0.16", optional = true }

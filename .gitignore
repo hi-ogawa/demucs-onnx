@@ -1,0 +1,8 @@
+data/
+node_modules/
+__pycache__/
+.venv/
+target/
+crates/napi/demucs.node
+crates/wasm/pkg/
+packages/app/.playwright-cli/
