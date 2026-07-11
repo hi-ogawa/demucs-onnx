@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Download YouTube audio and separate it into bass and no-bass stems."""
 
 import argparse
