@@ -2,6 +2,8 @@
 
 Portable Demucs v4 (`htdemucs`) inference built from exported ONNX models and a Rust orchestration layer. The repository includes a native CLI, Node binding, and fully client-side WASM web app.
 
+The model artifacts are derived from the [upstream Demucs models](https://github.com/adefossez/demucs), and the export builds on the ONNX work in [adefossez/demucs#10](https://github.com/adefossez/demucs/pull/10).
+
 The CLI separates WAV input into Demucs stems using locally exported ONNX models. Model export requires PyTorch, but inference uses the native Rust and ONNX Runtime stack.
 
 ## Usage
