@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "prepare": "vp config",
+    "bass-cover": "tsx examples/bass-cover.ts",
     "build:model": "uv run python tools/model-export/build_models.py",
     "build:wasm": "wasm-pack build crates/wasm --target web --release",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
@@ -12,6 +13,7 @@
     "test-e2e": "pnpm -C packages/app test-e2e"
   },
   "devDependencies": {
+    "tsx": "^4.20.3",
     "vite-plus": "^0.2.4"
   },
   "packageManager": "pnpm@11.11.0+sha512.4463f65fd80ed80d69bc1d4bf163ee94f605c7380fc318bb5b2ebe15f8cd12d49c51a4d59e951b401e764d3b6ca751cbf51bc50ed7001a6bcb4935e684c34882"
