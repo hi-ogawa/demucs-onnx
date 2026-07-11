@@ -1,0 +1,8 @@
+{
+  "$schema": "https://www.unpkg.com/wrangler@4.110.0/config-schema.json",
+  "name": "demucs-onnx",
+  "compatibility_date": "2026-07-12",
+  "assets": {
+    "directory": "packages/app/dist",
+  },
+}

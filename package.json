@@ -8,6 +8,7 @@
     "build-model": "uv run python tools/model-export/build_models.py",
     "model-release": "uv run --no-sync tools/model_release.py",
     "build-wasm": "wasm-pack build crates/wasm --target web --release",
+    "build": "pnpm build-wasm && pnpm -C packages/app build",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
     "lint": "vp check --fix && pnpm -C packages/app lint",
@@ -15,7 +16,8 @@
     "test-e2e": "pnpm -C packages/app test-e2e"
   },
   "devDependencies": {
-    "vite-plus": "^0.2.4"
+    "vite-plus": "^0.2.4",
+    "wrangler": "4.110.0"
   },
   "packageManager": "pnpm@11.11.0+sha512.4463f65fd80ed80d69bc1d4bf163ee94f605c7380fc318bb5b2ebe15f8cd12d49c51a4d59e951b401e764d3b6ca751cbf51bc50ed7001a6bcb4935e684c34882"
 }
