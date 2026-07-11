@@ -36,10 +36,16 @@ pnpm build:model --all
 Create a release and upload the six model assets by choosing an explicit tag:
 
 ```bash
-pnpm model-release release models-v1
+pnpm model-release release models-v1 --create
 ```
 
-Rerunning the command for an existing tag replaces same-named assets. Inspect a release with:
+Update an existing release by explicitly replacing its same-named assets:
+
+```bash
+pnpm model-release release models-v1 --update
+```
+
+Inspect a release with:
 
 ```bash
 gh release view models-v1

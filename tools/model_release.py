@@ -76,12 +76,7 @@ def release(args: argparse.Namespace) -> None:
         )
 
     paths = [str(MODELS_DIR / name) for name in ASSETS]
-    existing = subprocess.run(
-        ["gh", "release", "view", args.tag, "--repo", REPO],
-        text=True,
-        capture_output=True,
-    )
-    if existing.returncode == 0:
+    if args.update:
         run(
             [
                 "gh",
@@ -94,7 +89,7 @@ def release(args: argparse.Namespace) -> None:
                 REPO,
             ]
         )
-    elif "release not found" in existing.stderr.lower():
+    else:
         run(
             [
                 "gh",
@@ -112,8 +107,6 @@ def release(args: argparse.Namespace) -> None:
                 str(REPO_DIR / "docs/model-release-notes.md"),
             ]
         )
-    else:
-        raise SystemExit(existing.stderr.strip())
 
     run(["gh", "release", "view", args.tag, "--repo", REPO])
 
@@ -129,6 +122,9 @@ def main() -> None:
 
     release_parser = subparsers.add_parser("release", help="create or update a release")
     release_parser.add_argument("tag")
+    action = release_parser.add_mutually_exclusive_group(required=True)
+    action.add_argument("--create", action="store_true")
+    action.add_argument("--update", action="store_true")
     release_parser.set_defaults(func=release)
 
     args = parser.parse_args()
