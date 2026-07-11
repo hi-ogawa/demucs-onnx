@@ -1,0 +1,12 @@
+[package]
+name = "demucs-ort-driver"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+demucs-core = { path = "../core" }
+# default features with tls-native swapped for tls-rustls (see cli/Cargo.toml)
+ort = { version = "2.0.0-rc.10", default-features = false, features = [
+  "std", "ndarray", "tracing", "download-binaries", "tls-rustls", "copy-dylibs", "api-24",
+] }

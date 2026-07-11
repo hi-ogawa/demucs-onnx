@@ -1,0 +1,25 @@
+[project]
+name = "demucs-port-scripts"
+version = "0.0.0"
+description = "Export htdemucs to self-contained ONNX and verify parity (uv-managed, CPU-only)"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+  # torch 2.1.x is the newest line the demucs fork explicitly supports (torchaudio <2.2)
+  "torch==2.1.2",
+  "torchaudio==2.1.2",
+  # dhunstack's ONNX-export branch (adefossez/demucs PR #10), pinned to the reviewed head
+  "demucs @ git+https://github.com/dhunstack/demucs@6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185",
+  "onnx>=1.15",
+  "onnxruntime>=1.17",
+  "numpy<2",
+  "soundfile>=0.12",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchaudio = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

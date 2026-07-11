@@ -1,0 +1,5 @@
+data/
+scripts/.venv/
+rust/napi/demucs.node
+rust/wasm/pkg/
+web/.playwright-cli/

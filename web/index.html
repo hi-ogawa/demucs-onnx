@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>demucs-web prototype</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 640px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      fieldset {
+        border: 1px solid #ccc;
+        margin-bottom: 1rem;
+      }
+      #stems div {
+        margin: 0.5rem 0;
+      }
+      progress {
+        width: 100%;
+      }
+      #status {
+        color: #555;
+        font-size: 0.9rem;
+        white-space: pre-line;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>demucs-web prototype</h1>
+    <fieldset>
+      <legend>input</legend>
+      <input type="file" id="file" accept="audio/*" />
+    </fieldset>
+    <fieldset>
+      <legend>options</legend>
+      <label
+        >model
+        <select id="model">
+          <option>htdemucs</option>
+          <option>htdemucs_ft</option>
+        </select></label
+      >
+      <label
+        >two-stems
+        <select id="twoStems">
+          <option value="">off</option>
+          <option>drums</option>
+          <option>bass</option>
+          <option>other</option>
+          <option>vocals</option>
+        </select></label
+      >
+      <label
+        >method
+        <select id="method">
+          <option>add</option>
+          <option>minus</option>
+        </select></label
+      >
+      <label
+        >shifts <input type="number" id="shifts" value="1" min="1" max="4" style="width: 3em"
+      /></label>
+    </fieldset>
+    <button id="run" disabled>separate</button>
+    <progress id="progress" value="0" max="1" hidden></progress>
+    <p id="status">pick a file</p>
+    <div id="stems"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

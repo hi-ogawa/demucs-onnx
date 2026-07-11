@@ -1,0 +1,4 @@
+node_modules/
+public/ort/
+dist/
+test-results/
