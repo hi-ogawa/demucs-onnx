@@ -23,22 +23,19 @@ jobs:
       OMP_NUM_THREADS: 2
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "lts/*"
+
+      - run: corepack enable
 
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           enable-cache: true
 
       - uses: dtolnay/rust-toolchain@stable
-
-      - uses: pnpm/action-setup@v6.0.9
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24
-          cache: pnpm
 
       - uses: taiki-e/install-action@v2.83.1
         with:
