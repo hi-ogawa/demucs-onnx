@@ -68,7 +68,9 @@ pub fn run_all(
                     input.as_slice(),
                 ))
                 .map_err(ort_err)?;
-                let run = session.run(ort::inputs!["input" => value]).map_err(ort_err)?;
+                let run = session
+                    .run(ort::inputs!["input" => value])
+                    .map_err(ort_err)?;
                 let (shape, data) = run["output"].try_extract_tensor::<f32>().map_err(ort_err)?;
                 let dims: Vec<usize> = shape.iter().map(|&d| d as usize).collect();
                 if dims != [1, core::NUM_SOURCES, core::CHANNELS, core::SEGMENT] {
