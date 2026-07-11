@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HTDemucs model core</title>
+    <style>
+      :root {
+        --spec: #7c3aed; /* violet: spectrogram branch */
+        --spec-bg: #f5f3ff;
+        --time: #0f766e; /* teal: waveform (time) branch */
+        --time-bg: #f0fdfa;
+        --xf: #be123c; /* rose: cross-domain transformer */
+        --xf-bg: #fff1f2;
+        --model: #b45309; /* amber: weights / param facts */
+        --model-bg: #fffbeb;
+        --bb: #1e293b; /* slate: i/o and structure */
+        --bb-bg: #f1f5f9;
+        --muted: #64748b;
+        --line: #cbd5e1;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        color: #0f172a;
+        background: #fff;
+        max-width: 1160px;
+        margin: 2rem auto;
+        padding: 0 1.25rem;
+        line-height: 1.45;
+      }
+      h1 {
+        font-size: 1.45rem;
+        margin: 0 0 0.2rem;
+      }
+      h2 {
+        font-size: 1.15rem;
+        margin: 2.2rem 0 0.8rem;
+        border-bottom: 2px solid var(--line);
+        padding-bottom: 0.3rem;
+      }
+      h3 {
+        font-size: 0.95rem;
+        margin: 1.4rem 0 0.5rem;
+      }
+      p.sub {
+        color: var(--muted);
+        margin-top: 0;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.85em;
+        background: #f8fafc;
+        padding: 0.05em 0.3em;
+        border-radius: 4px;
+      }
+
+      .wrap {
+        position: relative;
+      }
+      nav.toc {
+        position: fixed;
+        top: 1.2rem;
+        right: max(1.25rem, calc((100vw - 1160px) / 2 + 1.25rem));
+        z-index: 1;
+        width: max-content;
+        font-size: 0.8rem;
+      }
+      nav.toc summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--muted);
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0.35rem 0.6rem;
+      }
+      nav.toc .links {
+        position: absolute;
+        right: 0;
+        width: max-content;
+        margin-top: 0.3rem;
+        padding: 0.45rem 0.65rem;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        box-shadow: 0 6px 18px rgb(15 23 42 / 12%);
+      }
+      nav.toc a {
+        display: block;
+        color: var(--muted);
+        padding: 0.18rem 0;
+        white-space: nowrap;
+      }
+      nav.toc a:hover {
+        color: #2563eb;
+      }
+      main {
+        min-width: 0;
+        max-width: 980px;
+        margin: 0 auto;
+      }
+
+      .row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: stretch;
+      }
+      .card {
+        border: 1.5px solid;
+        border-radius: 10px;
+        padding: 0.7rem 0.9rem;
+        flex: 1;
+        min-width: 240px;
+      }
+      .card h4 {
+        margin: 0 0 0.4rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .card ul {
+        margin: 0.2rem 0;
+        padding-left: 1.1rem;
+        font-size: 0.85rem;
+      }
+      .card.spec {
+        border-color: var(--spec);
+        background: var(--spec-bg);
+      }
+      .card.spec h4 {
+        color: var(--spec);
+      }
+      .card.time {
+        border-color: var(--time);
+        background: var(--time-bg);
+      }
+      .card.time h4 {
+        color: var(--time);
+      }
+      .card.xf {
+        border-color: var(--xf);
+        background: var(--xf-bg);
+      }
+      .card.xf h4 {
+        color: var(--xf);
+      }
+      .card.bb {
+        border-color: var(--bb);
+        background: var(--bb-bg);
+      }
+      .card.bb h4 {
+        color: var(--bb);
+      }
+
+      .legend {
+        display: flex;
+        gap: 1rem 1.4rem;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.5rem 0.8rem;
+        margin: 0.8rem 0;
+      }
+      .legend .sw {
+        display: inline-block;
+        width: 0.85em;
+        height: 0.85em;
+        border-radius: 3px;
+        vertical-align: -0.1em;
+        margin-right: 0.35em;
+      }
+
+      .bytes {
+        display: flex;
+        height: 1.5rem;
+        border-radius: 5px;
+        overflow: hidden;
+        font-size: 0.7rem;
+        color: #fff;
+        text-align: center;
+        line-height: 1.5rem;
+        margin: 0.4rem 0;
+      }
+
+      table {
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        margin: 0.6rem 0;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 0.35rem 0.6rem;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #f8fafc;
+      }
+      td.num {
+        text-align: right;
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav class="toc">
+        <details>
+          <summary>TOC</summary>
+          <div class="links">
+            <a href="#idea">1 · separate in two views</a>
+            <a href="#shape">2 · two U-Nets and a bridge</a>
+            <a href="#layer">3 · inside one layer</a>
+            <a href="#bridge">4 · the bridge</a>
+            <a href="#rebuild">5 · rebuild and sum</a>
+            <a href="#params">6 · where the 42 M live</a>
+          </div>
+        </details>
+      </nav>
+      <main>
+        <h1>HTDemucs model core</h1>
+        <p class="sub">
+          The <a href="inference-pipeline.html">inference pipeline page</a>
+          treats the model as a black box: <code>f32 (1, 2, 343980)</code> in,
+          <code>f32 (1, 4, 2, 343980)</code> out. This page opens that box. The
+          architecture is HTDemucs (demucs v4): the same 7.8&nbsp;s of audio is
+          processed <b>twice in parallel</b> — once as a spectrogram, once as a
+          raw waveform — by two convolutional U-Nets that never touch in the
+          encoder and exchange information only through a transformer at the
+          bottleneck (§4), which is also where 75% of the weights live (§6).
+          Paper: <a href="https://arxiv.org/abs/2211.08553">arXiv:2211.08553</a>
+          · code:
+          <a
+            href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/htdemucs.py"
+            >htdemucs.py</a
+          >
+          (the pinned fork this repo exports from) · upstream mechanics notes:
+          <a href="demucs.md">demucs.md</a>.
+        </p>
+        <div class="legend">
+          <span
+            ><span class="sw" style="background: var(--spec)"></span
+            >spectrogram branch</span
+          >
+          <span
+            ><span class="sw" style="background: var(--time)"></span>waveform
+            (time) branch</span
+          >
+          <span
+            ><span class="sw" style="background: var(--xf)"></span>cross-domain
+            transformer</span
+          >
+          <span
+            ><span class="sw" style="background: var(--bb)"></span>i/o ·
+            weight-free DSP</span
+          >
+          <span
+            ><span
+              class="sw"
+              style="background: #fff; border: 1.5px dashed var(--muted)"
+            ></span
+            >skip connection (added, not concatenated)</span
+          >
+        </div>
+
+        <h2 id="idea">1 · One idea: separate in two views at once</h2>
+        <p class="sub">
+          Sound has two natural representations, and each makes a different
+          kind of structure easy to see. Earlier Demucs generations picked one
+          (v1/v2 waveform-only, spectrogram models like Open-Unmix the other);
+          v3 ran both; v4 (this model) runs both <i>and lets them talk</i>.
+        </p>
+
+        <div class="row">
+          <div class="card spec">
+            <h4>Spectrogram view — frequency × time grid</h4>
+            <ul>
+              <li>
+                A sustained bass note or vocal harmonic is a few <b>stable
+                horizontal rows</b> — trivially separable structure
+              </li>
+              <li>
+                A drum hit is smeared vertically across all 2048 bins — hard
+              </li>
+              <li>
+                Phase (needed to get a waveform back) is the classically hard
+                part; §5 shows how this model sidesteps masking entirely
+              </li>
+            </ul>
+          </div>
+          <div class="card time">
+            <h4>Waveform view — raw samples</h4>
+            <ul>
+              <li>
+                A drum transient is a <b>sharp local event</b> — exactly what a
+                dilated conv stack resolves; phase comes for free
+              </li>
+              <li>
+                Pitch and harmony are spread over thousands of samples — hard
+              </li>
+              <li>
+                Waveform U-Nets (demucs v1/v2) historically won on drums/bass,
+                spectrogram models on vocals/other
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <svg
+          viewBox="0 0 640 158"
+          width="620"
+          style="display: block; margin: 0.8rem 0"
+        >
+          <text x="150" y="14" font-size="11" fill="#0f766e" text-anchor="middle" font-weight="600">
+            waveform view
+          </text>
+          <polyline
+            points="20,80 45,74 70,84 95,76 120,83 138,78 146,30 152,120 158,55 164,95 170,72 195,80 220,74 245,84 270,77 292,81"
+            fill="none"
+            stroke="#0f766e"
+            stroke-width="1.6"
+          />
+          <text x="152" y="140" font-size="9.5" fill="#64748b" text-anchor="middle">
+            drum hit: one crisp spike · the note underneath: invisible
+          </text>
+          <text x="480" y="14" font-size="11" fill="#7c3aed" text-anchor="middle" font-weight="600">
+            spectrogram view (same audio)
+          </text>
+          <rect x="370" y="24" width="220" height="96" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1" />
+          <g stroke="#7c3aed" stroke-width="4" opacity="0.75">
+            <line x1="374" y1="100" x2="586" y2="100" />
+            <line x1="374" y1="76" x2="586" y2="76" />
+            <line x1="374" y1="52" x2="586" y2="52" />
+          </g>
+          <rect x="466" y="26" width="9" height="92" fill="#7c3aed" opacity="0.3" />
+          <text x="480" y="140" font-size="9.5" fill="#64748b" text-anchor="middle">
+            the note: three crisp rows · the drum: a smear over all bins
+          </text>
+          <text x="362" y="34" font-size="9" fill="#64748b" text-anchor="end">freq ↑</text>
+          <text x="362" y="118" font-size="9" fill="#64748b" text-anchor="end">time →</text>
+        </svg>
+
+        <p>
+          Each view's blind spot is the other's strength. The model exploits
+          that literally: the final output is the <b>sum of two independent
+          waveform estimates</b>, one reconstructed from the spectrogram branch
+          and one produced directly by the time branch
+          (<a
+            href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/htdemucs.py#L682"
+            >htdemucs.py:682</a
+          >, <code>x = xt + x</code>).
+        </p>
+
+        <h2 id="shape">2 · The shape: two U-Nets and a bridge</h2>
+        <p class="sub">
+          Both branches are 4-layer conv encoder/decoder pyramids with skip
+          connections (U-Nets). Each encoder layer trades resolution for
+          channels: ÷4 resolution, ×2 channels. The spectrogram branch strides
+          along the <b>frequency axis only</b> (time frames pass through
+          untouched); the time branch strides along time. After 4 layers both
+          arrive at 384 channels, the transformer bridges them, and mirrored
+          decoders climb back up using the skips. With this depth the two
+          branches <b>never merge in the encoder</b> — the merge path in the
+          code (<code>inject</code>) is dead for depth 4 / nfft 4096, so the
+          bridge is the only place the views meet.
+        </p>
+
+        <div class="card bb" style="max-width: 560px; margin: 0.6rem 0">
+          <h4>Reading the shapes</h4>
+          <ul>
+            <li>
+              Tensors are <code>(batch, channels, …space)</code> — batch is
+              always 1; channels are learned feature maps
+            </li>
+            <li>
+              Spec branch: <code>(1, C, freq, 336)</code> — 336 = STFT frames of
+              7.8 s at hop 1024
+            </li>
+            <li>Time branch: <code>(1, C, samples)</code></li>
+          </ul>
+        </div>
+
+        <svg
+          viewBox="0 0 940 1180"
+          style="display: block; margin: 0.8rem auto; max-width: 100%"
+        >
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#64748b" />
+            </marker>
+          </defs>
+
+          <!-- input -->
+          <rect x="350" y="8" width="240" height="46" rx="8" fill="#f1f5f9" stroke="#1e293b" stroke-width="1.5" />
+          <text x="470" y="27" font-size="11.5" fill="#1e293b" text-anchor="middle" font-weight="600">input · f32 (1, 2, 343980)</text>
+          <text x="470" y="43" font-size="10" fill="#64748b" text-anchor="middle">7.8 s stereo mix, fixed</text>
+
+          <line x1="400" y1="54" x2="240" y2="92" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <line x1="540" y1="54" x2="700" y2="92" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+
+          <!-- branch prep -->
+          <rect x="115" y="96" width="250" height="40" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.4" />
+          <text x="240" y="113" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">z-score normalize (in-graph)</text>
+          <text x="240" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">→ (1, 2, 343980)</text>
+
+          <rect x="555" y="96" width="290" height="40" rx="7" fill="#fff" stroke="#7c3aed" stroke-width="1.4" />
+          <text x="700" y="113" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">STFT 4096/1024 · CaC · z-score</text>
+          <text x="700" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">2048 bins × 336 frames → (1, 4, 2048, 336)</text>
+
+          <line x1="240" y1="136" x2="240" y2="166" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <line x1="700" y1="136" x2="700" y2="166" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+
+          <!-- column titles -->
+          <text x="226" y="160" font-size="10" fill="#0f766e" text-anchor="end" font-style="italic">time branch ↓</text>
+          <text x="686" y="160" font-size="10" fill="#7c3aed" text-anchor="end" font-style="italic">spectrogram branch ↓ (conv along freq)</text>
+
+          <!-- time encoders -->
+          <g>
+            <rect x="110" y="170" width="260" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="188" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tencoder.0 · conv k8 s4</text>
+            <text x="240" y="203" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 48, 85995)</text>
+
+            <rect x="130" y="242" width="220" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="260" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tencoder.1 · conv k8 s4</text>
+            <text x="240" y="275" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 96, 21499)</text>
+
+            <rect x="150" y="314" width="180" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="332" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tencoder.2 · conv k8 s4</text>
+            <text x="240" y="347" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 192, 5375)</text>
+
+            <rect x="170" y="386" width="140" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="404" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tencoder.3</text>
+            <text x="240" y="419" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 384, 1344)</text>
+          </g>
+
+          <!-- spec encoders -->
+          <g>
+            <rect x="570" y="170" width="260" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="188" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">encoder.0 · conv 8×1 s4 · +freq-emb</text>
+            <text x="700" y="203" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 48, 512, 336)</text>
+
+            <rect x="590" y="242" width="220" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="260" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">encoder.1 · conv 8×1 s4</text>
+            <text x="700" y="275" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 96, 128, 336)</text>
+
+            <rect x="610" y="314" width="180" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="332" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">encoder.2 · conv 8×1 s4</text>
+            <text x="700" y="347" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 192, 32, 336)</text>
+
+            <rect x="630" y="386" width="140" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="404" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">encoder.3</text>
+            <text x="700" y="419" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 384, 8, 336)</text>
+          </g>
+
+          <!-- inter-encoder arrows -->
+          <g stroke="#64748b" stroke-width="1.2" marker-end="url(#ah)">
+            <line x1="240" y1="214" x2="240" y2="238" />
+            <line x1="240" y1="286" x2="240" y2="310" />
+            <line x1="240" y1="358" x2="240" y2="382" />
+            <line x1="700" y1="214" x2="700" y2="238" />
+            <line x1="700" y1="286" x2="700" y2="310" />
+            <line x1="700" y1="358" x2="700" y2="382" />
+          </g>
+
+          <!-- arrows into transformer -->
+          <line x1="240" y1="430" x2="340" y2="474" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <line x1="700" y1="430" x2="600" y2="474" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+
+          <!-- transformer -->
+          <rect x="280" y="478" width="380" height="216" rx="10" fill="#fff1f2" stroke="#be123c" stroke-width="1.8" />
+          <text x="470" y="500" font-size="12" fill="#be123c" text-anchor="middle" font-weight="700">cross-domain transformer · §4</text>
+          <rect x="298" y="510" width="164" height="24" rx="12" fill="#fff" stroke="#0f766e" stroke-width="1" />
+          <text x="380" y="526" font-size="9.5" fill="#0f766e" text-anchor="middle">1×1 conv 384→512 · 1344 tokens</text>
+          <rect x="478" y="510" width="164" height="24" rx="12" fill="#fff" stroke="#7c3aed" stroke-width="1" />
+          <text x="560" y="526" font-size="9.5" fill="#7c3aed" text-anchor="middle">1×1 conv 384→512 · 2688 tokens</text>
+          <g font-size="9.5" text-anchor="middle">
+            <rect x="330" y="544" width="280" height="19" rx="4" fill="#fecdd3" />
+            <text x="470" y="557" fill="#881337">0 · self-attn ∥ self-attn (per branch)</text>
+            <rect x="330" y="567" width="280" height="19" rx="4" fill="#be123c" />
+            <text x="470" y="580" fill="#fff">1 · cross-attn ⤫ each branch queries the other</text>
+            <rect x="330" y="590" width="280" height="19" rx="4" fill="#fecdd3" />
+            <text x="470" y="603" fill="#881337">2 · self-attn ∥ self-attn</text>
+            <rect x="330" y="613" width="280" height="19" rx="4" fill="#be123c" />
+            <text x="470" y="626" fill="#fff">3 · cross-attn ⤫</text>
+            <rect x="330" y="636" width="280" height="19" rx="4" fill="#fecdd3" />
+            <text x="470" y="649" fill="#881337">4 · self-attn ∥ self-attn</text>
+          </g>
+          <text x="470" y="672" font-size="9.5" fill="#64748b" text-anchor="middle">1×1 conv 512→384 each branch · shapes unchanged</text>
+          <rect x="668" y="560" width="126" height="22" rx="11" fill="#fffbeb" stroke="#b45309" />
+          <text x="731" y="575" font-size="9.5" fill="#b45309" text-anchor="middle">31.6 M params · 75%</text>
+
+          <!-- arrows out of transformer -->
+          <line x1="340" y1="694" x2="240" y2="738" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <line x1="600" y1="694" x2="700" y2="738" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+
+          <text x="240" y="732" font-size="10" fill="#0f766e" text-anchor="middle" font-style="italic">time decoder ↑ resolution</text>
+          <text x="700" y="732" font-size="10" fill="#7c3aed" text-anchor="middle" font-style="italic">spec decoder ↑ freq resolution</text>
+
+          <!-- time decoders -->
+          <g>
+            <rect x="170" y="742" width="140" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="760" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tdecoder.0 · +skip</text>
+            <text x="240" y="775" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 192, 5375)</text>
+
+            <rect x="150" y="814" width="180" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="832" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tdecoder.1 · +skip · convT k8 s4</text>
+            <text x="240" y="847" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 96, 21499)</text>
+
+            <rect x="130" y="886" width="220" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="904" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tdecoder.2 · +skip · convT k8 s4</text>
+            <text x="240" y="919" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 48, 85995)</text>
+
+            <rect x="110" y="958" width="260" height="44" rx="7" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.5" />
+            <text x="240" y="976" font-size="10.5" fill="#0f766e" text-anchor="middle" font-weight="600">tdecoder.3 · +skip · convT k8 s4</text>
+            <text x="240" y="991" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 8, 343980) = 4 src × stereo</text>
+          </g>
+
+          <!-- spec decoders -->
+          <g>
+            <rect x="630" y="742" width="140" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="760" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">decoder.0 · +skip</text>
+            <text x="700" y="775" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 192, 32, 336)</text>
+
+            <rect x="610" y="814" width="180" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="832" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">decoder.1 · +skip · convT 8×1 s4</text>
+            <text x="700" y="847" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 96, 128, 336)</text>
+
+            <rect x="590" y="886" width="220" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="904" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">decoder.2 · +skip · convT 8×1 s4</text>
+            <text x="700" y="919" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 48, 512, 336)</text>
+
+            <rect x="570" y="958" width="260" height="44" rx="7" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="700" y="976" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-weight="600">decoder.3 · +skip · convT 8×1 s4</text>
+            <text x="700" y="991" font-size="9.5" fill="#0f172a" text-anchor="middle" font-family="ui-monospace,monospace">(1, 16, 2048, 336) = 4 src × CaC</text>
+          </g>
+
+          <!-- inter-decoder arrows -->
+          <g stroke="#64748b" stroke-width="1.2" marker-end="url(#ah)">
+            <line x1="240" y1="786" x2="240" y2="810" />
+            <line x1="240" y1="858" x2="240" y2="882" />
+            <line x1="240" y1="930" x2="240" y2="954" />
+            <line x1="700" y1="786" x2="700" y2="810" />
+            <line x1="700" y1="858" x2="700" y2="882" />
+            <line x1="700" y1="930" x2="700" y2="954" />
+          </g>
+
+          <!-- skip connections: time (left margin) -->
+          <g fill="none" stroke="#0f766e" stroke-width="1.3" stroke-dasharray="5 4" opacity="0.6">
+            <path d="M110,192 L48,192 L48,980 L106,980" marker-end="url(#ah)" />
+            <path d="M130,264 L66,264 L66,908 L126,908" marker-end="url(#ah)" />
+            <path d="M150,336 L84,336 L84,836 L146,836" marker-end="url(#ah)" />
+            <path d="M170,408 L102,408 L102,764 L166,764" marker-end="url(#ah)" />
+          </g>
+          <!-- skip connections: spec (right margin) -->
+          <g fill="none" stroke="#7c3aed" stroke-width="1.3" stroke-dasharray="5 4" opacity="0.6">
+            <path d="M830,192 L892,192 L892,980 L834,980" marker-end="url(#ah)" />
+            <path d="M810,264 L874,264 L874,908 L814,908" marker-end="url(#ah)" />
+            <path d="M790,336 L856,336 L856,836 L794,836" marker-end="url(#ah)" />
+            <path d="M770,408 L838,408 L838,764 L774,764" marker-end="url(#ah)" />
+          </g>
+          <text x="22" y="580" font-size="9.5" fill="#0f766e" transform="rotate(-90 22 580)" text-anchor="middle" opacity="0.8">skips: encoder output added into decoder input</text>
+          <text x="920" y="580" font-size="9.5" fill="#7c3aed" transform="rotate(90 920 580)" text-anchor="middle" opacity="0.8">skips bypass the bridge — detail survives</text>
+
+          <!-- output prep -->
+          <line x1="240" y1="1002" x2="240" y2="1030" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <line x1="700" y1="1002" x2="700" y2="1030" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+
+          <rect x="115" y="1034" width="250" height="38" rx="7" fill="#fff" stroke="#0f766e" stroke-width="1.4" />
+          <text x="240" y="1050" font-size="10" fill="#0f766e" text-anchor="middle" font-weight="600">view (1, 4, 2, 343980) · de-normalize</text>
+          <text x="240" y="1064" font-size="9.5" fill="#64748b" text-anchor="middle">waveform estimate per stem</text>
+
+          <rect x="555" y="1034" width="290" height="38" rx="7" fill="#fff" stroke="#7c3aed" stroke-width="1.4" />
+          <text x="700" y="1050" font-size="10" fill="#7c3aed" text-anchor="middle" font-weight="600">complex spec (1, 4, 2, 2048, 336) · de-norm · iSTFT</text>
+          <text x="700" y="1064" font-size="9.5" fill="#64748b" text-anchor="middle">second waveform estimate per stem</text>
+
+          <!-- sum -->
+          <line x1="365" y1="1072" x2="452" y2="1105" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <line x1="575" y1="1072" x2="488" y2="1105" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <circle cx="470" cy="1114" r="13" fill="#fff" stroke="#1e293b" stroke-width="1.6" />
+          <text x="470" y="1119" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="700">+</text>
+          <line x1="483" y1="1114" x2="560" y2="1114" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah)" />
+          <rect x="564" y="1092" width="290" height="44" rx="8" fill="#f1f5f9" stroke="#1e293b" stroke-width="1.5" />
+          <text x="709" y="1110" font-size="11.5" fill="#1e293b" text-anchor="middle" font-weight="600">output · f32 (1, 4, 2, 343980)</text>
+          <text x="709" y="1126" font-size="10" fill="#64748b" text-anchor="middle">[drums, bass, other, vocals]</text>
+        </svg>
+
+        <p class="sub" style="font-size: 0.8rem">
+          Shapes measured by tracing the shipped <code>htdemucs</code>
+          checkpoint (they are identical for all five weight sets). The odd
+          time-branch lengths (85995 → 21499 → 5375) are just ÷4 with a
+          right-pad when not divisible. Forward pass:
+          <a
+            href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/htdemucs.py#L551-L685"
+            >htdemucs.py:551–685</a
+          >.
+        </p>
+
+        <h2 id="layer">3 · Inside one encoder layer</h2>
+        <p class="sub">
+          All eight encoder layers (both branches) are the same recipe,
+          <a
+            href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/hdemucs.py#L69-L157"
+            >HEncLayer</a
+          >: a big strided conv does the down-sampling, then a small residual
+          conv stack (<a
+            href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/demucs.py#L86-L154"
+            >DConv</a
+          >) refines, then a gated 1×1 mixes channels.
+        </p>
+
+        <svg
+          viewBox="0 0 900 210"
+          style="display: block; margin: 0.6rem 0; max-width: 100%"
+        >
+          <defs>
+            <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#64748b" />
+            </marker>
+          </defs>
+          <g font-size="10" text-anchor="middle">
+            <rect x="10" y="60" width="150" height="52" rx="8" fill="#f1f5f9" stroke="#1e293b" stroke-width="1.4" />
+            <text x="85" y="82" fill="#1e293b" font-weight="600">strided conv</text>
+            <text x="85" y="97" fill="#64748b">k8 s4 · ÷4 res, ×2 ch</text>
+
+            <line x1="160" y1="86" x2="192" y2="86" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah2)" />
+            <rect x="196" y="60" width="86" height="52" rx="8" fill="#fff" stroke="#64748b" stroke-width="1.2" />
+            <text x="239" y="90" fill="#0f172a">GELU</text>
+
+            <line x1="282" y1="86" x2="314" y2="86" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah2)" />
+
+            <!-- DConv residual block -->
+            <rect x="318" y="34" width="360" height="104" rx="10" fill="#fff" stroke="#b45309" stroke-width="1.4" stroke-dasharray="6 3" />
+            <text x="498" y="52" fill="#b45309" font-weight="600">DConv residual ×2 (d=1, then d=2)</text>
+            <rect x="334" y="62" width="150" height="50" rx="7" fill="#fffbeb" stroke="#b45309" stroke-width="1.2" />
+            <text x="409" y="83" fill="#b45309">dilated conv k3</text>
+            <text x="409" y="97" fill="#64748b">compress ch ÷8 · GELU</text>
+            <line x1="484" y1="87" x2="512" y2="87" stroke="#64748b" stroke-width="1.2" marker-end="url(#ah2)" />
+            <rect x="516" y="62" width="146" height="50" rx="7" fill="#fffbeb" stroke="#b45309" stroke-width="1.2" />
+            <text x="589" y="83" fill="#b45309">1×1 → GLU</text>
+            <text x="589" y="97" fill="#64748b">LayerScale (init 1e-3)</text>
+            <path d="M318,86 C300,150 520,168 678,96" fill="none" stroke="#b45309" stroke-width="1.2" marker-end="url(#ah2)" />
+            <text x="498" y="162" fill="#b45309" font-size="9.5">+ identity (residual)</text>
+
+            <line x1="678" y1="86" x2="710" y2="86" stroke="#64748b" stroke-width="1.3" marker-end="url(#ah2)" />
+            <rect x="714" y="60" width="150" height="52" rx="8" fill="#f1f5f9" stroke="#1e293b" stroke-width="1.4" />
+            <text x="789" y="82" fill="#1e293b" font-weight="600">1×1 conv → GLU</text>
+            <text x="789" y="97" fill="#64748b">gated channel mix</text>
+          </g>
+        </svg>
+
+        <ul style="font-size: 0.88rem">
+          <li>
+            <b>The dilated convs always run along time</b> — in spectrogram
+            layers the tensor is reshaped so every frequency band becomes its
+            own batch item (<a
+              href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/hdemucs.py#L146-L151"
+              >hdemucs.py:146</a
+            >). That is how "frequency" layers still see temporal context.
+          </li>
+          <li>
+            <b>Frequency embedding</b> (spec branch, after layer 0 only): the
+            strided conv shares weights across all 512 bins, so a learned
+            48-dim vector per bin is added to tell the network <i>which</i>
+            pitch region it is looking at
+            (<a
+              href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/htdemucs.py#L601-L606"
+              >htdemucs.py:601</a
+            >).
+          </li>
+          <li>
+            Decoder layers (<a
+              href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/hdemucs.py#L256-L335"
+              >HDecLayer</a
+            >) mirror this without the DConv: add the skip, gated 3-wide conv,
+            then a transposed conv does the ×4 upsample.
+          </li>
+        </ul>
+
+        <h2 id="bridge">4 · The bridge: where the two views talk</h2>
+        <p class="sub">
+          At the bottleneck each branch is compact enough to attend over. Both
+          are projected 384→512 and flattened into token sequences
+          (<a
+            href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/transformer.py#L648-L676"
+            >transformer.py:648</a
+          >):
+        </p>
+
+        <div class="row">
+          <div class="card spec">
+            <h4>2688 spectrogram tokens</h4>
+            <ul>
+              <li>8 freq bands × 336 frames, one 512-dim token each</li>
+              <li>2-D sinusoidal position embedding (freq, time)</li>
+            </ul>
+          </div>
+          <div class="card time">
+            <h4>1344 waveform tokens</h4>
+            <ul>
+              <li>one 512-dim token per 256 samples (~5.8 ms)</li>
+              <li>1-D sinusoidal position embedding</li>
+            </ul>
+          </div>
+        </div>
+
+        <p>
+          Then 5 layers alternate two moves. <b>Self-attention layers</b>
+          (0,&nbsp;2,&nbsp;4) let each branch reorganize globally on its own —
+          note that this is the first time the time branch can relate sample
+          85 to sample 340000 directly, since convs are local.
+          <b>Cross-attention layers</b> (1,&nbsp;3) are the hybrid payoff: each
+          spectrogram token builds its update as an attention-weighted mix of
+          the <i>waveform</i> branch's tokens, and vice versa (queries from one
+          branch, keys/values from the other, computed symmetrically from the
+          same pre-layer states). Concretely, the token holding a smeared drum
+          transient in the spectrogram can pull the crisp version from the time
+          branch, and the time token in a dense chord can pull the resolved
+          harmonics from the spectrogram side. Each of the 10 layer instances
+          (5 per branch) has its own weights: dim 512, 8 heads, FFN 2048,
+          pre-LayerNorm, LayerScale.
+        </p>
+
+        <div class="card xf" style="max-width: 620px">
+          <h4>Why this block dominates the model</h4>
+          <ul>
+            <li>
+              a self-attn instance ≈ 3.15 M params (QKV+out ≈ 1.05 M, FFN ≈
+              2.1 M); a cross-attn instance is the same size
+            </li>
+            <li>
+              10 instances + norms ≈ <b>31.6 M of the 42.0 M total (75%)</b>,
+              measured, §6
+            </li>
+            <li>
+              attention cost stays sane because it runs on 2688 / 1344 tokens,
+              not on raw resolution — the conv pyramids exist to make the
+              transformer affordable
+            </li>
+          </ul>
+        </div>
+
+        <h2 id="rebuild">5 · Rebuild: no mask, just predict and sum</h2>
+        <p class="sub">
+          Spectrogram separators traditionally output a mask over the mix's
+          magnitudes and reuse the mix's phase. This model does something
+          simpler and stronger — <b>complex-as-channels (CaC)</b>: real and
+          imaginary parts are just 2 channels per audio channel, end to end.
+        </p>
+        <ul style="font-size: 0.88rem">
+          <li>
+            Input side: the mix STFT becomes 4 channels (2 stereo × re/im).
+          </li>
+          <li>
+            Output side: <code>decoder.3</code> emits 16 channels = 4 sources ×
+            2 stereo × re/im — a <b>full complex spectrogram per stem</b>,
+            phase included, predicted directly. The "masking" function is a
+            pure reshape when CaC is on
+            (<a
+              href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/htdemucs.py#L483-L494"
+              >htdemucs.py:483</a
+            >).
+          </li>
+          <li>
+            iSTFT turns that into waveforms, and the time branch's own 8-channel
+            output (4 sources × stereo) is added:
+            <code>output = iSTFT(spec_est) + time_est</code>. Each branch alone
+            would already be a complete separator; the sum is an ensemble
+            baked into one network, trained jointly.
+          </li>
+          <li>
+            The in-graph z-score normalizations from §2 are inverted here, so
+            statistics round-trip exactly
+            (<a
+              href="https://github.com/dhunstack/demucs/blob/6a96f8c0c64474d0b5a91f5cc680e3f33b0ed185/demucs/htdemucs.py#L649-L681"
+              >htdemucs.py:649</a
+            >).
+          </li>
+        </ul>
+
+        <h2 id="params">6 · Where the 42 M parameters live</h2>
+        <p class="sub">
+          Measured from the shipped checkpoint (41,984,456 params; the ONNX
+          initializer scan agrees exactly). The pyramids are cheap; the bridge
+          is the model.
+        </p>
+
+        <div class="bytes" style="max-width: 720px">
+          <div style="background: #64748b; flex: 285">enc</div>
+          <div style="background: #be123c; flex: 3234">
+            transformer + 1×1 projections · 32.3 M (77%)
+          </div>
+          <div style="background: #334155; flex: 677">dec 6.77 M</div>
+        </div>
+        <p class="sub" style="font-size: 0.8rem">
+          encoders 2.85 M · bridge 32.34 M · decoders 6.77 M (plus 0.02 M
+          frequency embedding)
+        </p>
+
+        <table>
+          <tr>
+            <th>Module</th>
+            <th>Params</th>
+            <th>Share</th>
+            <th>Note</th>
+          </tr>
+          <tr>
+            <td>cross-domain transformer</td>
+            <td class="num">31,550,464</td>
+            <td class="num">75.1%</td>
+            <td>10 layer instances × ~3.15 M</td>
+          </tr>
+          <tr>
+            <td>1×1 projections 384↔512</td>
+            <td class="num">788,224</td>
+            <td class="num">1.9%</td>
+            <td>2 per branch (<code>bottom_channels=512</code>)</td>
+          </tr>
+          <tr>
+            <td>freq decoder</td>
+            <td class="num">4,562,620</td>
+            <td class="num">10.9%</td>
+            <td rowspan="2">
+              decoders &gt; encoders: 3×3 gated rewrite convs vs 1×1
+            </td>
+          </tr>
+          <tr>
+            <td>time decoder</td>
+            <td class="num">2,209,460</td>
+            <td class="num">5.3%</td>
+          </tr>
+          <tr>
+            <td>freq encoder</td>
+            <td class="num">1,424,940</td>
+            <td class="num">3.4%</td>
+            <td rowspan="2">
+              deepest layer holds ~75% of each pyramid (channels² growth)
+            </td>
+          </tr>
+          <tr>
+            <td>time encoder</td>
+            <td class="num">1,424,172</td>
+            <td class="num">3.4%</td>
+          </tr>
+          <tr>
+            <td>freq embedding</td>
+            <td class="num">24,576</td>
+            <td class="num">0.1%</td>
+            <td>512 bins × 48 dims</td>
+          </tr>
+        </table>
+
+        <h3>What ONNX export changes: nothing learned</h3>
+        <p style="font-size: 0.88rem; max-width: 720px">
+          Everything above sits verbatim in the shipped
+          <code>.onnx</code> graphs. The only surgery
+          (<a href="../tools/model-export/export_onnx.py"
+            >tools/model-export/export_onnx.py</a
+          >, from
+          <a href="https://github.com/adefossez/demucs/pull/10">PR #10</a>) is
+          on the two weight-free ends: <code>torch.stft/istft</code> use complex
+          tensors, which ONNX lacks, so the STFT/iSTFT become matmuls against
+          fixed sine/cosine tables and complex values ride as a trailing
+          dimension of 2. Those baked DFT tables are the 136 MB "shared block"
+          in the
+          <a href="inference-pipeline.html#bbox">pipeline page's byte anatomy</a
+          >; the 42 M learned parameters here are the other 168 MB.
+        </p>
+      </main>
+    </div>
+  </body>
+</html>
