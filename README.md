@@ -6,24 +6,20 @@ The CLI separates WAV input into Demucs stems using locally exported ONNX models
 
 ## Usage
 
-Prerequisites: Rust and `uv`.
+Prerequisites: Rust, `uv`, and `pnpm`.
 
 One-time setup from the repository root:
 
 ```bash
 # Install the pinned export environment and build the standard model. This downloads the
 # upstream checkpoint, exports ONNX, and moves shared DFT data into one external file.
-uv run python tools/model-export/build_models.py htdemucs
-
-# Build the Rust CLI.
-cargo build --release -p demucs-cli
+pnpm build:model
 ```
 
 Separate a WAV file into four stems:
 
 ```bash
-./target/release/demucs-rs-proto separate \
-  --models data/onnx-lean \
+pnpm separate -- \
   --name htdemucs \
   data/input/song.wav data/output/song
 ```

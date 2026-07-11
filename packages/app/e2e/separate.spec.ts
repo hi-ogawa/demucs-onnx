@@ -10,44 +10,16 @@ import { resolve } from "node:path";
 const MODELS_DIR = resolve(import.meta.dirname, "../../../data/onnx-lean");
 const MODEL = resolve(MODELS_DIR, "htdemucs.onnx");
 const DFT = resolve(MODELS_DIR, "dft.bin");
-
-/** 2s stereo f32 wav: L = 220Hz sine, R = 110Hz sine. */
-function fixtureWav(): Buffer {
-  const sr = 44100;
-  const frames = 2 * sr;
-  const nch = 2;
-  const buf = Buffer.alloc(44 + frames * nch * 4);
-  buf.write("RIFF", 0);
-  buf.writeUInt32LE(36 + frames * nch * 4, 4);
-  buf.write("WAVE", 8);
-  buf.write("fmt ", 12);
-  buf.writeUInt32LE(16, 16);
-  buf.writeUInt16LE(3, 20); // IEEE float
-  buf.writeUInt16LE(nch, 22);
-  buf.writeUInt32LE(sr, 24);
-  buf.writeUInt32LE(sr * nch * 4, 28);
-  buf.writeUInt16LE(nch * 4, 32);
-  buf.writeUInt16LE(32, 34);
-  buf.write("data", 36);
-  buf.writeUInt32LE(frames * nch * 4, 40);
-  for (let i = 0; i < frames; i++) {
-    buf.writeFloatLE(0.4 * Math.sin((2 * Math.PI * 220 * i) / sr), 44 + i * 8);
-    buf.writeFloatLE(0.4 * Math.sin((2 * Math.PI * 110 * i) / sr), 48 + i * 8);
-  }
-  return buf;
-}
+const FIXTURE = resolve(import.meta.dirname, "../../../fixtures/sine-10s.wav");
 
 test("separates a clip fully client-side", async ({ page }) => {
   expect(existsSync(MODEL), `model missing at ${MODEL}`).toBe(true);
   expect(existsSync(DFT), `external data missing at ${DFT}`).toBe(true);
+  expect(existsSync(FIXTURE), `fixture missing at ${FIXTURE}`).toBe(true);
 
   await page.goto("/");
-  await page.setInputFiles("#file", {
-    name: "fixture.wav",
-    mimeType: "audio/wav",
-    buffer: fixtureWav(),
-  });
-  await expect(page.locator("#status")).toContainText("decoded: 2.00s", { timeout: 15_000 });
+  await page.setInputFiles("#file", FIXTURE);
+  await expect(page.locator("#status")).toContainText("decoded: 10.00s", { timeout: 15_000 });
 
   await page.click("#run");
   await expect(page.locator("#status")).toContainText("done in", { timeout: 240_000 });
