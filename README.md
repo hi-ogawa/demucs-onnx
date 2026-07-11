@@ -65,4 +65,4 @@ Open `http://localhost:5173`, choose a local audio file, and run separation. Aud
 - [`packages/app/`](packages/app/) contains the fully client-side Vite app.
 - [`tools/model-export/`](tools/model-export/) contains the `uv`-managed model export, DFT stripping, and parity tools.
 - [`docs/`](docs/) contains documentation about Demucs architecture, the model release process, and implementation history.
-- [`data/`](data/) is the gitignored location for generated models, audio, and outputs.
+- `data/` is the gitignored and used for generated models, audio, and outputs.
