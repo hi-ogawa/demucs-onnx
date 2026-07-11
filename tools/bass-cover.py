@@ -1,10 +1,4 @@
-#!/usr/bin/env python3
-"""Bass-cover workflow wrapper: YouTube ID/URL -> bass.wav + no_bass.wav.
-
-Port of the earlier Docker Compose workflow with the Demucs step replaced by
-the Rust CLI (settled config: htdemucs_ft, two-stems bass,
-minus method — see docs/development.md §8 for the A/B that fixed these defaults).
-"""
+"""Download YouTube audio and separate it into bass and no-bass stems."""
 
 import argparse
 import os
@@ -16,7 +10,6 @@ import time
 from pathlib import Path
 
 REPO_DIR = Path(__file__).resolve().parent.parent
-CLI = REPO_DIR / "target/release/demucs-rs-proto"
 MODELS = REPO_DIR / "data/onnx-lean"
 
 
@@ -67,12 +60,8 @@ def main():
         if args.end <= start:
             parser.error("--end must be greater than --start")
 
-    if not CLI.exists():
-        sys.exit(f"missing {CLI}\nbuild it first: cargo build --release")
     if not MODELS.is_dir():
-        sys.exit(
-            f"missing {MODELS}\nregeneration chain: docs/development.md §2 (export) + §7 (strip_dft)"
-        )
+        sys.exit(f"missing {MODELS}\nbuild it first: pnpm build:model htdemucs_ft_bass")
 
     os.chdir(REPO_DIR)
     name = slugify(args.name or args.youtube)
@@ -93,7 +82,7 @@ def main():
             "wav",
             "-o",
             str(input_dir / f"{name}.%(ext)s"),
-        ]
+        ],
     )
 
     demucs_input = source
@@ -113,14 +102,12 @@ def main():
         run("trim clip", command)
         demucs_input = clip
 
-    out_dir = Path("data/output") / demucs_input.stem
+    output_dir = Path("data/output") / demucs_input.stem
     run(
         "separate bass stem",
         [
-            CLI,
-            "separate",
-            "--models",
-            MODELS,
+            "pnpm",
+            "cli-separate",
             "--name",
             "htdemucs_ft",
             "--two-stems",
@@ -128,11 +115,11 @@ def main():
             "--method",
             "minus",
             demucs_input,
-            out_dir,
-        ]
+            output_dir,
+        ],
     )
 
-    print(f"\nOutput: {out_dir}/")
+    print(f"\nOutput: {output_dir}/")
 
 
 if __name__ == "__main__":
