@@ -63,7 +63,7 @@ Build the static app with:
 pnpm build
 ```
 
-The output in `packages/app/dist/` is configured for Cloudflare Workers static assets by `wrangler.jsonc`. Configure the Cloudflare build command as `pnpm build`; production users select model files locally, so model artifacts are not included in the deployment.
+The output in `packages/app/dist/` is configured for Cloudflare Workers static assets by `wrangler.jsonc`. Configure the Cloudflare build command as `pnpm build-cf`; production users select model files locally, so model artifacts are not included in the deployment.
 
 ## Repository
 
