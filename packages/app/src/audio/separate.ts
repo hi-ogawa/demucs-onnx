@@ -1,3 +1,5 @@
+import ortWasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.mjs?url";
+import ortWasmUrl from "onnxruntime-web/ort-wasm-simd-threaded.wasm?url";
 // Browser capabilities plugged into the Rust/WASM separation driver. The worker owns
 // messaging; this module owns fetch and onnxruntime-web only.
 import * as ort from "onnxruntime-web/wasm";
@@ -6,6 +8,10 @@ import init, {
   type Host,
 } from "../../../../crates/wasm/pkg/demucs_wasm.js";
 import { readModelFile, type ModelFilename, type ModelSource } from "./models";
+
+// Keep Emscripten's pthread entry point separate from this application worker.
+// https://onnxruntime.ai/docs/tutorials/web/env-flags-and-session-options.html#envwasmwasmpaths
+ort.env.wasm.wasmPaths = { mjs: ortWasmModuleUrl, wasm: ortWasmUrl };
 
 const SEGMENT = 343980;
 const IN_LEN = 2 * SEGMENT; // (1, 2, SEGMENT)

@@ -8,6 +8,14 @@ const modelsDir = resolve(repoDir, "data/onnx-lean");
 
 export default defineConfig(({ command }) => ({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "onnxruntime-web/wasm": resolve(
+        __dirname,
+        "node_modules/onnxruntime-web/dist/ort.wasm.min.mjs",
+      ),
+    },
+  },
   define: {
     __MODELS_URL__: JSON.stringify(
       command === "serve" ? `/@fs${modelsDir}` : null,
