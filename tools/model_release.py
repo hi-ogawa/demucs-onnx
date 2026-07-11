@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Download or publish the shipped Demucs model artifacts."""
 
 import argparse

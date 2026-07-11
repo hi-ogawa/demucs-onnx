@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Strip the deterministic DFT kernel tensors out of baked htdemucs ONNX exports.
 
 Each baked export carries ~136 MB of Constant tensors (STFT cos/sin conv kernels, iSTFT

@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config",
-    "bass-cover": "python3 tools/bass-cover.py",
+    "bass-cover": "uv run --no-sync tools/bass-cover.py",
     "build:model": "uv run python tools/model-export/build_models.py",
-    "model-release": "python tools/model_release.py",
+    "model-release": "uv run --no-sync tools/model_release.py",
     "build:wasm": "wasm-pack build crates/wasm --target web --release",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",

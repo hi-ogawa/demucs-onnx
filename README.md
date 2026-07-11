@@ -6,7 +6,7 @@ The model artifacts are derived from the [upstream Demucs models](https://github
 
 ## Usage
 
-Prerequisites: Rust, Python, `pnpm`, and the GitHub CLI (`gh`).
+Prerequisites: Rust, Python, `uv`, `pnpm`, and the GitHub CLI (`gh`).
 
 Install dependencies and download the standard model using the current tag from the [releases page](https://github.com/hi-ogawa/demucs-onnx/releases):
 
@@ -38,7 +38,7 @@ Other options:
 
 ## Build Models Locally
 
-Building models requires `uv` in addition to the usage prerequisites:
+Build models locally with:
 
 ```bash
 pnpm build:model htdemucs
