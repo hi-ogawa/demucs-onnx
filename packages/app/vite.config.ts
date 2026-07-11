@@ -10,6 +10,7 @@ export default defineConfig(({ command }) => ({
   plugins: [react()],
   resolve: {
     alias: {
+      // ORT does not expose a subpath for its external-WASM entry.
       "onnxruntime-web/wasm": resolve(
         __dirname,
         "node_modules/onnxruntime-web/dist/ort.wasm.min.mjs",
