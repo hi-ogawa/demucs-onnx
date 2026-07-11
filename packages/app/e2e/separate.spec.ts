@@ -2,12 +2,14 @@
 // Exercises the whole client pipeline (decodeAudioData, wasm core, onnxruntime-web);
 // numeric parity vs the native CLI is covered by the CLI-side comparisons, not here.
 //
-// Requires models in ../data/onnx-lean (see plan.md for the regeneration chain).
+// Requires models in data/onnx-lean (see README.md for the regeneration chain).
 import { test, expect } from "@playwright/test";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const MODELS = resolve(import.meta.dirname, "../../data/onnx-lean/htdemucs.onnx");
+const MODELS_DIR = resolve(import.meta.dirname, "../../../data/onnx-lean");
+const MODEL = resolve(MODELS_DIR, "htdemucs.onnx");
+const DFT = resolve(MODELS_DIR, "dft.bin");
 
 /** 2s stereo f32 wav: L = 220Hz sine, R = 110Hz sine. */
 function fixtureWav(): Buffer {
@@ -36,7 +38,8 @@ function fixtureWav(): Buffer {
 }
 
 test("separates a clip fully client-side", async ({ page }) => {
-  test.skip(!existsSync(MODELS), `models missing at ${MODELS}`);
+  expect(existsSync(MODEL), `model missing at ${MODEL}`).toBe(true);
+  expect(existsSync(DFT), `external data missing at ${DFT}`).toBe(true);
 
   await page.goto("/");
   await page.setInputFiles("#file", {
