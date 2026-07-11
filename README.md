@@ -11,16 +11,10 @@ Prerequisites: Rust and `uv`.
 One-time setup from the repository root:
 
 ```bash
-# Install the pinned export environment and export the standard model. This downloads the
-# upstream checkpoint and writes a ~304 MB ONNX model.
-cd tools/model-export
+# Install the pinned export environment and build the standard model. This downloads the
+# upstream checkpoint, exports ONNX, and moves shared DFT data into one external file.
 uv sync
-uv run python export_onnx.py --model htdemucs --out ../../data/onnx
-
-# Move the shared DFT tensors into an external data file, matching the production layout.
-uv run python strip_dft.py --models htdemucs \
-  --src ../../data/onnx --out ../../data/onnx-lean
-cd ../..
+uv run python tools/model-export/build_models.py htdemucs
 
 # Build the Rust CLI.
 cargo build --release -p demucs-cli
@@ -43,7 +37,7 @@ Useful variants:
 - `--shifts N` averages `N` seeded-offset passes. The default is one pass.
 - `node crates/napi/cli.mjs separate ...` exposes the same flow through the Node binding.
 
-The setup above creates the size-optimized standard model under `data/onnx-lean/`. See [development history](docs/development.md) sections 2 and 7 to export all fine-tuned specialists and deduplicate their shared DFT data.
+The setup above creates the size-optimized standard model under `data/onnx-lean/`. Run `uv run python tools/model-export/build_models.py --all` to build the standard model and all fine-tuned specialists. Passing explicit member names builds an exact subset.
 
 ## Repository
 

@@ -54,5 +54,5 @@ naive 304 MB.
 
 ## Resources
 
-Workspace: `data/` 291 MB, `tools/model-export/.venv` 988 MB (both gitignored). Export + parity ran niced,
+Workspace: `data/` 291 MB, `.venv/` 988 MB (both gitignored). Export + parity ran niced,
 4 threads, well within the laptop's headroom.

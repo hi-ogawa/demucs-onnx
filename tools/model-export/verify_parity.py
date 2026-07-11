@@ -7,9 +7,9 @@ both the export and PR #10's STFT/iSTFT rewrite in one shot. GSoC reports MSE < 
 StemSplit claims 1.6e-4 max abs diff -- we produce our own numbers.
 
 Usage:
-    uv run python verify_parity.py --onnx ../../data/onnx/htdemucs_ft_bass.onnx \
+    uv run python tools/model-export/verify_parity.py --onnx data/onnx/htdemucs_ft_bass.onnx \
         --model htdemucs_ft --index 1
-    uv run python verify_parity.py --onnx ... --model ... --index 1 --wav ../../data/input/clip.wav
+    uv run python tools/model-export/verify_parity.py --onnx ... --model ... --index 1 --wav data/input/clip.wav
 
 --index picks the bag member (htdemucs_ft order: 0=drums 1=bass 2=other 3=vocals);
 omit for a plain HTDemucs model. Without --wav, uses a seeded random chunk (harsher

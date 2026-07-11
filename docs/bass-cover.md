@@ -9,15 +9,9 @@ Prerequisites: Rust, `uv`, `ffmpeg`, and `yt-dlp`.
 Run the one-time setup from the repository root:
 
 ```bash
-# Install the pinned export environment and export the fine-tuned bass specialist.
-cd tools/model-export
+# Install the pinned export environment and build the fine-tuned bass specialist.
 uv sync
-uv run python export_onnx.py --model htdemucs_ft --sources bass --out ../../data/onnx
-
-# Move the shared DFT tensors into an external data file.
-uv run python strip_dft.py --models htdemucs_ft_bass \
-  --src ../../data/onnx --out ../../data/onnx-lean
-cd ../..
+uv run python tools/model-export/build_models.py htdemucs_ft_bass
 
 # Build the Rust CLI.
 cargo build --release -p demucs-cli

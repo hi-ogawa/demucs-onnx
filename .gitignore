@@ -1,6 +1,7 @@
 data/
 node_modules/
-tools/model-export/.venv/
+__pycache__/
+.venv/
 target/
 crates/napi/demucs.node
 crates/wasm/pkg/

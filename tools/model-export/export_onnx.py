@@ -7,9 +7,9 @@ exports every bag member, naming each by its one-hot source specialty so that
 htdemucs_ft yields htdemucs_ft_{drums,bass,other,vocals}.onnx.
 
 Usage:
-    uv run python export_onnx.py --model htdemucs_ft --out ../../data/onnx
-    uv run python export_onnx.py --model htdemucs_ft --sources bass --out ../../data/onnx
-    uv run python export_onnx.py --model htdemucs --out ../../data/onnx
+    uv run python tools/model-export/export_onnx.py --model htdemucs_ft --out data/onnx
+    uv run python tools/model-export/export_onnx.py --model htdemucs_ft --sources bass --out data/onnx
+    uv run python tools/model-export/export_onnx.py --model htdemucs --out data/onnx
 
 Graph contract (per exported file):
     input:  float32 (1, 2, 343980)   stereo 44.1kHz, exactly segment*samplerate samples
@@ -50,6 +50,35 @@ def export_one(core: HTDemucs, path: Path) -> None:
     print(f"  wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
 
 
+def export_model(model_name: str, out: Path, sources: list[str] | None = None) -> list[Path]:
+    out.mkdir(parents=True, exist_ok=True)
+    written = []
+    model = get_model(model_name)
+    if isinstance(model, HTDemucs):
+        path = out / f"{model_name}.onnx"
+        export_one(model, path)
+        written.append(path)
+    elif isinstance(model, BagOfModels):
+        if len(model.models) == 1:
+            # single-member bag (e.g. plain htdemucs): no specialty suffix
+            assert isinstance(model.models[0], HTDemucs)
+            path = out / f"{model_name}.onnx"
+            export_one(model.models[0], path)
+            written.append(path)
+            return written
+        for sub, weights in zip(model.models, model.weights):
+            assert isinstance(sub, HTDemucs)
+            name = specialty(model.sources, weights)
+            if sources and name not in sources:
+                continue
+            path = out / f"{model_name}_{name}.onnx"
+            export_one(sub, path)
+            written.append(path)
+    else:
+        raise TypeError(f"unsupported model type: {type(model)}")
+    return written
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="htdemucs_ft")
@@ -60,25 +89,7 @@ def main() -> None:
         help="for a bag, export only these specialists (e.g. --sources bass)",
     )
     args = parser.parse_args()
-    args.out.mkdir(parents=True, exist_ok=True)
-
-    model = get_model(args.model)
-    if isinstance(model, HTDemucs):
-        export_one(model, args.out / f"{args.model}.onnx")
-    elif isinstance(model, BagOfModels):
-        if len(model.models) == 1:
-            # single-member bag (e.g. plain htdemucs): no specialty suffix
-            assert isinstance(model.models[0], HTDemucs)
-            export_one(model.models[0], args.out / f"{args.model}.onnx")
-            return
-        for sub, weights in zip(model.models, model.weights):
-            assert isinstance(sub, HTDemucs)
-            name = specialty(model.sources, weights)
-            if args.sources and name not in args.sources:
-                continue
-            export_one(sub, args.out / f"{args.model}_{name}.onnx")
-    else:
-        raise TypeError(f"unsupported model type: {type(model)}")
+    export_model(args.model, args.out, args.sources)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ Everything here happened on 2026-07-09 on the home laptop (8 cores, 16G; heavy r
 instead of multi-GB):
 
 ```bash
-uv sync --project tools/model-export
+uv sync
 ```
 
 `pyproject.toml` pins torch/torchaudio 2.1.2 (newest line the demucs fork supports) and installs
@@ -29,8 +29,8 @@ mechanics are unchanged from the PR: set the `onnx_exportable` flag, trace with 
 `(1, 2, 343980)` input, opset 17.
 
 ```bash
-uv run --project tools/model-export python tools/model-export/export_onnx.py --model htdemucs --out data/onnx
-uv run --project tools/model-export python tools/model-export/export_onnx.py --model htdemucs_ft --sources bass --out data/onnx
+uv run python tools/model-export/export_onnx.py --model htdemucs --out data/onnx
+uv run python tools/model-export/export_onnx.py --model htdemucs_ft --sources bass --out data/onnx
 ```
 
 Both produced 304.4 MB files. Checkpoints download to `~/.cache/torch/hub/checkpoints/` (81 MB
@@ -55,8 +55,8 @@ harsher than music numerically. `--index` picks the bag member (ft order: 0=drum
 confirms `models[1]` = bass empirically.
 
 ```bash
-uv run --project tools/model-export python tools/model-export/verify_parity.py --onnx data/onnx/htdemucs.onnx --model htdemucs --index 0
-uv run --project tools/model-export python tools/model-export/verify_parity.py --onnx data/onnx/htdemucs_ft_bass.onnx --model htdemucs_ft --index 1
+uv run python tools/model-export/verify_parity.py --onnx data/onnx/htdemucs.onnx --model htdemucs --index 0
+uv run python tools/model-export/verify_parity.py --onnx data/onnx/htdemucs_ft_bass.onnx --model htdemucs_ft --index 1
 ```
 
 | Artifact                | Parity (max abs / MSE)                    |
@@ -98,7 +98,7 @@ ffmpeg -y -f lavfi \
   comparison:
 
 ```bash
-uv run --project tools/model-export demucs --shifts 0 --float32 -n htdemucs -o data/reference data/input/test-clip.wav
+uv run demucs --shifts 0 --float32 -n htdemucs -o data/reference data/input/test-clip.wav
 ```
 
 The crates (`crates/`, `demucs-rs-proto`; deps: `ort`, `hound`, `anyhow`) reimplement the
@@ -200,7 +200,7 @@ into one shared `dft.bin` (64-byte aligned offsets; layout recorded from the fir
 hash-verified by the rest).
 
 ```bash
-uv run --project tools/model-export python tools/model-export/strip_dft.py \
+uv run python tools/model-export/strip_dft.py \
     --models htdemucs htdemucs_ft_drums htdemucs_ft_bass \
     htdemucs_ft_other htdemucs_ft_vocals --src data/onnx --out data/onnx-lean
 ```
@@ -403,7 +403,7 @@ paragraph is deleted — the API no longer needs one.
 Proven chain: official checkpoints → our export (all 5 models) → tensor parity → Rust e2e at wav
 level → workflow-replacement CLI (ft bag, two-stems, both methods, resampling, deterministic
 shifts) → deduped lean artifacts (`data/onnx-lean`: 934 MB, zero redundant bytes) → Node CLI via
-napi. Disk: `data/` ~3 GB (baked + lean models + clips + stems), `tools/model-export/.venv` ~1 GB,
+napi. Disk: `data/` ~3 GB (baked + lean models + clips + stems), `.venv/` ~1 GB,
 `target/` ~1 GB — all gitignored. Plus rustup (~700 MB, system-level) and 4×81 MB checkpoint
 cache in `~/.cache/torch/`. Baked `data/onnx` can be deleted once lean is the trusted working
 set.

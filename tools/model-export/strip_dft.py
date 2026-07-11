@@ -14,8 +14,9 @@ natively at session load — consumers (Python ORT, Rust ort crate) need no chan
 5 x 304 MB -> 5 x ~168 MB + one 136 MB dft.bin.
 
 Usage:
-    uv run python strip_dft.py --models htdemucs htdemucs_ft_drums htdemucs_ft_bass \
-        htdemucs_ft_other htdemucs_ft_vocals --src ../../data/onnx --out ../../data/onnx-lean
+    uv run python tools/model-export/strip_dft.py \
+        --models htdemucs htdemucs_ft_drums htdemucs_ft_bass \
+        htdemucs_ft_other htdemucs_ft_vocals --src data/onnx --out data/onnx-lean
 """
 
 import argparse
@@ -30,21 +31,15 @@ DFT_FILE = "dft.bin"
 ALIGN = 64
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--models", nargs="+", required=True)
-    parser.add_argument("--src", type=Path, required=True)
-    parser.add_argument("--out", type=Path, required=True)
-    args = parser.parse_args()
-    args.out.mkdir(parents=True, exist_ok=True)
-
+def strip_models(models: list[str], src: Path, out: Path) -> None:
+    out.mkdir(parents=True, exist_ok=True)
     # name -> (offset, length, sha256) in dft.bin; filled by the first model,
     # verified identical by every subsequent one
     layout: dict[str, tuple[int, int, str]] = {}
     blob = bytearray()
 
-    for name in args.models:
-        model = onnx.load(str(args.src / f"{name}.onnx"))
+    for name in models:
+        model = onnx.load(str(src / f"{name}.onnx"))
         graph = model.graph
         stripped = []
         keep_nodes = []
@@ -89,17 +84,26 @@ def main() -> None:
 
         del graph.node[:]
         graph.node.extend(keep_nodes)
-        out_path = args.out / f"{name}.onnx"
+        out_path = out / f"{name}.onnx"
         onnx.save(model, str(out_path))
         total = sum(l for _, l in stripped)
         print(f"{name}: stripped {len(stripped)} tensors ({total/1e6:.1f} MB) -> "
               f"{out_path.stat().st_size/1e6:.1f} MB")
 
-    dft_path = args.out / DFT_FILE
+    dft_path = out / DFT_FILE
     dft_path.write_bytes(bytes(blob))
     print(f"{DFT_FILE}: {len(blob)/1e6:.1f} MB, sha256 {hashlib.sha256(bytes(blob)).hexdigest()}")
     for tname, (off, length, digest) in layout.items():
         print(f"  {tname}  offset={off} length={length} sha256={digest[:16]}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--models", nargs="+", required=True)
+    parser.add_argument("--src", type=Path, required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    strip_models(args.models, args.src, args.out)
 
 
 if __name__ == "__main__":
