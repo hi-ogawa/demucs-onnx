@@ -1,6 +1,10 @@
 // Worker: messaging and the browser host for the Rust/WASM separation flow.
 // Input is a SeparateRequest verbatim; output is the WorkerResponse union.
-import { separate, type SeparatedStem, type SeparateRequest } from "./audio/separate";
+import {
+  separate,
+  type SeparatedStem,
+  type SeparateRequest,
+} from "./audio/separate";
 
 export type WorkerResponse =
   | { type: "status"; text: string }

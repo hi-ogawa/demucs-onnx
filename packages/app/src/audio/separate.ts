@@ -45,8 +45,11 @@ export async function separate(
 
   const host: Host = {
     event(...event) {
-      if (event[0] === "status") cb.onStatus?.(event[1]);
-      else cb.onProgress?.(event[1], event[2]);
+      if (event[0] === "status") {
+        cb.onStatus?.(event[1]);
+      } else {
+        cb.onProgress?.(event[1], event[2]);
+      }
     },
 
     async initialize() {
@@ -57,7 +60,9 @@ export async function separate(
     },
 
     async loadModel(model, source) {
-      if (!dft) throw new Error("host not initialized");
+      if (!dft) {
+        throw new Error("host not initialized");
+      }
       const file = source ? `${model}_${source}.onnx` : `${model}.onnx`;
       this.event("status", `loading model ${file}...`);
       const bytes = new Uint8Array(
@@ -71,7 +76,9 @@ export async function separate(
 
     async runModel(session, inputPtr, outputPtr) {
       const input = new Float32Array(wasm.memory.buffer, inputPtr, IN_LEN);
-      const feeds = { input: new ort.Tensor("float32", input, [1, 2, SEGMENT]) };
+      const feeds = {
+        input: new ort.Tensor("float32", input, [1, 2, SEGMENT]),
+      };
       const result = await (session as ort.InferenceSession).run(feeds);
       const output = new Float32Array(wasm.memory.buffer, outputPtr, OUT_LEN);
       output.set(result.output.data as Float32Array);

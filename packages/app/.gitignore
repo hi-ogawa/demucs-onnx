@@ -1,4 +1,5 @@
 node_modules/
+*.tsbuildinfo
 public/ort/
 dist/
 test-results/
