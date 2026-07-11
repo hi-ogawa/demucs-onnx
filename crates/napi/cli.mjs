@@ -9,7 +9,9 @@ const binding = require("./demucs.node");
 
 const argv = process.argv.slice(2);
 if (argv[0] !== "separate") {
-  console.error("usage: cli.mjs separate --models <dir> [...] <input.wav> <out_dir>");
+  console.error(
+    "usage: cli.mjs separate --models <dir> [...] <input.wav> <out_dir>",
+  );
   process.exit(1);
 }
 
@@ -17,8 +19,11 @@ const flags = {};
 const positional = [];
 for (let i = 1; i < argv.length; i++) {
   const a = argv[i];
-  if (a.startsWith("--")) flags[a.slice(2)] = argv[++i];
-  else positional.push(a);
+  if (a.startsWith("--")) {
+    flags[a.slice(2)] = argv[++i];
+  } else {
+    positional.push(a);
+  }
 }
 const [input, outDir] = positional;
 if (!flags.models || !input || !outDir) {
@@ -26,9 +31,17 @@ if (!flags.models || !input || !outDir) {
   process.exit(1);
 }
 
-const written = binding.separate(flags.models, flags.name ?? "htdemucs", input, outDir, {
-  twoStems: flags["two-stems"],
-  method: flags.method,
-  shifts: flags.shifts !== undefined ? Number(flags.shifts) : undefined,
-});
-for (const p of written) console.log(`wrote ${p}`);
+const written = binding.separate(
+  flags.models,
+  flags.name ?? "htdemucs",
+  input,
+  outDir,
+  {
+    twoStems: flags["two-stems"],
+    method: flags.method,
+    shifts: flags.shifts !== undefined ? Number(flags.shifts) : undefined,
+  },
+);
+for (const p of written) {
+  console.log(`wrote ${p}`);
+}

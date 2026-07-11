@@ -19,7 +19,7 @@ Independent of our project; our choices on top are in `design.md`.
    dropped — `convert_audio_channels`)
 2. Global loudness normalization: `ref = mean(channels)`; `(wav - ref.mean()) / (ref.std() + 1e-8)`,
    inverted on output (`demucs/api.py:268-291`)
-3. Shift trick (default `shifts=1`): pad 0.5s, *random* offset, un-shift, average
+3. Shift trick (default `shifts=1`): pad 0.5s, _random_ offset, un-shift, average
    (`demucs/apply.py:237-256`)
 4. Chunking + weighted overlap-add: segment 343,980 samples, stride `(1-overlap)*segment`,
    `overlap=0.25`, centered padding from the full tensor (`TensorChunk.padded`), `center_trim`,
@@ -27,7 +27,7 @@ Independent of our project; our choices on top are in `design.md`.
 5. Bag of models: a `-n` name resolves to a yaml spec (`demucs/remote/*.yaml`) = checkpoint
    list + per-source weight matrix. `htdemucs` = 1 member; `htdemucs_ft` = 4 specialists with
    one-hot weights (order drums/bass/other/vocals); mdx-era bags use fractional weights (true
-   ensembles). Each member is a *complete* model (same topology, ~42M params); combination is
+   ensembles). Each member is a _complete_ model (same topology, ~42M params); combination is
    `stem_k = Σᵢ(wᵢₖ·outᵢₖ)/Σᵢwᵢₖ`
 6. Two-stems arithmetic (pure post-processing): `add` → `no_x = sum(others)`; `minus` →
    `no_x = mix − x`. Upstream always runs the full bag even in minus mode (no member-filtering

@@ -21,15 +21,15 @@ bag members, naming ft specialists by their one-hot source.
 
 Per baked fp32 file (~304 MB, opset 17, ~4,500 nodes):
 
-| Component | Size | Notes |
-|---|---|---|
-| Learned weights (533 initializers) | 168 MB | ~42M params fp32; upstream ships fp16 `.th` = 81 MB |
+| Component                               | Size     | Notes                                                                                                                   |
+| --------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Learned weights (533 initializers)      | 168 MB   | ~42M params fp32; upstream ships fp16 `.th` = 81 MB                                                                     |
 | Deterministic DFT tensors (4 Constants) | 135.7 MB | STFT cos/sin `[2049,1,4096]` ×2, iSTFT basis `[4098,1,4096]`, window-sum `[356352]`; byte-identical across all 5 models |
-| Graph structure | ~0 | 1,496 Constants, mostly shape scalars |
+| Graph structure                         | ~0       | 1,496 Constants, mostly shape scalars                                                                                   |
 
 Exported graph metadata declares output dims as unknown `[0,0,0,0]` — consumers check actual
 shape at runtime, never the declared one. An ft "specialist" is a complete htdemucs with
-fine-tuned weight *values* — same topology, same file size; the bag's one-hot weight selects
+fine-tuned weight _values_ — same topology, same file size; the bag's one-hot weight selects
 the output row downstream.
 
 ## Artifact Format (current: `data/onnx-lean`)
@@ -47,7 +47,7 @@ at session load — Python and Rust consumers need zero special handling.
   only remaining cross-file duplication is graph structure (a few MB), so this is loader
   architecture for the repo-promotion phase, not a size fix. Requires verifying trace-generated
   tensor names line up across independent exports (initializer names like `onnx::MatMul_*`).
-  Note: weights must stay *initializers* (external data), never graph inputs — inputs are
+  Note: weights must stay _initializers_ (external data), never graph inputs — inputs are
   dynamic and kill ORT's session-load prepacking/folding; the swap seam is session creation,
   not `Run()`.
 

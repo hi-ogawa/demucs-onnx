@@ -20,11 +20,11 @@ Everything landed first-try:
 
 **File anatomy** (the surprise of the iteration):
 
-| Component | Size | Notes |
-|---|---|---|
-| Learned weights (533 initializers) | 168 MB | the actual ~42M params, fp32 |
+| Component                                   | Size   | Notes                                                  |
+| ------------------------------------------- | ------ | ------------------------------------------------------ |
+| Learned weights (533 initializers)          | 168 MB | the actual ~42M params, fp32                           |
 | STFT/iSTFT DFT kernels (3 Constant tensors) | 136 MB | cos/sin `[2049,1,4096]` ×2 + synthesis `[4098,1,4096]` |
-| Graph structure (4,523 nodes) | ~0 | 1,496 Constants, mostly shape scalars |
+| Graph structure (4,523 nodes)               | ~0     | 1,496 Constants, mostly shape scalars                  |
 
 45% of the file is deterministic sin/cos tables — the "self-contained graph" tax. They are
 identical across all 4 ft specialists. Size levers for later: ONNX external-data format (one
@@ -35,7 +35,7 @@ naive 304 MB.
 **Other:**
 
 - Bag order confirmed empirically: `models[1]` = bass specialist (parity would explode otherwise)
-- TracerWarnings at export are expected: the trace bakes the fixed chunk shape, which *is* the
+- TracerWarnings at export are expected: the trace bakes the fixed chunk shape, which _is_ the
   contract
 - Output tensor metadata reports dims `[0,0,0,0]` (unknown) even though the shape is fixed —
   cosmetic, but the Rust side shouldn't rely on declared output shape
@@ -50,7 +50,7 @@ naive 304 MB.
 - **Scope shortcut, corrected by Hiroshi**: I exported only the bass specialist because the
   personal use case is bass covers. Product-wise the tool should offer arbitrary stem choice like
   anyone would expect — the artifact set must be complete (all 4 specialists), and the bass-only
-  path is a runtime *optimization* (minus mode loads 1 model), not an artifact-level shortcut.
+  path is a runtime _optimization_ (minus mode loads 1 model), not an artifact-level shortcut.
 
 ## Resources
 
