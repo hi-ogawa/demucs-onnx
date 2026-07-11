@@ -71,10 +71,18 @@ modelFilesInput.onchange = async () => {
   runBtn.disabled = true;
   try {
     selectedModelFiles = await Promise.all(
-      supported.map(async (file) => ({
-        name: file.name as ModelFile["name"],
-        bytes: new Uint8Array(await file.arrayBuffer()),
-      })),
+      supported.map(async (file) => {
+        try {
+          return {
+            name: file.name as ModelFile["name"],
+            bytes: new Uint8Array(await file.arrayBuffer()),
+          };
+        } catch (err) {
+          throw new Error(
+            `${file.name} (${file.size} bytes): ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`,
+          );
+        }
+      }),
     );
   } catch (err) {
     modelFilesStatus.textContent = `Failed to read model files: ${String(err)}`;
