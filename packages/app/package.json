@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.app.config.ts",
-    "build": "vite build --config vite.app.config.ts",
+    "dev": "vite",
+    "build": "vite build",
     "typecheck": "tsc -b",
     "lint": "pnpm lint-dead-code && pnpm typecheck",
     "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
