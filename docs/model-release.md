@@ -30,7 +30,7 @@ Every subset includes `dft.bin`. A partial download replaces `data/onnx-lean/`, 
 Model maintainers need Python with `uv` in addition to the download prerequisites. Build the complete release set locally:
 
 ```bash
-pnpm build:model --all
+pnpm build-model --all
 ```
 
 Create a release and upload the six model assets by choosing an explicit tag:

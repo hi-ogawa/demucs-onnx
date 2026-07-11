@@ -61,7 +61,7 @@ def main():
             parser.error("--end must be greater than --start")
 
     if not MODELS.is_dir():
-        sys.exit(f"missing {MODELS}\nbuild it first: pnpm build:model htdemucs_ft_bass")
+        sys.exit(f"missing {MODELS}\nbuild it first: pnpm build-model htdemucs_ft_bass")
 
     os.chdir(REPO_DIR)
     name = slugify(args.name or args.youtube)

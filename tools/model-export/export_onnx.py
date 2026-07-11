@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Export htdemucs / htdemucs_ft to self-contained ONNX (waveform in -> stems out).
 
 Adapted from dhunstack's scripts/convert-pth-to-onnx.py (adefossez/demucs PR #10).
