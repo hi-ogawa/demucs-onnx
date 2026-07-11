@@ -1,4 +1,4 @@
-Size-optimized Demucs ONNX models for native and browser inference.
+Size-optimized Demucs ONNX models for native and browser inference. These are derived artifacts based on the [upstream Demucs models](https://github.com/adefossez/demucs) and the ONNX export work in [adefossez/demucs#10](https://github.com/adefossez/demucs/pull/10).
 
 Download one of these sets:
 
@@ -7,5 +7,3 @@ Download one of these sets:
 - Full fine-tuned support: `dft.bin` and all four fine-tuned specialists.
 
 Every ONNX model references the shared `dft.bin` external-data file. Keep both files in the same directory for native ONNX Runtime, or supply `dft.bin` through ONNX Runtime Web's external-data API.
-
-`SHA256SUMS` contains integrity hashes for all six model assets.

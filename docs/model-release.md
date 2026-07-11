@@ -11,7 +11,7 @@ gh auth status
 pnpm model-release download models-v1
 ```
 
-The download command retrieves all five ONNX files, `dft.bin`, and `SHA256SUMS` into `data/onnx-lean/`. It verifies checksums before replacing an existing model directory.
+The download command retrieves all five ONNX files and `dft.bin` into `data/onnx-lean/`. It replaces an existing model directory only after the requested assets have downloaded successfully.
 
 Pass member names after the tag to download only a useful subset:
 
@@ -33,25 +33,16 @@ Model maintainers need Python with `uv` in addition to the download prerequisite
 pnpm build:model --all
 ```
 
-Create a release and upload the six model assets plus generated checksums by choosing an explicit tag:
+Create a release and upload the six model assets by choosing an explicit tag:
 
 ```bash
 pnpm model-release release models-v1
 ```
 
-To review a new release before publication, create it as a draft:
+Rerunning the command for an existing tag replaces same-named assets. Inspect a release with:
 
 ```bash
-pnpm model-release release models-v1 --draft
+gh release view models-v1
 ```
 
-Rerunning the command for an existing tag replaces same-named assets but preserves whether that release is draft, prerelease, or published. `--draft` is rejected for an existing release because the script does not implicitly change release state.
-
-Inspect or publish a release explicitly:
-
-```bash
-gh release view models-v1 --json url,isDraft,assets
-gh release edit models-v1 --draft=false
-```
-
-Prefer a new tag such as `models-v2` when model bytes change. Overwriting a published release makes previously recorded checksums stale and should be reserved for correcting an upload before consumers depend on it.
+Prefer a new tag such as `models-v2` when model bytes change. Overwriting a published release should be reserved for correcting an upload before consumers depend on it.
