@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "onnxruntime-web": "^1.23.0",
-    "vite": "^7.3.0"
+    "onnxruntime-web": "^1.27.0",
+    "vite": "^8.1.4"
   }
 }
