@@ -10,6 +10,7 @@
     "model-release": "uv run --no-sync tools/model_release.py",
     "build-wasm": "wasm-pack build crates/wasm --target web --release",
     "build": "pnpm build-wasm && pnpm -C packages/app build",
+    "build-cf": "(command -v cargo >/dev/null || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal) && PATH=\"$HOME/.cargo/bin:$PATH\" pnpm build",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
     "lint": "cargo fmt --all && vp check --fix && pnpm -C packages/app lint",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "vite-plus": "^0.2.4",
+    "wasm-pack": "0.15.0",
     "wrangler": "4.110.0"
   },
   "packageManager": "pnpm@11.11.0+sha512.4463f65fd80ed80d69bc1d4bf163ee94f605c7380fc318bb5b2ebe15f8cd12d49c51a4d59e951b401e764d3b6ca751cbf51bc50ed7001a6bcb4935e684c34882"

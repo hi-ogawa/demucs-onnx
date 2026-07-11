@@ -37,10 +37,6 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: taiki-e/install-action@v2.83.1
-        with:
-          tool: wasm-pack@0.15.0
-
       - name: Cache model export inputs
         uses: actions/cache@v6.1.0
         with:

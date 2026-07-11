@@ -48,8 +48,6 @@ Run `pnpm build-model --all` to build the standard model and all fine-tuned spec
 
 ## Web App
 
-Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) and ensure it is available on `PATH`.
-
 Build the WASM binding and start the fully client-side app:
 
 ```bash
@@ -65,7 +63,7 @@ Build the static app with:
 pnpm build
 ```
 
-The output in `packages/app/dist/` is configured for Cloudflare Workers static assets by `wrangler.jsonc`. Configure the Cloudflare build command as `pnpm build`; production users select model files locally, so model artifacts are not included in the deployment.
+The output in `packages/app/dist/` is configured for Cloudflare Workers static assets by `wrangler.jsonc`. Configure the Cloudflare build command as `pnpm build-cf`; production users select model files locally, so model artifacts are not included in the deployment.
 
 ## Repository
 
