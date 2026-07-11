@@ -4,7 +4,7 @@ import * as ort from "onnxruntime-web/wasm";
 import init, {
   separate as separateWasm,
   type Host,
-} from "../../../rust/wasm/pkg/demucs_wasm.js";
+} from "../../../../crates/wasm/pkg/demucs_wasm.js";
 
 const SEGMENT = 343980;
 const IN_LEN = 2 * SEGMENT; // (1, 2, SEGMENT)

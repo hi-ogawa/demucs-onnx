@@ -22,7 +22,7 @@ optimization, never an artifact-level shortcut.
        **Known gap, must address in follow-up:** the existing bass workflow runs `htdemucs_ft`
        (~9.2 dB tier); this baseline is ~9.0 dB. Baseline is for Rust bring-up simplicity, not
        the quality endpoint — workflow parity requires the 4 ft specialist exports.
-2. [x] **Rust e2e prototype** — `rust/` crate (`ort` + `hound`): wav → norm → chunk → ORT →
+2. [x] **Rust e2e prototype** — Rust crates (`ort` + `hound`): wav → norm → chunk → ORT →
        triangular OLA → 4 stem wavs, matching the Python demucs CLI at max abs 3.7e-5 /
        SNR 73–103 dB on a 12s synthetic clip (2026-07-09, first run)
 3. [x] **Workflow-replacement CLI** — all 5 models exported + parity-checked; resampling
@@ -41,21 +41,21 @@ optimization, never an artifact-level shortcut.
        accounting for upstream's `save_audio` clip='rescale' default silently rescaling
        clipping stems (our raw f32 preserves stems-sum-to-mix; theirs doesn't). Numeric gate
        for Docker retirement: passed (2026-07-09).
-6. [x] **Workspace split for JS bindings** — `rust/` is now `core` (sans-inference pull-style
+6. [x] **Workspace split for JS bindings** — `crates/` contains `core` (sans-inference pull-style
        engine: `next_job`/`feed`/`finish`, no ort dependency; sync callers drive directly,
        async JS drivers await between pulls) + `cli` (ort driver, same binary/flags).
        Regression: real-music and shifts=1 outputs **bit-identical** to pre-refactor;
        synthetic-vs-Python numbers unchanged (2026-07-09).
 
-7. [x] **Node CLI via napi-rs** — `rust/napi/` binds core + ort; `cli.mjs` mirrors the Rust
+7. [x] **Node CLI via napi-rs** — `crates/napi/` binds core + ort; `cli.mjs` mirrors the Rust
        CLI. Output matches Python reference identically and the Rust CLI at float-noise level
        (ft minus path bit-identical) (2026-07-09).
-8. [x] **Browser prototype** — `rust/wasm/` (wasm-bindgen over core) + `web/` Vite
+8. [x] **Browser prototype** — `crates/wasm/` (wasm-bindgen over core) + `packages/app/` Vite
        app; fully client-side: decodeAudioData → worker → onnxruntime-web wasm EP. 3s clip
        separates in-browser in 12.2s; stems vs native CLI at 29.5–64.2 dB (wasm-kernel float
-       divergence, no systematic bug). Flow e2e committed: `web/e2e/separate.spec.ts`
+       divergence, no systematic bug). Flow e2e committed: `packages/app/e2e/separate.spec.ts`
        (@playwright/test, `pnpm test`), passing in ~13s (2026-07-09).
-9. [x] **Contract cleanup** — allocation-free chunk inference, shared `rust/ort-driver`
+9. [x] **Contract cleanup** — allocation-free chunk inference, shared `crates/ort-driver`
        crate (cli + napi), core de-stringed and de-generalized (`Source`, typed `Outputs`,
        `Bag` encoding the three shipped shapes, `vocab` for names + model registry).
        Gate: cargo check/clippy clean; numeric regression deferred, no model artifacts on
@@ -86,7 +86,7 @@ uv run python strip_dft.py --models htdemucs_ft_bass \
 cd ..
 
 # Build the Rust CLI.
-cargo build --release --manifest-path rust/Cargo.toml -p demucs-cli
+cargo build --release -p demucs-cli
 ```
 
 Test the complete WAV → Rust → ONNX Runtime → WAV path on a short clip:
@@ -98,7 +98,7 @@ yt-dlp "https://www.youtube.com/watch?v=6q8UMVXhXsE" -x --audio-format wav \
 ffmpeg -ss 10 -t 10 -i data/input/triples-baby-flower.wav \
   data/input/triples-baby-flower-clip.wav
 
-./rust/target/release/demucs-rs-proto separate \
+./target/release/demucs-rs-proto separate \
   --models data/onnx-lean --name htdemucs_ft --two-stems bass --method minus \
   data/input/triples-baby-flower-clip.wav data/output/triples-baby-flower-clip
 ```
@@ -122,7 +122,7 @@ replaced by the Rust CLI (settled defaults baked in: ft, two-stems bass, minus):
 The manual steps, for anything the wrapper doesn't expose:
 
 ```bash
-cd 2026-07-09-demucs-port
+cd demucs-onnx
 
 # 1. get the song (any wav works; yt-dlp output is 48k — the CLI resamples itself)
 yt-dlp "https://www.youtube.com/watch?v=<id>" -x --audio-format wav -o "data/input/song.%(ext)s"
@@ -133,7 +133,7 @@ ffmpeg -ss 10 -to 20 -i data/input/song.wav data/input/song-clip.wav
 # 3. separate -> <outdir>/bass.wav + no_bass.wav (f32 wav, drop into Ableton)
 #    minus mode (no_bass = mix - bass) runs only the bass specialist: 4x faster, and the
 #    A/B on real music found it indistinguishable from add (2026-07-10), so it is the default
-./rust/target/release/demucs-rs-proto separate --models data/onnx-lean --name htdemucs_ft \
+./target/release/demucs-rs-proto separate --models data/onnx-lean --name htdemucs_ft \
   --two-stems bass --method minus data/input/song.wav data/output/song
 
 # variants:
@@ -143,7 +143,7 @@ ffmpeg -ss 10 -to 20 -i data/input/song.wav data/input/song-clip.wav
 #                    default, so only worth it for full/add runs where the ft bag costs 4x)
 #   --shifts N       passes to average: default 1 = single pass; 2+ = seeded-offset shift
 #                    trick at N x compute (0 is rejected — offsetting one pass buys nothing)
-# node flavor (same flags): node rust/napi/cli.mjs separate ...
+# node flavor (same flags): node crates/napi/cli.mjs separate ...
 ```
 
 Listening A/B set: `data/real-rust-*`, regenerable with the commands above (`data/` is gitignored; see `plan.md` §8).
@@ -160,8 +160,8 @@ Listening A/B set: `data/real-rust-*`, regenerable with the commands above (`dat
   orchestration port choices, open product questions
 - `notes/pipeline.html` — visual review companion: entities, black-box contract, orchestration flow, mode contrast
 - `notes/postmortem-2026-07-09.md` — iteration 1 (export + parity) postmortem
-- `rust/` — workspace: `core` (sans-inference engine), `ort-driver` (shared native ort
+- `crates/` — Rust workspace crates: `core` (sans-inference engine), `ort-driver` (shared native ort
   driver), `cli`, `napi` (Node), `wasm` (browser)
-- `web/` — fully client-side Vite prototype (see plan.md §12)
+- `packages/app/` — fully client-side Vite prototype (see plan.md §12)
 - `scripts/` — uv-managed export + parity harness (CPU-only torch)
 - `data/` — gitignored artifacts (exported .onnx, ~300 MB each)

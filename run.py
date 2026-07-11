@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 TASK_DIR = Path(__file__).resolve().parent
-CLI = TASK_DIR / "rust/target/release/demucs-rs-proto"
+CLI = TASK_DIR / "target/release/demucs-rs-proto"
 MODELS = TASK_DIR / "data/onnx-lean"
 
 

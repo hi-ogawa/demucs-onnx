@@ -1,5 +1,7 @@
 data/
+node_modules/
 scripts/.venv/
-rust/napi/demucs.node
-rust/wasm/pkg/
-web/.playwright-cli/
+target/
+crates/napi/demucs.node
+crates/wasm/pkg/
+packages/app/.playwright-cli/

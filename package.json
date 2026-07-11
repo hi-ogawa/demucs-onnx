@@ -1,0 +1,8 @@
+{
+  "name": "demucs-onnx",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter demucs-onnx-app dev",
+    "test": "pnpm --filter demucs-onnx-app test"
+  }
+}

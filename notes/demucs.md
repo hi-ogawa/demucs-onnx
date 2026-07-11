@@ -78,7 +78,7 @@ reuses to select outputs at inference time.
   weight-conversion/verification story unexamined — same post-agent-era skepticism applies.
   **Takes the `demucs-rs` name** — our repo promotion needs another.
 - **demucs-web** — https://github.com/timcsy/demucs-web — onnxruntime-web (wasm/WebGPU),
-  architecturally the same shape as our `web/` prototype; depth unassessed.
+  architecturally the same shape as our `packages/app/` prototype; depth unassessed.
 
 ## Weight Handling in the Wild
 

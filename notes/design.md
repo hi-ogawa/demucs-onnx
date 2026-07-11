@@ -51,7 +51,7 @@ at session load — Python and Rust consumers need zero special handling.
   dynamic and kill ORT's session-load prepacking/folding; the swap seam is session creation,
   not `Run()`.
 
-## Orchestration Port (Rust, `rust/`)
+## Orchestration Port (Rust, `crates/`)
 
 Mirrors upstream math exactly (Bessel-corrected std, `TensorChunk`-style centered padding,
 `center_trim`, triangular OLA) with deliberate divergences:

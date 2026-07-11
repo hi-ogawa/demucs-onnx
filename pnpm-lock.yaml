@@ -6,7 +6,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  packages/app:
     devDependencies:
       '@playwright/test':
         specifier: ^1.61.1

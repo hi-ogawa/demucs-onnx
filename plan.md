@@ -101,20 +101,20 @@ ffmpeg -y -f lavfi \
 cd scripts && uv run demucs --shifts 0 --float32 -n htdemucs -o ../data/reference ../data/input/test-clip.wav
 ```
 
-The crate (`rust/`, `demucs-rs-proto`; deps: `ort`, `hound`, `anyhow`) reimplements the
+The crates (`crates/`, `demucs-rs-proto`; deps: `ort`, `hound`, `anyhow`) reimplement the
 orchestration layer — global loudness normalization (Bessel-corrected std, matching
 `torch.std()`), fixed-size chunking with `TensorChunk`-style centered padding, `center_trim`,
 triangular weighted overlap-add, denormalization — around an ORT session. The upstream logic it
 mirrors is mapped with line refs in `notes/demucs.md` ("Orchestration Layer"); the doc comment in
-`rust/src/main.rs` states scope. Build friction worth remembering: the `ort` crate resolved to
+`crates/cli/src/main.rs` states scope. Build friction worth remembering: the `ort` crate resolved to
 2.0.0-rc.12, whose typed errors aren't `Send+Sync` — they need stringifying before anyhow.
 
 ```bash
 cd rust && cargo build --release && cd ..
-./rust/target/release/demucs-rs-proto separate data/onnx/htdemucs.onnx data/input/test-clip.wav data/rust-out
+./target/release/demucs-rs-proto separate data/onnx/htdemucs.onnx data/input/test-clip.wav data/rust-out
 for s in drums bass other vocals; do
   echo -n "$s: "
-  ./rust/target/release/demucs-rs-proto compare data/reference/htdemucs/test-clip/$s.wav data/rust-out/$s.wav
+  ./target/release/demucs-rs-proto compare data/reference/htdemucs/test-clip/$s.wav data/rust-out/$s.wav
 done
 ```
 
@@ -154,7 +154,7 @@ First the remaining ft specialists were exported and parity-checked (same harnes
 
 ```bash
 # the workflow-replacement invocation
-./rust/target/release/demucs-rs-proto separate --models data/onnx --name htdemucs_ft \
+./target/release/demucs-rs-proto separate --models data/onnx --name htdemucs_ft \
   --two-stems bass [--method minus] [--shifts N] input.wav out_dir
 # -> out_dir/bass.wav + out_dir/no_bass.wav
 ```
@@ -260,7 +260,7 @@ full-stems mode, where ft genuinely costs 4x).
 ## 9. Workspace split: sans-inference core + CLI
 
 Preparation for JS bindings (napi-rs, native + wasm via emnapi — one binding crate covers Node
-and browser, the Rolldown/Oxc distribution pattern). The key design move: `rust/` became a
+and browser, the Rolldown/Oxc distribution pattern). The key design move: `crates/` became a
 two-crate workspace where **`core` never runs inference**:
 
 - `core` (`demucs-core`): wav io, channel conform, resample, normalization, bag registry, and
@@ -284,7 +284,7 @@ Regression gate (refactor changed nothing):
 
 ## 10. Node CLI via napi-rs
 
-`rust/napi/` (`demucs-napi`, third workspace member): `#[napi]`-exported `separate()` wrapping
+`crates/napi/` (`demucs-napi`, third workspace member): `#[napi]`-exported `separate()` wrapping
 the same core engine + ort driver as the CLI; `cli.mjs` is a thin Node argv wrapper mirroring
 the Rust CLI's flags. Built with plain cargo — no `@napi-rs/cli` tooling yet; the cdylib is
 copied to `demucs.node` and `require`d directly (the npm packaging/prebuild story belongs to
@@ -293,7 +293,7 @@ repo promotion).
 ```bash
 cargo build --release -p demucs-napi
 cp target/release/libdemucs_napi.so napi/demucs.node
-node rust/napi/cli.mjs separate --models data/onnx-lean --name htdemucs --shifts 0 in.wav out/
+node crates/napi/cli.mjs separate --models data/onnx-lean --name htdemucs --shifts 0 in.wav out/
 ```
 
 Verification (12s synthetic, Node v24.18):
@@ -323,15 +323,15 @@ init); not a rigorous benchmark. Rigorous per-chunk numbers belong to the repo-p
 
 ## 12. Browser prototype (end-to-end, perf deferred)
 
-Built per the plan shape: `rust/wasm/` (wasm-bindgen over core's pull API — napi-rs wasm was
+Built per the plan shape: `crates/wasm/` (wasm-bindgen over core's pull API — napi-rs wasm was
 sidestepped because the napi crate depends on ort, which doesn't compile to wasm; unification
-later) + `web/` Vite app (main thread decodes via `OfflineAudioContext(44100).decodeAudioData`,
+later) + `packages/app/` Vite app (main thread decodes via `OfflineAudioContext(44100).decodeAudioData`,
 worker drives `next_input()` → onnxruntime-web wasm EP → `feed()`; models fetched from
 `data/onnx-lean` via `/@fs`, `dft.bin` through ort-web's `externalData`).
 
 ```bash
 pnpm add -g wasm-pack   # one-time (also: rustup target add wasm32-unknown-unknown)
-(cd rust/wasm && wasm-pack build --target web --release)
+(cd crates/wasm && wasm-pack build --target web --release)
 (cd web && pnpm i && pnpm dev)
 ```
 
@@ -371,7 +371,7 @@ of the perf tier.
 
 **Verification honesty note:** the initial browser gate was driven interactively
 (playwright-cli session) — a scripted manual smoke test, not a committed artifact. Follow-up
-landed same day: `web/e2e/separate.spec.ts` (@playwright/test, `pnpm test` in `web/`) exercises
+landed same day: `packages/app/e2e/separate.spec.ts` (@playwright/test, root `pnpm test`) exercises
 the full flow — generated 2s wav fixture (no binary checked in) → upload → decode → separate →
 asserts 4 stems rendered with players + download links. Flow-only by design; numeric parity is
 the CLI comparisons' job. Skips with a clear message if `data/onnx-lean` is absent; the config
@@ -403,7 +403,7 @@ Proven chain: official checkpoints → our export (all 5 models) → tensor pari
 level → workflow-replacement CLI (ft bag, two-stems, both methods, resampling, deterministic
 shifts) → deduped lean artifacts (`data/onnx-lean`: 934 MB, zero redundant bytes) → Node CLI via
 napi. Disk: `data/` ~3 GB (baked + lean models + clips + stems), `scripts/.venv` ~1 GB,
-`rust/target` ~1 GB — all gitignored. Plus rustup (~700 MB, system-level) and 4×81 MB checkpoint
+`target/` ~1 GB — all gitignored. Plus rustup (~700 MB, system-level) and 4×81 MB checkpoint
 cache in `~/.cache/torch/`. Baked `data/onnx` can be deleted once lean is the trusted working
 set.
 

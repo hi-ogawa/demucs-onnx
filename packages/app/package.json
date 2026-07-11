@@ -1,5 +1,5 @@
 {
-  "name": "demucs-web-proto",
+  "name": "demucs-onnx-app",
   "private": true,
   "type": "module",
   "scripts": {

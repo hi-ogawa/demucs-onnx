@@ -1,6 +1,0 @@
-[workspace]
-resolver = "2"
-members = ["core", "ort-driver", "cli", "napi", "wasm"]
-
-[profile.release]
-debug = false

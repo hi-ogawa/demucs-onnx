@@ -1,8 +1,9 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
 
-// Models are served straight from the sibling data dir via /@fs (no 300MB copies).
-const modelsDir = resolve(__dirname, "../data/onnx-lean");
+// Models are served straight from the repository data dir via /@fs (no 300MB copies).
+const repoDir = resolve(__dirname, "../..");
+const modelsDir = resolve(repoDir, "data/onnx-lean");
 
 export default defineConfig({
   define: {
@@ -19,8 +20,8 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
     fs: {
-      // allow serving the wasm pkg and model files from the task dir
-      allow: [resolve(__dirname, "..")],
+      // allow serving the wasm pkg and model files from the repository
+      allow: [repoDir],
     },
   },
 });
