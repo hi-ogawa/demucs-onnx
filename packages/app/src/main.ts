@@ -1,7 +1,6 @@
 import {
   isModelFilename,
   requiredModelFiles,
-  type ModelFile,
   type ModelSource,
 } from "./audio/models";
 import type { SeparateRequest } from "./audio/separate";
@@ -26,7 +25,7 @@ const status = $<HTMLParagraphElement>("status");
 const stemsDiv = $<HTMLDivElement>("stems");
 
 let decoded: { left: Float32Array; right: Float32Array } | null = null;
-let selectedModelFiles: ModelFile[] | null = null;
+let selectedModelFiles: File[] | null = null;
 let running = false;
 
 function getModelSource(): ModelSource | null {
@@ -62,32 +61,10 @@ function updateAvailability() {
   runBtn.disabled = running || !decoded || !modelsReady;
 }
 
-modelFilesInput.onchange = async () => {
+modelFilesInput.onchange = () => {
   const files = [...(modelFilesInput.files ?? [])];
   const unsupported = files.filter((file) => !isModelFilename(file.name));
-  const supported = files.filter((file) => isModelFilename(file.name));
-  selectedModelFiles = null;
-  modelFilesStatus.textContent = "Reading model files...";
-  runBtn.disabled = true;
-  try {
-    selectedModelFiles = await Promise.all(
-      supported.map(async (file) => {
-        try {
-          return {
-            name: file.name as ModelFile["name"],
-            bytes: new Uint8Array(await file.arrayBuffer()),
-          };
-        } catch (err) {
-          throw new Error(
-            `${file.name} (${file.size} bytes): ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`,
-          );
-        }
-      }),
-    );
-  } catch (err) {
-    modelFilesStatus.textContent = `Failed to read model files: ${String(err)}`;
-    return;
-  }
+  selectedModelFiles = files.filter((file) => isModelFilename(file.name));
   updateAvailability();
   if (unsupported.length) {
     modelFilesStatus.textContent += ` Unsupported files: ${unsupported.map((file) => file.name).join(", ")}`;

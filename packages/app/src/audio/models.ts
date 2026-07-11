@@ -9,14 +9,9 @@ const MODEL_FILENAMES = [
 
 export type ModelFilename = (typeof MODEL_FILENAMES)[number];
 
-export interface ModelFile {
-  name: ModelFilename;
-  bytes: Uint8Array;
-}
-
 export type ModelSource =
   | { kind: "url"; baseUrl: string }
-  | { kind: "files"; files: ModelFile[] };
+  | { kind: "files"; files: File[] };
 
 export function isModelFilename(name: string): name is ModelFilename {
   return MODEL_FILENAMES.includes(name as ModelFilename);
@@ -51,7 +46,7 @@ export async function readModelFile(
     if (!file) {
       throw new Error(`missing model file: ${filename}`);
     }
-    return file.bytes;
+    return new Uint8Array(await file.arrayBuffer());
   }
 
   const url = `${source.baseUrl}/${filename}`;
