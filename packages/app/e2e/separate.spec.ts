@@ -10,7 +10,7 @@ import { test, expect } from "@playwright/test";
 const MODELS_DIR = resolve(import.meta.dirname, "../../../data/onnx-lean");
 const MODEL = resolve(MODELS_DIR, "htdemucs.onnx");
 const DFT = resolve(MODELS_DIR, "dft.bin");
-const FIXTURE = resolve(import.meta.dirname, "../../../fixtures/sine-10s.wav");
+const FIXTURE = resolve(import.meta.dirname, "../../../fixtures/sine-2s.wav");
 
 test("separates a clip fully client-side", async ({ page }) => {
   expect(existsSync(MODEL), `model missing at ${MODEL}`).toBe(true);
@@ -19,7 +19,7 @@ test("separates a clip fully client-side", async ({ page }) => {
 
   await page.goto("/");
   await page.setInputFiles("#file", FIXTURE);
-  await expect(page.locator("#status")).toContainText("decoded: 10.00s", {
+  await expect(page.locator("#status")).toContainText("decoded: 2.00s", {
     timeout: 15_000,
   });
 
