@@ -10,7 +10,6 @@ Run the one-time setup from the repository root:
 
 ```bash
 # Install the pinned export environment and build the fine-tuned bass specialist.
-uv sync
 uv run python tools/model-export/build_models.py htdemucs_ft_bass
 
 # Build the Rust CLI.

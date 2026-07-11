@@ -13,7 +13,6 @@ One-time setup from the repository root:
 ```bash
 # Install the pinned export environment and build the standard model. This downloads the
 # upstream checkpoint, exports ONNX, and moves shared DFT data into one external file.
-uv sync
 uv run python tools/model-export/build_models.py htdemucs
 
 # Build the Rust CLI.
