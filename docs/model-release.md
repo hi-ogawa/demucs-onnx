@@ -8,7 +8,7 @@ Prerequisites are Python, `gh` authenticated with access to the repository, and 
 
 ```bash
 gh auth status
-pnpm model-release download models-v1
+pnpm model-release download models-2026-07-11
 ```
 
 The download command retrieves all five ONNX files and `dft.bin` into `data/onnx-lean/`. It replaces an existing model directory only after the requested assets have downloaded successfully.
@@ -17,10 +17,10 @@ Pass member names after the tag to download only a useful subset:
 
 ```bash
 # Standard four-stem and two-stem modes.
-pnpm model-release download models-v1 htdemucs
+pnpm model-release download models-2026-07-11 htdemucs
 
 # Fine-tuned bass/minus mode.
-pnpm model-release download models-v1 htdemucs_ft_bass
+pnpm model-release download models-2026-07-11 htdemucs_ft_bass
 ```
 
 Every subset includes `dft.bin`. A partial download replaces `data/onnx-lean/`, so only the selected workflows remain available locally.
@@ -36,19 +36,19 @@ pnpm build:model --all
 Create a release and upload the six model assets by choosing an explicit tag:
 
 ```bash
-pnpm model-release release models-v1
+pnpm model-release release models-2026-07-11
 ```
 
 Update an existing release by explicitly replacing its same-named assets:
 
 ```bash
-pnpm model-release release models-v1 --update
+pnpm model-release release models-2026-07-11 --update
 ```
 
 Inspect a release with:
 
 ```bash
-gh release view models-v1
+gh release view models-2026-07-11
 ```
 
-Prefer a new tag such as `models-v2` when model bytes change. Overwriting a published release should be reserved for correcting an upload before consumers depend on it.
+Prefer a new date-based tag when model bytes change. Overwriting a published release should be reserved for correcting an upload before consumers depend on it.

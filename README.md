@@ -20,7 +20,7 @@ pnpm build:model htdemucs
 Alternatively, download the prebuilt standard model using a tag from the [releases page](https://github.com/hi-ogawa/demucs-onnx/releases):
 
 ```bash
-pnpm model-release download models-v1 htdemucs
+pnpm model-release download models-2026-07-11 htdemucs
 ```
 
 Separate a WAV file into four stems:
