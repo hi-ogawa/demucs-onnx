@@ -18,6 +18,7 @@ export default defineConfig({
     },
   },
   staged: {
-    "*": "vp check --fix",
+    "packages/app/**/*": "vp check --fix",
+    "{package.json,vite.config.ts}": "vp check --fix",
   },
 });
