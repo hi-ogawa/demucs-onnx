@@ -13,19 +13,11 @@ export default defineConfig(({ command }) => ({
       command === "serve" ? `/@fs${modelsDir}` : null,
     ),
   },
-  optimizeDeps: {
-    // keep ort un-prebundled so its internal import.meta.url asset resolution works in dev
-    exclude: ["onnxruntime-web"],
-  },
   server: {
     headers: {
       // cross-origin isolation for threaded ort-wasm (SharedArrayBuffer)
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
-    },
-    fs: {
-      // allow serving the wasm pkg and model files from the repository
-      allow: [repoDir],
     },
   },
 }));
