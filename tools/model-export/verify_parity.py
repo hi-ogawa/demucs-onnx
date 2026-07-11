@@ -6,7 +6,8 @@ both the export and PR #10's STFT/iSTFT rewrite in one shot. GSoC reports MSE < 
 StemSplit claims 1.6e-4 max abs diff -- we produce our own numbers.
 
 Usage:
-    pnpm verify-parity --onnx data/onnx/htdemucs.onnx --model htdemucs
+    pnpm verify-parity --onnx data/onnx/htdemucs.onnx \
+        --stripped-onnx data/onnx-lean/htdemucs.onnx --model htdemucs
     pnpm verify-parity --onnx data/onnx/htdemucs_ft_bass.onnx \
         --model htdemucs_ft --index 1
     uv run python tools/model-export/verify_parity.py --onnx ... --model ... --index 1 --wav data/input/clip.wav
@@ -44,6 +45,7 @@ def load_chunk(wav: Path | None, length: int) -> torch.Tensor:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--onnx", type=Path, required=True)
+    parser.add_argument("--stripped-onnx", type=Path)
     parser.add_argument("--model", default="htdemucs_ft")
     parser.add_argument("--index", type=int, default=None, help="bag member index")
     parser.add_argument("--wav", type=Path, default=None)
@@ -53,6 +55,8 @@ def main() -> None:
 
     if not args.onnx.is_file():
         parser.error(f"ONNX model not found: {args.onnx}")
+    if args.stripped_onnx is not None and not args.stripped_onnx.is_file():
+        parser.error(f"stripped ONNX model not found: {args.stripped_onnx}")
     for name in ("max_abs", "max_mse"):
         value = getattr(args, name)
         if not math.isfinite(value) or value < 0:
@@ -81,8 +85,12 @@ def main() -> None:
     with torch.no_grad():
         ref = core(chunk).numpy()  # (1, 4, 2, length)
 
-    sess = ort.InferenceSession(str(args.onnx), providers=["CPUExecutionProvider"])
-    (out,) = sess.run(["output"], {"input": chunk.numpy()})
+    def run_onnx(path: Path) -> np.ndarray:
+        sess = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+        (output,) = sess.run(["output"], {"input": chunk.numpy()})
+        return output
+
+    out = run_onnx(args.onnx)
 
     assert out.shape == ref.shape, f"shape mismatch: onnx {out.shape} vs torch {ref.shape}"
     diff = np.abs(out - ref)
@@ -102,6 +110,19 @@ def main() -> None:
         failures.append(f"mse {mse:.3e} > {args.max_mse:.3e}")
     if failures:
         raise SystemExit(f"parity check failed: {', '.join(failures)}")
+
+    if args.stripped_onnx is not None:
+        stripped = run_onnx(args.stripped_onnx)
+        assert stripped.shape == out.shape, (
+            f"shape mismatch: stripped {stripped.shape} vs unstripped {out.shape}"
+        )
+        if not np.array_equal(stripped, out):
+            strip_diff = np.abs(stripped - out)
+            raise SystemExit(
+                "stripped model differs from unstripped model: "
+                f"max abs diff {strip_diff.max():.3e}, mse {(strip_diff**2).mean():.3e}"
+            )
+        print("stripped model: exactly matches unstripped output")
 
 
 if __name__ == "__main__":

@@ -36,11 +36,11 @@ pnpm build-model --all
 Verify each unstripped export against the original PyTorch forward path. The standard model does not need a member index; fine-tuned member indices are `0=drums`, `1=bass`, `2=other`, and `3=vocals`:
 
 ```bash
-pnpm verify-parity --onnx data/onnx/htdemucs.onnx --model htdemucs
+pnpm verify-parity --onnx data/onnx/htdemucs.onnx --stripped-onnx data/onnx-lean/htdemucs.onnx --model htdemucs
 pnpm verify-parity --onnx data/onnx/htdemucs_ft_bass.onnx --model htdemucs_ft --index 1
 ```
 
-The command exits unsuccessfully when maximum absolute error or mean squared error exceeds its threshold. Use `--max-abs` and `--max-mse` to override the defaults when investigating numerical differences.
+The command exits unsuccessfully when maximum absolute error or mean squared error exceeds its threshold. Use `--max-abs` and `--max-mse` to override the defaults when investigating numerical differences. When `--stripped-onnx` is provided, its output must exactly match the unstripped export.
 
 Create a release and upload the six model assets by choosing an explicit tag:
 

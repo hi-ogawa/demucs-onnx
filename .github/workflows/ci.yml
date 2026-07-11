@@ -53,7 +53,11 @@ jobs:
 
       - run: pnpm build-model htdemucs
 
-      - run: pnpm verify-parity --onnx data/onnx/htdemucs.onnx --model htdemucs
+      - run: |
+          pnpm verify-parity \
+            --onnx data/onnx/htdemucs.onnx \
+            --stripped-onnx data/onnx-lean/htdemucs.onnx \
+            --model htdemucs
 
       - run: |
           pnpm cli-separate \
