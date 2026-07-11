@@ -38,6 +38,20 @@ Useful variants:
 
 The setup above creates the size-optimized standard model under `data/onnx-lean/`. Run `uv run python tools/model-export/build_models.py --all` to build the standard model and all fine-tuned specialists. Passing explicit member names builds an exact subset.
 
+## Web App
+
+Prerequisite: install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) and make it available on `PATH`.
+
+Build the WASM binding and start the fully client-side app:
+
+```bash
+pnpm install
+pnpm build:wasm
+pnpm dev
+```
+
+Open `http://localhost:5173`, choose a local audio file, and run separation. Audio and models stay in the browser; Vite serves the generated models from `data/onnx-lean/` during development.
+
 ## Repository
 
 - `crates/` contains the Rust workspace: orchestration core, ONNX Runtime driver, CLI, Node binding, and WASM binding.
