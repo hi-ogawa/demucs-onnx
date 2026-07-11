@@ -13,7 +13,7 @@ One-time setup from the repository root:
 ```bash
 # Install the pinned export environment and build the standard model. This downloads the
 # upstream checkpoint, exports ONNX, and moves shared DFT data into one external file.
-pnpm build:model
+pnpm build:model htdemucs
 ```
 
 Separate a WAV file into four stems:
