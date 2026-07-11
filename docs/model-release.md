@@ -9,8 +9,6 @@ Prerequisites are Python, `gh` authenticated with access to the repository, and 
 ```bash
 gh auth status
 pnpm model-release download models-v1
-pnpm build:wasm
-pnpm dev
 ```
 
 The download command retrieves all five ONNX files, `dft.bin`, and `SHA256SUMS` into `data/onnx-lean/`. It verifies checksums before replacing an existing model directory.
