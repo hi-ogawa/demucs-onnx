@@ -46,6 +46,13 @@ pnpm build:model htdemucs
 
 Run `pnpm build:model --all` to build the standard model and all fine-tuned specialists.
 
+Build FP16-weight storage artifacts with FP32 computation, inputs, outputs, and shared DFT
+tensors:
+
+```bash
+pnpm build:model htdemucs --precision fp16 --out data/onnx-lean-fp16
+```
+
 ## Web App
 
 Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) and ensure it is available on `PATH`.

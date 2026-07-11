@@ -49,7 +49,17 @@ def main() -> None:
     args = parser.parse_args()
 
     model = get_model(args.model)
-    core = model.models[args.index] if isinstance(model, BagOfModels) else model
+    if isinstance(model, BagOfModels):
+        if args.index is None:
+            if len(model.models) != 1:
+                parser.error("--index is required for a multi-member bag")
+            core = model.models[0]
+        else:
+            core = model.models[args.index]
+    else:
+        if args.index is not None:
+            parser.error("--index only applies to a bag of models")
+        core = model
     core.eval()
     assert not getattr(core, "onnx_exportable", False), "reference must use the real torch path"
 

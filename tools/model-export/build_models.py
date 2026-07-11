@@ -40,6 +40,12 @@ def main() -> None:
     parser.add_argument("--all", action="store_true", help="build all shipped model members")
     parser.add_argument("--cache", type=Path, default=REPO_DIR / "data/onnx")
     parser.add_argument("--out", type=Path, default=REPO_DIR / "data/onnx-lean")
+    parser.add_argument(
+        "--precision",
+        choices=("fp32", "fp16"),
+        default="fp32",
+        help="weight storage precision; model computation and I/O remain fp32",
+    )
     args = parser.parse_args()
 
     if args.all and args.members:
@@ -75,11 +81,23 @@ def main() -> None:
 
     staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.new-", dir=output.parent))
     try:
-        strip_models(requested, cache, staging)
+        source = cache
+        converted = None
+        if args.precision == "fp16":
+            from convert_fp16 import convert_model
+
+            converted = Path(tempfile.mkdtemp(prefix=".onnx-fp16-", dir=output.parent))
+            for name in requested:
+                convert_model(cache / f"{name}.onnx", converted / f"{name}.onnx")
+            source = converted
+        strip_models(requested, source, staging)
         replace_output(staging, output)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
+    finally:
+        if converted is not None:
+            shutil.rmtree(converted, ignore_errors=True)
 
     print(f"wrote {len(requested)} model(s) to {output}")
 
