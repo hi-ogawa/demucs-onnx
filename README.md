@@ -8,10 +8,16 @@ The CLI separates WAV input into Demucs stems using locally exported ONNX models
 
 Prerequisites: Rust, `uv`, and `pnpm`.
 
-One-time setup from the repository root, using a model release tag from the [releases page](https://github.com/hi-ogawa/demucs-onnx/releases):
+One-time setup from the repository root:
 
 ```bash
 pnpm install
+pnpm build:model htdemucs
+```
+
+Alternatively, download the prebuilt standard model using a tag from the [releases page](https://github.com/hi-ogawa/demucs-onnx/releases):
+
+```bash
 pnpm download:models -- models-v1 htdemucs
 ```
 
@@ -31,9 +37,7 @@ Useful variants:
 - `--shifts N` averages `N` seeded-offset passes. The default is one pass.
 - `node crates/napi/cli.mjs separate ...` exposes the same flow through the Node binding.
 
-The setup above downloads and verifies the size-optimized standard model under `data/onnx-lean/`. Omit `htdemucs` to download all standard and fine-tuned models. See [Model releases](docs/model-release.md) for partial downloads and maintainer publishing instructions.
-
-Model export requires the pinned Python environment and is only needed when changing or publishing model artifacts. Run `pnpm build:model --all` to build the standard model and all fine-tuned specialists locally. Passing explicit member names builds an exact subset.
+Both setup paths create the size-optimized standard model under `data/onnx-lean/`. Run `pnpm build:model --all` to build the standard model and all fine-tuned specialists locally. Passing explicit member names builds an exact subset. For release downloads, omit `htdemucs` to download all models. See [Model releases](docs/model-release.md) for partial downloads and maintainer publishing instructions.
 
 ## Web App
 
