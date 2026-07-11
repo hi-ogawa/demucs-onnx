@@ -8,12 +8,11 @@ The CLI separates WAV input into Demucs stems using locally exported ONNX models
 
 Prerequisites: Rust, `uv`, and `pnpm`.
 
-One-time setup from the repository root:
+One-time setup from the repository root, using a model release tag from the [releases page](https://github.com/hi-ogawa/demucs-onnx/releases):
 
 ```bash
-# Install the pinned export environment and build the standard model. This downloads the
-# upstream checkpoint, exports ONNX, and moves shared DFT data into one external file.
-pnpm build:model htdemucs
+pnpm install
+pnpm download:models -- models-v1 htdemucs
 ```
 
 Separate a WAV file into four stems:
@@ -32,7 +31,9 @@ Useful variants:
 - `--shifts N` averages `N` seeded-offset passes. The default is one pass.
 - `node crates/napi/cli.mjs separate ...` exposes the same flow through the Node binding.
 
-The setup above creates the size-optimized standard model under `data/onnx-lean/`. Run `uv run python tools/model-export/build_models.py --all` to build the standard model and all fine-tuned specialists. Passing explicit member names builds an exact subset.
+The setup above downloads and verifies the size-optimized standard model under `data/onnx-lean/`. Omit `htdemucs` to download all standard and fine-tuned models. See [Model releases](docs/model-release.md) for partial downloads and maintainer publishing instructions.
+
+Model export requires the pinned Python environment and is only needed when changing or publishing model artifacts. Run `pnpm build:model --all` to build the standard model and all fine-tuned specialists locally. Passing explicit member names builds an exact subset.
 
 ## Web App
 
@@ -54,6 +55,7 @@ Open `http://localhost:5173`, choose a local audio file, and run separation. Aud
 - `packages/app/` contains the fully client-side Vite app.
 - `tools/model-export/` contains the uv-managed model export, DFT stripping, and parity tools.
 - `docs/architecture.md` describes the runtime and artifact design.
+- `docs/model-release.md` documents downloading and publishing model artifacts.
 - `docs/demucs.md` documents upstream Demucs mechanics and prior art.
 - `docs/development.md` records the chronological implementation process and measurements.
 - `docs/history.md` preserves the original motivation and prototype completion timeline.
