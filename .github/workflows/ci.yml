@@ -2,7 +2,13 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -12,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      # Model export otherwise uses every available CPU thread.
+      # Limit model export so it does not saturate the CI runner.
       # https://docs.pytorch.org/docs/stable/threading_environment_variables.html
       OMP_NUM_THREADS: 2
 
