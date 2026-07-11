@@ -6,6 +6,7 @@
     "prepare": "vp config",
     "bass-cover": "uv run --no-sync tools/bass-cover.py",
     "build-model": "uv run python tools/model-export/build_models.py",
+    "verify-parity": "uv run python tools/model-export/verify_parity.py",
     "model-release": "uv run --no-sync tools/model_release.py",
     "build-wasm": "wasm-pack build crates/wasm --target web --release",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
