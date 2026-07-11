@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
@@ -69,92 +67,98 @@ function numberOption(
   return number;
 }
 
-const { values, positionals } = parseArgs({
-  allowPositionals: true,
-  options: {
-    name: { type: "string" },
-    start: { type: "string" },
-    end: { type: "string" },
-    help: { type: "boolean", short: "h" },
-  },
-});
+function main(): void {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: {
+      name: { type: "string" },
+      start: { type: "string" },
+      end: { type: "string" },
+      help: { type: "boolean", short: "h" },
+    },
+  });
 
-if (values.help) {
-  console.log(usage());
-  process.exit(0);
-}
-if (positionals.length !== 1) {
-  fail(usage());
-}
-
-const [youtube] = positionals;
-const start = numberOption("start", values.start);
-const end = numberOption("end", values.end);
-if (end !== undefined && end <= (start ?? 0)) {
-  fail("--end must be greater than --start");
-}
-if (!existsSync(models)) {
-  fail(`missing ${models}\nbuild it first: pnpm build:model htdemucs_ft_bass`);
-}
-
-const slugify = (value: string): string =>
-  value
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, "-")
-    .replaceAll(/^-|-$/g, "") || "song";
-const timeSlug = (value: number): string => String(value).replace(".", "p");
-const name = slugify(values.name ?? youtube);
-const url =
-  youtube.startsWith("http://") || youtube.startsWith("https://")
-    ? youtube
-    : `https://www.youtube.com/watch?v=${youtube}`;
-const inputDir = join(repoDir, "data/input");
-mkdirSync(inputDir, { recursive: true });
-
-const source = join(inputDir, `${name}.wav`);
-run("download audio", "yt-dlp", [
-  "--no-playlist",
-  url,
-  "-x",
-  "--audio-format",
-  "wav",
-  "-o",
-  join(inputDir, `${name}.%(ext)s`),
-]);
-
-let demucsInput = source;
-if (start !== undefined || end !== undefined) {
-  const trimParts = ["trim"];
-  if (start !== undefined) {
-    trimParts.push(`s${timeSlug(start)}`);
+  if (values.help) {
+    console.log(usage());
+    process.exit(0);
   }
-  if (end !== undefined) {
-    trimParts.push(`e${timeSlug(end)}`);
+  if (positionals.length !== 1) {
+    fail(usage());
   }
-  demucsInput = join(inputDir, `${name}-${trimParts.join("-")}.wav`);
 
-  const ffmpegArgs = ["-y"];
-  if (start !== undefined) {
-    ffmpegArgs.push("-ss", String(start));
+  const [youtube] = positionals;
+  const start = numberOption("start", values.start);
+  const end = numberOption("end", values.end);
+  if (end !== undefined && end <= (start ?? 0)) {
+    fail("--end must be greater than --start");
   }
-  if (end !== undefined) {
-    ffmpegArgs.push("-to", String(end));
+  if (!existsSync(models)) {
+    fail(
+      `missing ${models}\nbuild it first: pnpm build:model htdemucs_ft_bass`,
+    );
   }
-  ffmpegArgs.push("-i", source, demucsInput);
-  run("trim clip", "ffmpeg", ffmpegArgs);
+
+  const slugify = (value: string): string =>
+    value
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9]+/g, "-")
+      .replaceAll(/^-|-$/g, "") || "song";
+  const timeSlug = (value: number): string => String(value).replace(".", "p");
+  const name = slugify(values.name ?? youtube);
+  const url =
+    youtube.startsWith("http://") || youtube.startsWith("https://")
+      ? youtube
+      : `https://www.youtube.com/watch?v=${youtube}`;
+  const inputDir = join(repoDir, "data/input");
+  mkdirSync(inputDir, { recursive: true });
+
+  const source = join(inputDir, `${name}.wav`);
+  run("download audio", "yt-dlp", [
+    "--no-playlist",
+    url,
+    "-x",
+    "--audio-format",
+    "wav",
+    "-o",
+    join(inputDir, `${name}.%(ext)s`),
+  ]);
+
+  let demucsInput = source;
+  if (start !== undefined || end !== undefined) {
+    const trimParts = ["trim"];
+    if (start !== undefined) {
+      trimParts.push(`s${timeSlug(start)}`);
+    }
+    if (end !== undefined) {
+      trimParts.push(`e${timeSlug(end)}`);
+    }
+    demucsInput = join(inputDir, `${name}-${trimParts.join("-")}.wav`);
+
+    const ffmpegArgs = ["-y"];
+    if (start !== undefined) {
+      ffmpegArgs.push("-ss", String(start));
+    }
+    if (end !== undefined) {
+      ffmpegArgs.push("-to", String(end));
+    }
+    ffmpegArgs.push("-i", source, demucsInput);
+    run("trim clip", "ffmpeg", ffmpegArgs);
+  }
+
+  const outputDir = join(repoDir, "data/output", basename(demucsInput, ".wav"));
+  run("separate bass stem", "pnpm", [
+    "cli-separate",
+    "--name",
+    "htdemucs_ft",
+    "--two-stems",
+    "bass",
+    "--method",
+    "minus",
+    demucsInput,
+    outputDir,
+  ]);
+
+  console.log(`\nOutput: ${outputDir}/`);
 }
 
-const outputDir = join(repoDir, "data/output", basename(demucsInput, ".wav"));
-run("separate bass stem", "pnpm", [
-  "cli-separate",
-  "--name",
-  "htdemucs_ft",
-  "--two-stems",
-  "bass",
-  "--method",
-  "minus",
-  demucsInput,
-  outputDir,
-]);
-
-console.log(`\nOutput: ${outputDir}/`);
+main();
