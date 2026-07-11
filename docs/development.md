@@ -215,8 +215,8 @@ remaining bytes are all unique learned weights). Verification:
 
 ## 8. Real-music verification
 
-The synthetic-sines caveat closed with a real track, mirroring the old `examples/bass-cover.py` flow: yt-dlp
-download (TripleS "Baby Flower", the June task's test song), 10s trim conformed to 44.1k stereo
+The synthetic-sines caveat closed with a real track, mirroring the old `docs/bass-cover.py` flow: yt-dlp
+download (TripleS "Baby Flower", the workflow's test song), 10s trim conformed to 44.1k stereo
 f32 in the same ffmpeg step (one shared input for both pipelines, so their different resamplers
 stay out of the measurement).
 
@@ -418,11 +418,11 @@ set.
 
 Other threads:
 
-- Retire the Docker workflow (`2026-06-20-bass-stem-separation/`): the substantive step landed
-  2026-07-10 — `examples/bass-cover.py` ports the old wrapper (yt-dlp → trim → separate) onto the Rust CLI
+- Retire the legacy Docker workflow: the substantive step landed
+  2026-07-10 — `docs/bass-cover.py` ports the old wrapper (yt-dlp → trim → separate) onto the Rust CLI
   with the settled config (ft, two-stems bass, minus; A/Bs resolved, see §8), verified e2e on
   the test song (10s clip separated in 16.6s). Remaining housekeeping: supersede notice in the
-  old task's README, and the ~1.4 GB image lives on the Docker Desktop side (docker isn't
+  legacy workflow documentation, and the ~1.4 GB image lives on the Docker Desktop side (docker isn't
   reachable from this WSL distro), so reclaim it from there when convenient
 - Repo promotion (e.g. `demucs-rs`) when publish/CI actually forces it: napi prebuild matrix,
   npm publishing, public visibility; CLI polish (formats, int16/24 out + clip strategy,

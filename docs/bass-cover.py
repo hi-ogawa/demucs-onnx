@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Bass-cover workflow wrapper: YouTube ID/URL -> bass.wav + no_bass.wav.
 
-Port of 2026-06-20-bass-stem-separation/run.py with the Docker Compose demucs
-step replaced by the Rust CLI (settled config: htdemucs_ft, two-stems bass,
+Port of the earlier Docker Compose workflow with the Demucs step replaced by
+the Rust CLI (settled config: htdemucs_ft, two-stems bass,
 minus method — see docs/development.md §8 for the A/B that fixed these defaults).
 """
 
