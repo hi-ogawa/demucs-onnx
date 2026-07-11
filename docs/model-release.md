@@ -8,7 +8,7 @@ Prerequisites are Python, `gh` authenticated with access to the repository, and 
 
 ```bash
 gh auth status
-pnpm download:models -- models-v1
+pnpm models download models-v1
 pnpm build:wasm
 pnpm dev
 ```
@@ -19,10 +19,10 @@ Pass member names after the tag to download only a useful subset:
 
 ```bash
 # Standard four-stem and two-stem modes.
-pnpm download:models -- models-v1 htdemucs
+pnpm models download models-v1 htdemucs
 
 # Fine-tuned bass/minus mode.
-pnpm download:models -- models-v1 htdemucs_ft_bass
+pnpm models download models-v1 htdemucs_ft_bass
 ```
 
 Every subset includes `dft.bin`. A partial download replaces `data/onnx-lean/`, so only the selected workflows remain available locally.
@@ -38,13 +38,13 @@ pnpm build:model --all
 Create a release and upload the six model assets plus generated checksums by choosing an explicit tag:
 
 ```bash
-pnpm release:models -- models-v1
+pnpm models release models-v1
 ```
 
 To review a new release before publication, create it as a draft:
 
 ```bash
-pnpm release:models -- models-v1 --draft
+pnpm models release models-v1 --draft
 ```
 
 Rerunning the command for an existing tag replaces same-named assets but preserves whether that release is draft, prerelease, or published. `--draft` is rejected for an existing release because the script does not implicitly change release state.

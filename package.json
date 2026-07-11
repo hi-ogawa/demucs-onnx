@@ -4,8 +4,7 @@
   "scripts": {
     "prepare": "vp config",
     "build:model": "uv run python tools/model-export/build_models.py",
-    "download:models": "python tools/models.py download",
-    "release:models": "python tools/models.py release",
+    "models": "python tools/models.py",
     "build:wasm": "wasm-pack build crates/wasm --target web --release",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
