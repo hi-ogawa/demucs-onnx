@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>demucs-port: orchestration pipeline</title>
+    <title>Demucs ONNX inference pipeline</title>
     <style>
       :root {
         --user: #2563eb; /* blue: user data */
@@ -326,7 +326,7 @@
         <a href="#cost">5 · the cost</a>
       </nav>
       <main>
-        <h1>demucs: orchestration pipeline</h1>
+        <h1>Demucs ONNX inference pipeline</h1>
 
         <div class="legend">
           <span
@@ -567,18 +567,19 @@
           >), ideally summing back to the input chunk.
         </p>
         <p class="sub">
-          Runs on any ONNX Runtime (native, wasm, WebGPU), which makes this the
-          seam where CLI / Node / browser differ, while everything above it is
-          identical. Internals are out of scope here.
+          The graph runs through ONNX Runtime natively and ONNX Runtime Web in
+          the browser. The inference host changes at this seam while
+          orchestration remains shared. Internals are out of scope here.
         </p>
 
         <p>
-          The five weight sets specialize over that stem axis.
-          <code>ft</code> stands for <b>fine-tuned</b>, meaning each
-          <code>ft_*</code> set is the generalist <code>htdemucs</code> trained
-          further on one stem. That training sharpens that stem's output, but
-          the fixed graph still emits all four. Which outputs are kept is the
-          orchestration's call (§3):
+          The five weight sets specialize over that stem axis. The diagrams
+          abbreviate the <code>htdemucs_ft_*</code> artifact names as
+          <code>ft_*</code>. <code>ft</code> stands for <b>fine-tuned</b>,
+          meaning each <code>ft_*</code> set is the generalist
+          <code>htdemucs</code> trained further on one stem. That training
+          sharpens that stem's output, but the fixed graph still emits all four.
+          Which outputs are kept is the orchestration's call (§3):
         </p>
 
         <svg
@@ -1136,7 +1137,7 @@
           One pass ≈ 5 s native / 9.5 s browser on the dev laptop.
         </p>
 
-        <h3 id="modes">Two-stems methods (target = bass)</h3>
+        <h3 id="modes">Two-stems methods (bass example)</h3>
         <p class="sub">
           <b>Method</b> is arithmetic outside the idea. It decides how
           <code>no_bass</code> is built, and it composes freely with model
@@ -1186,8 +1187,9 @@
             artifacts stack
           </li>
           <li>
-            <b>minus</b>: the backing is the untouched master minus the bass
-            estimate's leakage. Quality A/B is still open.
+            <b>minus</b>: the backing is the original mix minus the target
+            estimate. With fine-tuned models, this requires running only the
+            target specialist.
           </li>
         </ul>
 
@@ -1195,10 +1197,11 @@
           Sources: <code>crates/core/src/lib.rs</code> (engine),
           <code>tools/model-export/export_onnx.py</code> /
           <code>strip_dft.py</code> (artifacts); upstream math refs in
-          <code>docs/demucs.md</code>. Numbers (sizes, shapes, strides, dB)
-          reflect the delivered initial prototype, 2026-07-09. Inference host
-          (CLI ort / Node napi / browser ort-web) swaps at the black-box seam
-          only.
+          <code>docs/demucs.md</code>. Performance measurements were captured on
+          the development laptop during the initial prototype on 2026-07-09;
+          architecture and artifact descriptions reflect the current
+          implementation. The inference host (CLI ort / Node napi / browser
+          ort-web) swaps at the black-box seam only.
         </p>
       </main>
     </div>

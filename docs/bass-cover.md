@@ -28,5 +28,3 @@ pnpm bass-cover 6q8UMVXhXsE --name triples-baby-flower --start 10 --end 20
 ```
 
 The wrapper downloads audio, optionally trims it, and delegates to the same `pnpm cli-separate` wrapper documented in the README with the settled `htdemucs_ft` two-stems bass/minus configuration. Minus mode loads only the bass specialist and computes `no_bass = mix - bass`, so it avoids running the other three specialists.
-
-For the measurements and A/B decision behind these defaults, see [development.md](development.md), especially section 8.

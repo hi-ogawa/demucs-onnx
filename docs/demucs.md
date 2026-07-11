@@ -1,7 +1,7 @@
 # Demucs: Mechanism and Existing Ports
 
 Upstream facts — how demucs v4 (htdemucs) works and what portable-port work already exists.
-Independent of our project; our choices on top are in `design.md`.
+Independent of our project; our choices on top are in [`architecture.md`](architecture.md).
 
 ## Core Model
 

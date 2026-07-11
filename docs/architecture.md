@@ -1,7 +1,6 @@
 # Design: What We Build on Top
 
 Our port's choices, layered over the upstream mechanism documented in `demucs.md`.
-How each piece came to be is in `development.md`.
 
 ## Stance
 
@@ -78,8 +77,3 @@ exactly `session.run`). Residual work is verification, not code: per-EP op-cover
 (EPs compile kernels/shaders on first run; cf. the CoreML 30–60s first-call tax). WebGPU is
 bounded by the client's actual GPU minus translation overhead — it's the only path past wasm's
 fixed 128-bit SIMD in-browser, an upside where silicon exists, not magic.
-
-## Open Product Questions
-
-- minus vs add `no_bass` quality (belief: minus is bad; mechanism in `demucs.md` §6) — listen
-- plain `htdemucs` vs `htdemucs_ft` audibility for backing tracks — decides the product default
