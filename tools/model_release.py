@@ -70,10 +70,11 @@ def download(args: argparse.Namespace) -> None:
 def release(args: argparse.Namespace) -> None:
     missing = [str(MODELS_DIR / name) for name in ASSETS if not (MODELS_DIR / name).is_file()]
     if missing:
-        raise SystemExit(
-            f"missing release asset: {missing[0]}\n"
-            "build the complete set with: pnpm build:model --all"
-        )
+        raise SystemExit("\n".join([
+            "missing release assets:",
+            *missing,
+            "build the complete set with: pnpm build:model --all",
+        ]))
 
     paths = [str(MODELS_DIR / name) for name in ASSETS]
     if args.update:
