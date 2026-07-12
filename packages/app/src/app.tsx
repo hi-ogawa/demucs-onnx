@@ -36,13 +36,6 @@ export function App() {
   // TODO: probably bad
   const [status, setStatus] = useState("");
 
-  // TODO: bad
-  const runAbortRef = useRef<AbortController | null>(null);
-
-  // TODO: bad. probably mutation result
-  const [outputs, setOutputs] = useState<Output[]>([]);
-  const outputUrlsRef = useRef<string[]>([]);
-
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
 
@@ -90,16 +83,6 @@ export function App() {
     }
   }
 
-  useEffect(
-    () => () => {
-      runAbortRef.current?.abort();
-      for (const url of outputUrlsRef.current) {
-        URL.revokeObjectURL(url);
-      }
-    },
-    [],
-  );
-
   // TODO: bad. pending/error?
   const decodeMutation = useMutation({ mutationFn: decodeAudioFile });
 
@@ -123,6 +106,23 @@ export function App() {
       onError: () => setStatus(""),
     });
   }
+
+  // TODO: bad
+  const runAbortRef = useRef<AbortController | null>(null);
+
+  // TODO: bad. probably mutation result
+  const [outputs, setOutputs] = useState<Output[]>([]);
+  const outputUrlsRef = useRef<string[]>([]);
+
+  useEffect(
+    () => () => {
+      runAbortRef.current?.abort();
+      for (const url of outputUrlsRef.current) {
+        URL.revokeObjectURL(url);
+      }
+    },
+    [],
+  );
 
   const handleRunMutation = useMutation({
     mutationFn: async () => {
