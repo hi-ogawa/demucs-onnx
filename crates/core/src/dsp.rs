@@ -45,15 +45,17 @@ impl Stft {
         }
     }
 
-    /// Convert planar stereo `[channel][sample]` into flattened
+    /// Convert flattened planar stereo `[channel, sample]` into flattened
     /// `[1, left-real/imag, right-real/imag, frequency, frame]` data.
-    pub fn process(&mut self, waveform: &[Vec<f32>; CHANNELS]) -> Result<Vec<f32>> {
-        if waveform.iter().any(|channel| channel.len() != SEGMENT) {
-            bail!("STFT requires {CHANNELS} channels of {SEGMENT} samples");
+    pub fn process(&mut self, waveform: &[f32]) -> Result<Vec<f32>> {
+        let expected = CHANNELS * SEGMENT;
+        if waveform.len() != expected {
+            bail!("STFT requires {expected} waveform values");
         }
 
         let mut packed = vec![0.0; CAC_CHANNELS * FREQUENCIES * FRAMES];
-        for (channel_index, channel) in waveform.iter().enumerate() {
+        for channel_index in 0..CHANNELS {
+            let channel = &waveform[channel_index * SEGMENT..(channel_index + 1) * SEGMENT];
             let aligned = reflect_pad(
                 channel,
                 ALIGNMENT_PAD,
@@ -237,7 +239,8 @@ mod tests {
             REFERENCE.len(),
             CAC_CHANNELS * SELECTED_FREQUENCIES * FRAMES * size_of::<f32>()
         );
-        let actual = Stft::new().process(&deterministic_waveform()).unwrap();
+        let waveform = deterministic_waveform().concat();
+        let actual = Stft::new().process(&waveform).unwrap();
 
         let mut max_abs = 0.0_f32;
         let mut squared_error = 0.0_f64;

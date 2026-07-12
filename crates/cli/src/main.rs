@@ -1,6 +1,6 @@
 //! demucs CLI: ONNX Runtime-backed driver over demucs-core's separation engine.
 use anyhow::{Context, Result};
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use console::style;
 use demucs_core as core;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -27,6 +27,10 @@ struct SeparateArgs {
     /// Directory containing ONNX models
     #[arg(long = "models", value_name = "DIR")]
     models_dir: PathBuf,
+
+    /// ONNX graph contract; auto detects legacy or split models
+    #[arg(long, default_value = "auto", value_enum)]
+    graph: GraphArg,
 
     /// Separation model: standard (htdemucs) or fine-tuned (htdemucs_ft). Default: htdemucs
     #[arg(
@@ -78,6 +82,13 @@ struct SeparateArgs {
     out_dir: PathBuf,
 }
 
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum GraphArg {
+    Auto,
+    Legacy,
+    Split,
+}
+
 fn main() -> Result<()> {
     match Cli::parse().command {
         Command::Separate(args) => separate(args),
@@ -112,7 +123,12 @@ fn separate(args: SeparateArgs) -> Result<()> {
 
     eprintln!("prepared audio in {}", format_duration(prepare_elapsed));
     let mut progress = CliProgress::new();
-    let outputs = ort_driver::run_all(&args.models_dir, &members, wav, opts, |event| {
+    let graph = match args.graph {
+        GraphArg::Auto => ort_driver::GraphFlavor::Auto,
+        GraphArg::Legacy => ort_driver::GraphFlavor::Legacy,
+        GraphArg::Split => ort_driver::GraphFlavor::Split,
+    };
+    let outputs = ort_driver::run_all(&args.models_dir, graph, &members, wav, opts, |event| {
         progress.update(event)
     })?;
     progress.finish();

@@ -178,13 +178,21 @@ code.
 - [x] Add a reusable real-FFT plan, periodic Hann window, and work buffers with `realfft`.
 - [x] Implement and verify reflect padding, STFT framing, normalization, cropping, and CaC packing.
 - [x] Implement and verify inverse packing, iSTFT overlap-add reconstruction, and the final crop.
-- Change the native backend to provide two inputs and consume two outputs.
-- Preserve the existing member, shift, chunk, overlap-add, and stem-finalization orchestration.
+- [x] Change the native backend to provide two inputs and consume two outputs.
+- [x] Preserve the existing member, shift, chunk, overlap-add, and stem-finalization orchestration.
 
 The Rust STFT test compares every frame at 64 frequencies across all CaC channels with a compact
 PyTorch fixture. Initial parity measured `1.788e-7` max absolute error and `8.839e-16` MSE.
 The separate iSTFT test compares every eighth sample across all four sources and both channels;
 initial parity measured `7.153e-7` max absolute error and `1.096e-14` MSE.
+
+The CLI supports explicit `legacy` and `split` graph contracts plus input/output-name-based auto
+detection. On the deterministic two-second fixture, split and legacy final stems differed by at most
+`1.324e-4` with `4.476e-10` overall MSE. Run the split path with:
+
+```sh
+pnpm cli-separate-v2 fixtures/sine-2s.wav data/output-split
+```
 
 ### 4. Integrate WASM
 

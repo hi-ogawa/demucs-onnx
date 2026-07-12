@@ -37,6 +37,19 @@ pub enum Progress<'a> {
     },
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum GraphFlavor {
+    Auto,
+    Legacy,
+    Split,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum LoadedGraph {
+    Legacy,
+    Split,
+}
+
 fn ort_err<R>(e: ort::Error<R>) -> anyhow::Error {
     anyhow!("ort: {e}")
 }
@@ -54,6 +67,7 @@ fn member_file(member: core::vocab::Member) -> &'static str {
 
 pub fn run_all(
     models_dir: &Path,
+    graph_flavor: GraphFlavor,
     members: &[core::vocab::Member],
     wav: [Vec<f32>; core::CHANNELS],
     opts: core::Options,
@@ -73,6 +87,8 @@ pub fn run_all(
     });
     let mut done = 0;
     let mut input = vec![0f32; core::CHANNELS * core::SEGMENT];
+    let mut stft = core::dsp::Stft::new();
+    let mut istft = core::dsp::Istft::new();
     for (member_index, &member) in members.iter().enumerate() {
         let member_plan = &separation.plan.members[member_index];
         let member_total = member_plan
@@ -97,6 +113,7 @@ pub fn run_all(
             .commit_from_file(&path)
             .map_err(ort_err)
             .with_context(|| format!("load {}", path.display()))?;
+        let loaded_graph = graph_contract(&session, graph_flavor)?;
         on_progress(Progress::LoadFinished {
             elapsed: load_started.elapsed(),
         });
@@ -113,15 +130,67 @@ pub fn run_all(
                     input.as_slice(),
                 ))
                 .map_err(ort_err)?;
-                let run = session
-                    .run(ort::inputs!["input" => value])
-                    .map_err(ort_err)?;
-                let (shape, data) = run["output"].try_extract_tensor::<f32>().map_err(ort_err)?;
-                let dims: Vec<usize> = shape.iter().map(|&d| d as usize).collect();
-                if dims != [1, core::NUM_SOURCES, core::CHANNELS, core::SEGMENT] {
-                    bail!("unexpected output shape {dims:?}");
+                match loaded_graph {
+                    LoadedGraph::Legacy => {
+                        let run = session
+                            .run(ort::inputs!["input" => value])
+                            .map_err(ort_err)?;
+                        let (shape, data) =
+                            run["output"].try_extract_tensor::<f32>().map_err(ort_err)?;
+                        let dims: Vec<usize> = shape.iter().map(|&d| d as usize).collect();
+                        if dims != [1, core::NUM_SOURCES, core::CHANNELS, core::SEGMENT] {
+                            bail!("unexpected output shape {dims:?}");
+                        }
+                        chunk_processor.process_output(chunk, data)?;
+                    }
+                    LoadedGraph::Split => {
+                        let spectrogram = stft.process(&input)?;
+                        let spectrogram_value = ort::value::TensorRef::from_array_view((
+                            [
+                                1usize,
+                                core::dsp::CAC_CHANNELS,
+                                core::dsp::FREQUENCIES,
+                                core::dsp::FRAMES,
+                            ],
+                            spectrogram.as_slice(),
+                        ))
+                        .map_err(ort_err)?;
+                        let run = session
+                            .run(ort::inputs![
+                                "waveform" => value,
+                                "spectrogram" => spectrogram_value,
+                            ])
+                            .map_err(ort_err)?;
+                        let (frequency_shape, frequency) = run["frequency"]
+                            .try_extract_tensor::<f32>()
+                            .map_err(ort_err)?;
+                        let frequency_dims: Vec<usize> =
+                            frequency_shape.iter().map(|&d| d as usize).collect();
+                        if frequency_dims
+                            != [
+                                1,
+                                core::NUM_SOURCES,
+                                core::dsp::CAC_CHANNELS,
+                                core::dsp::FREQUENCIES,
+                                core::dsp::FRAMES,
+                            ]
+                        {
+                            bail!("unexpected frequency output shape {frequency_dims:?}");
+                        }
+                        let (time_shape, time) =
+                            run["time"].try_extract_tensor::<f32>().map_err(ort_err)?;
+                        let time_dims: Vec<usize> =
+                            time_shape.iter().map(|&d| d as usize).collect();
+                        if time_dims != [1, core::NUM_SOURCES, core::CHANNELS, core::SEGMENT] {
+                            bail!("unexpected time output shape {time_dims:?}");
+                        }
+                        let mut output = istft.process(frequency)?;
+                        for (sample, time_sample) in output.iter_mut().zip(time) {
+                            *sample += time_sample;
+                        }
+                        chunk_processor.process_output(chunk, &output)?;
+                    }
                 }
-                chunk_processor.process_output(chunk, data)?;
                 done += 1;
                 member_done += 1;
                 on_progress(Progress::Inference {
@@ -151,4 +220,24 @@ pub fn run_all(
         elapsed: finalize_started.elapsed(),
     });
     Ok(outputs)
+}
+
+fn graph_contract(session: &ort::session::Session, requested: GraphFlavor) -> Result<LoadedGraph> {
+    let inputs: Vec<&str> = session.inputs().iter().map(|input| input.name()).collect();
+    let outputs: Vec<&str> = session
+        .outputs()
+        .iter()
+        .map(|output| output.name())
+        .collect();
+    let loaded = match (inputs.as_slice(), outputs.as_slice()) {
+        (["input"], ["output"]) => LoadedGraph::Legacy,
+        (["waveform", "spectrogram"], ["frequency", "time"]) => LoadedGraph::Split,
+        _ => bail!("unsupported ONNX contract: inputs {inputs:?}, outputs {outputs:?}"),
+    };
+    match requested {
+        GraphFlavor::Auto => Ok(loaded),
+        GraphFlavor::Legacy if loaded == LoadedGraph::Legacy => Ok(loaded),
+        GraphFlavor::Split if loaded == LoadedGraph::Split => Ok(loaded),
+        _ => bail!("requested {requested:?} graph but loaded {loaded:?}"),
+    }
 }
