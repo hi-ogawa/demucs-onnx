@@ -6,7 +6,7 @@ import * as ort from "onnxruntime-web/wasm";
 import init, {
   separate as separateWasm,
   type Host,
-} from "../../../../crates/wasm/pkg/demucs_wasm.js";
+} from "../../../../../crates/wasm/pkg/demucs_wasm.js";
 import { readModelFile, type ModelFilename, type ModelSource } from "./models";
 
 // Keep Emscripten's pthread entry point separate from this application worker.
