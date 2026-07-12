@@ -143,8 +143,7 @@ export function App() {
           `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
         );
       },
-      onError: (error) =>
-        setStatus(`error: failed to decode audio: ${error.message}`),
+      onError: () => setStatus(""),
     });
   }
 
