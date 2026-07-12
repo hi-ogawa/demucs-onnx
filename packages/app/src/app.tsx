@@ -27,9 +27,6 @@ export function App() {
   >({});
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
-  // TODO: probably bad
-  const [status, setStatus] = useState("");
-
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
 
@@ -78,24 +75,8 @@ export function App() {
   }
 
   const handleAudioFileMutation = useMutation({
-    mutationFn: async (file: File | undefined) => {
-      if (!file) {
-        setStatus("");
-        return null;
-      }
-
-      setStatus("decoding...");
-      const audio = await decodeAudioFile(file);
-      setStatus(
-        `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
-      );
-      return audio;
-    },
-    onSettled: (_data, error) => {
-      if (error) {
-        setStatus("");
-      }
-    },
+    mutationFn: (file: File | undefined) =>
+      file ? decodeAudioFile(file) : Promise.resolve(null),
   });
   const decoded = handleAudioFileMutation.data ?? null;
 
@@ -133,10 +114,7 @@ export function App() {
         const blob = encodeWavF32([output.left, output.right], 44100);
         return { ...output, url: URL.createObjectURL(blob) };
       });
-      setStatus(
-        `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
-      );
-      return nextOutputs;
+      return { outputs: nextOutputs, durationMs: performance.now() - started };
     },
     onSettled: (_data, error) => {
       if (error) {
@@ -145,15 +123,27 @@ export function App() {
     },
   });
 
-  const outputs = handleRunMutation.data ?? [];
+  const outputs = handleRunMutation.data?.outputs ?? [];
   useEffect(() => {
-    const currentOutputs = handleRunMutation.data;
+    const currentOutputs = handleRunMutation.data?.outputs;
     return () => {
       for (const output of currentOutputs ?? []) {
         URL.revokeObjectURL(output.url);
       }
     };
   }, [handleRunMutation.data]);
+
+  const runIsLatest =
+    handleRunMutation.submittedAt > handleAudioFileMutation.submittedAt;
+  const status = runIsLatest
+    ? handleRunMutation.data
+      ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
+      : ""
+    : handleAudioFileMutation.isPending
+      ? "decoding..."
+      : decoded
+        ? `decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
+        : "";
 
   return (
     <main className="mx-auto w-full max-w-[800px] px-3 py-9 sm:px-5 sm:py-18 md:pb-24">
