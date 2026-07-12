@@ -60,11 +60,21 @@ jobs:
             --name htdemucs \
             --two-stems bass \
             --two-stems-mix minus \
-            fixtures/sine-10s.wav data/ci-output
-          test -s data/ci-output/bass.wav
-          test -s data/ci-output/no_bass.wav
+            fixtures/sine-10s.wav data/ci-output/native
+          test -s data/ci-output/native/bass.wav
+          test -s data/ci-output/native/no_bass.wav
 
       - run: pnpm build-wasm
+
+      - run: |
+          pnpm wasm-separate \
+            --models data/onnx-lean \
+            --name htdemucs \
+            --two-stems bass \
+            --two-stems-mix minus \
+            fixtures/sine-10s.wav data/ci-output/wasm
+          uv run --no-sync tools/compare-wav.py \
+            data/ci-output/native data/ci-output/wasm
 
       - run: pnpm lint-check
 

@@ -7,15 +7,17 @@ import init, {
   separate as separateWasm,
   type Host,
 } from "../../../../../crates/wasm/pkg/demucs_wasm.js";
+import {
+  MODEL_INPUT_LENGTH,
+  MODEL_OUTPUT_LENGTH,
+  MODEL_SEGMENT,
+  SOURCES,
+} from "./constants";
 import { readModelFile, type ModelFilename, type ModelSource } from "./models";
 
 // Keep Emscripten's pthread entry point separate from this application worker.
 // https://onnxruntime.ai/docs/tutorials/web/env-flags-and-session-options.html#envwasmwasmpaths
 ort.env.wasm.wasmPaths = { mjs: ortWasmModuleUrl, wasm: ortWasmUrl };
-
-const SEGMENT = 343980;
-const IN_LEN = 2 * SEGMENT; // (1, 2, SEGMENT)
-const OUT_LEN = 4 * 2 * SEGMENT; // (1, 4, 2, SEGMENT)
 
 export interface TwoStems {
   source: string;
@@ -118,12 +120,20 @@ export async function separate(
     },
 
     async runModel(session, inputPtr, outputPtr) {
-      const input = new Float32Array(wasm.memory.buffer, inputPtr, IN_LEN);
+      const input = new Float32Array(
+        wasm.memory.buffer,
+        inputPtr,
+        MODEL_INPUT_LENGTH,
+      );
       const feeds = {
-        input: new ort.Tensor("float32", input, [1, 2, SEGMENT]),
+        input: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
       };
       const result = await (session as ort.InferenceSession).run(feeds);
-      const output = new Float32Array(wasm.memory.buffer, outputPtr, OUT_LEN);
+      const output = new Float32Array(
+        wasm.memory.buffer,
+        outputPtr,
+        MODEL_OUTPUT_LENGTH,
+      );
       output.set(result.output.data as Float32Array);
     },
 
@@ -143,7 +153,7 @@ export async function separate(
   );
   const names = req.twoStems
     ? [req.twoStems.source, `no_${req.twoStems.source}`]
-    : ["drums", "bass", "other", "vocals"];
+    : SOURCES;
   return names.map((name, index) => ({
     name,
     left: tracks[2 * index],

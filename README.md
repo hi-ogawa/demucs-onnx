@@ -41,6 +41,18 @@ pnpm cli-separate --name htdemucs_ft --two-stems bass --two-stems-mix minus data
 
 This creates `bass.wav` and `no_bass.wav`.
 
+Run the same separation flow through the Rust/WASM driver and
+`onnxruntime-web`'s Node WASM runtime with:
+
+```bash
+pnpm build-wasm
+pnpm wasm-separate --models data/onnx-lean data/input/song.wav data/output/song
+```
+
+The WASM CLI accepts the same `--name`, `--two-stems`, `--two-stems-mix`, and
+`--shifts` options as the native CLI. Its WAV decoder currently requires 44.1
+kHz PCM or float input.
+
 | Option                         | Explanation                                                                                                                                                                                                                                                       |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--name htdemucs\|htdemucs_ft` | Chooses the standard general-purpose model or the fine-tuned source-specialist models.                                                                                                                                                                            |
