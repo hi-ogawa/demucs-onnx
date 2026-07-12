@@ -6,13 +6,14 @@ import init, {
   separate as separateWasm,
   type Host,
 } from "../../../../crates/wasm/pkg/demucs_wasm.js";
+import {
+  AUDIO_SAMPLE_RATE,
+  MODEL_INPUT_LENGTH,
+  MODEL_OUTPUT_LENGTH,
+  MODEL_SEGMENT,
+  SOURCES,
+} from "../lib/audio/constants";
 import { decodeWav, encodeWavF32 } from "../lib/audio/wav";
-
-const SAMPLE_RATE = 44_100;
-const SEGMENT = 343_980;
-const INPUT_LENGTH = 2 * SEGMENT;
-const OUTPUT_LENGTH = 4 * 2 * SEGMENT;
-const SOURCES = ["drums", "bass", "other", "vocals"];
 
 function usage() {
   console.error(`Usage: pnpm wasm-separate [OPTIONS] <INPUT.WAV> <OUT_DIR>
@@ -91,11 +92,11 @@ async function main() {
   const args = parseCli();
   const inputBytes = await readFile(args.input);
   const { left, right, sampleRate } = decodeWav(inputBytes);
-  if (sampleRate !== SAMPLE_RATE) {
-    throw new Error(`expected ${SAMPLE_RATE}Hz WAV, got ${sampleRate}Hz`);
+  if (sampleRate !== AUDIO_SAMPLE_RATE) {
+    throw new Error(`expected ${AUDIO_SAMPLE_RATE}Hz WAV, got ${sampleRate}Hz`);
   }
   console.error(
-    `input: ${left.length} samples (${(left.length / SAMPLE_RATE).toFixed(2)}s) | model ${args.name} | shifts ${args.shifts}`,
+    `input: ${left.length} samples (${(left.length / AUDIO_SAMPLE_RATE).toFixed(2)}s) | model ${args.name} | shifts ${args.shifts}`,
   );
 
   const wasmBytes = await readFile(
@@ -127,15 +128,15 @@ async function main() {
       const input = new Float32Array(
         wasm.memory.buffer,
         inputPtr,
-        INPUT_LENGTH,
+        MODEL_INPUT_LENGTH,
       );
       const result = await (session as ort.InferenceSession).run({
-        input: new ort.Tensor("float32", input, [1, 2, SEGMENT]),
+        input: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
       });
       const output = new Float32Array(
         wasm.memory.buffer,
         outputPtr,
-        OUTPUT_LENGTH,
+        MODEL_OUTPUT_LENGTH,
       );
       output.set(result.output.data as Float32Array);
     },
@@ -161,7 +162,7 @@ async function main() {
     const path = join(args.outDir, `${name}.wav`);
     const wav = encodeWavF32(
       [tracks[index * 2], tracks[index * 2 + 1]],
-      SAMPLE_RATE,
+      AUDIO_SAMPLE_RATE,
     );
     await writeFile(path, new Uint8Array(await wav.arrayBuffer()));
     console.error(`wrote ${path}`);
