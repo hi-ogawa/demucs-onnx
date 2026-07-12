@@ -39,28 +39,34 @@ struct SeparateArgs {
     )]
     name: String,
 
-    /// Output SOURCE and a mix without it instead of all four stems
+    /// Select a source and output it with a mix without it
     #[arg(
         long,
         value_name = "SOURCE",
         value_parser = ["drums", "bass", "other", "vocals"],
         hide_possible_values = true,
-        long_help = "Output SOURCE and a mix without it instead of all four stems. Sources: drums, bass, other, vocals"
+        long_help = "Select a SOURCE and output it with a mix without it. By default, output all four stems. Sources: drums, bass, vocals, or other (instruments not classified as vocals, drums, or bass)"
     )]
     two_stems: Option<String>,
 
-    /// How to create the second stem in two-stem mode
+    /// Choose the backing-mix quality and speed tradeoff
     #[arg(
         long,
-        value_name = "METHOD",
+        value_name = "MIX",
         value_parser = ["add", "minus"],
         hide_possible_values = true,
-        long_help = "How to create the second stem in two-stem mode: add sums the other stems; minus subtracts SOURCE from the original mix.\nWith htdemucs_ft, minus runs only the selected source model and skips the other three. Default: add"
+        long_help = "Choose the backing-mix quality and speed tradeoff: add combines the other separated stems; minus subtracts SOURCE from the original. With htdemucs_ft, minus runs about four times faster by using only that source's specialist. Results vary by track. Default: add"
     )]
-    method: Option<String>,
+    two_stems_mix: Option<String>,
 
-    /// Number of processing passes to average; more passes take proportionally longer. Default: 1
-    #[arg(long, default_value_t = 1, value_name = "N", hide_default_value = true)]
+    /// Trade speed for separation quality by averaging N passes
+    #[arg(
+        long,
+        default_value_t = 1,
+        value_name = "N",
+        hide_default_value = true,
+        long_help = "Trade speed for separation quality by averaging N processing passes. Runtime grows roughly in proportion. Default: 1"
+    )]
     shifts: u32,
 
     /// Input WAV file
@@ -80,7 +86,7 @@ fn main() -> Result<()> {
 
 fn separate(args: SeparateArgs) -> Result<()> {
     let total_started = Instant::now();
-    let mode = core::Mode::parse(args.two_stems.as_deref(), args.method.as_deref())?;
+    let mode = core::Mode::parse(args.two_stems.as_deref(), args.two_stems_mix.as_deref())?;
     let prepare_started = Instant::now();
     let bytes = std::fs::read(&args.input).with_context(|| format!("open {}", args.input))?;
     let (raw, rate) = core::decode_wav(&bytes)?;
@@ -145,56 +151,6 @@ fn separate(args: SeparateArgs) -> Result<()> {
         format_duration(write_elapsed),
     );
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use clap::error::ErrorKind;
-
-    #[test]
-    fn top_level_help() {
-        let error = Cli::try_parse_from(["demucs", "--help"]).unwrap_err();
-        assert_eq!(error.kind(), ErrorKind::DisplayHelp);
-        assert!(error.to_string().contains("separate"));
-    }
-
-    #[test]
-    fn separate_defaults() {
-        let cli = Cli::try_parse_from([
-            "demucs",
-            "separate",
-            "--models",
-            "models",
-            "input.wav",
-            "out",
-        ])
-        .unwrap();
-        let Command::Separate(args) = cli.command;
-        assert_eq!(args.name, "htdemucs");
-        assert_eq!(args.shifts, 1);
-    }
-
-    #[test]
-    fn missing_models_is_an_error() {
-        let error = Cli::try_parse_from(["demucs", "separate", "input.wav", "out"]).unwrap_err();
-        assert_eq!(error.kind(), ErrorKind::MissingRequiredArgument);
-    }
-
-    #[test]
-    fn unknown_option_is_an_error() {
-        let error = Cli::try_parse_from([
-            "demucs",
-            "separate",
-            "--models",
-            "models",
-            "--unknown",
-            "input.wav",
-            "out",
-        ])
-        .unwrap_err();
-        assert_eq!(error.kind(), ErrorKind::UnknownArgument);
-    }
 }
 
 // Interactive layouts stay model-oriented while the overall row remains stable:

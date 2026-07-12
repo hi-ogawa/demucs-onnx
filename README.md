@@ -25,24 +25,28 @@ pnpm link-wt
 
 This creates a `data` symlink and refuses to replace an existing file, directory, or symlink.
 
-Separate a WAV file into four stems:
+Separate a WAV file into vocals, drums, bass, and other. `other` contains
+instruments not classified as vocals, drums, or bass.
 
 ```bash
 pnpm cli-separate data/input/song.wav data/output/song
 ```
 
-Fine-tuned minus mode works with `drums`, `bass`, `vocals`, or `other` and runs only the selected source's specialist instead of all four fine-tuned models, which makes inference about four times faster. For example, to split bass from the remaining mix:
+To create a bass track and a backing track without bass:
 
 ```bash
 pnpm model-release download models-2026-07-11 htdemucs_ft_bass
-pnpm cli-separate --name htdemucs_ft --two-stems bass --method minus data/input/song.wav data/output/song
+pnpm cli-separate --name htdemucs_ft --two-stems bass --two-stems-mix minus data/input/song.wav data/output/song
 ```
 
-Other options:
+This creates `bass.wav` and `no_bass.wav`.
 
-- `--two-stems <source> --method add` emits a target stem and the sum of the remaining stems.
-- `--name htdemucs_ft` selects the fine-tuned specialist models.
-- `--shifts N` averages `N` seeded-offset passes. The default is one pass.
+| Option | Explanation |
+| --- | --- |
+| `--name htdemucs\|htdemucs_ft` | Chooses the standard general-purpose model or the fine-tuned source-specialist models. |
+| `--two-stems <source>` | Selects a `drums`, `bass`, `vocals`, or `other` source and outputs it with a mix without it. By default, outputs all four stems. |
+| `--two-stems-mix add\|minus` | Chooses the backing-mix quality and speed tradeoff. `add` combines the other separated stems. `minus` subtracts the source from the original and, with `htdemucs_ft`, runs about four times faster by using only that source's specialist. Results vary by track. |
+| `--shifts N` | Trades speed for separation quality by averaging `N` processing passes. Runtime grows roughly in proportion. The default is one pass. |
 
 ## Build Models Locally
 
