@@ -13,6 +13,7 @@ import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
+import { useNow } from "./lib/use-now";
 import { encodeWavF32 } from "./lib/wav";
 
 // TODO: bad?
@@ -34,8 +35,7 @@ export function App() {
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
-  // TODO: hook
-  const [now, setNow] = useState(Date.now());
+  const now = useNow(running);
 
   // TODO: probably bad
   const [status, setStatus] = useState("");
@@ -112,14 +112,6 @@ export function App() {
     [],
   );
 
-  useEffect(() => {
-    if (!running) {
-      return;
-    }
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [running]);
-
   // TODO: bad. pending/error?
   const decodeMutation = useMutation({ mutationFn: decodeAudioFile });
 
@@ -152,7 +144,6 @@ export function App() {
     clearOutputs();
     setRunning(true);
     const startedAt = Date.now();
-    setNow(startedAt);
     setRunProgress({
       phase: "preparing",
       startedAt,
