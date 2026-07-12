@@ -2,16 +2,21 @@ import { z } from "zod";
 
 const STORAGE_KEY = "demucs-onnx:main:v1";
 
-const preferencesSchema = z.preprocess(
-  (value) => (typeof value === "object" && value !== null ? value : {}),
-  z.object({
+const preferencesSchema = z
+  .object({
     model: z.enum(["htdemucs", "htdemucs_ft"]).catch("htdemucs"),
     outputMode: z.enum(["four-stems", "two-stems"]).catch("four-stems"),
     targetStem: z.enum(["drums", "bass", "other", "vocals"]).catch("vocals"),
     method: z.enum(["add", "minus"]).catch("add"),
     shifts: z.number().int().min(1).max(4).catch(1),
-  }),
-);
+  })
+  .catch({
+    model: "htdemucs",
+    outputMode: "four-stems",
+    targetStem: "vocals",
+    method: "add",
+    shifts: 1,
+  });
 
 export type Preferences = z.output<typeof preferencesSchema>;
 
