@@ -330,9 +330,9 @@ export function App() {
             </div>
           </fieldset>
 
-          <div className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[#18201b] p-6 text-white shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
+          <div className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-6 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
             <button
-              className="min-h-13 w-full cursor-pointer rounded-[10px] border-0 bg-[#78d09b] font-extrabold text-[#102b1d] hover:not-disabled:bg-[#91dfad] disabled:cursor-not-allowed disabled:bg-[#39463f] disabled:text-[#89948d]"
+              className="min-h-13 w-full cursor-pointer rounded-[10px] border border-transparent bg-[#78d09b] font-bold text-[#102b1d] hover:not-disabled:bg-[#91dfad] disabled:cursor-not-allowed disabled:border-[#c9ccc7] disabled:bg-[#eeeee9] disabled:text-[#777f79]"
               id="run"
               disabled={running || !decoded || !modelsReady}
               onClick={handleRun}
@@ -348,7 +348,7 @@ export function App() {
               />
             )}
             <p
-              className="mt-3.5 min-h-[1.3em] text-sm leading-normal whitespace-pre-line text-[#bbc4be]"
+              className="mt-3.5 min-h-[1.3em] text-sm leading-normal whitespace-pre-line text-[#667068]"
               id="status"
             >
               {status}
