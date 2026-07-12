@@ -7,7 +7,7 @@ type StoredModelArtifact = ModelArtifact & {
 };
 
 const artifactStore = new IdbStore<StoredModelArtifact>({
-  databaseName: "demucs-artifacts-v1",
+  databaseName: "demucs-artifacts-v2",
   storeName: "artifacts",
   version: 1,
   keyPath: "name",
