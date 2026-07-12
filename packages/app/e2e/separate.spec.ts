@@ -23,7 +23,7 @@ test("separates a clip fully client-side", async ({ page }) => {
     page.getByTestId("model-file-slot").getByText("Ready"),
   ).toHaveCount(2);
   await page.setInputFiles("#file", FIXTURE);
-  await expect(page.locator("#status")).toContainText("Decoded: 2.00s");
+  await expect(page.locator("#audio-status")).toContainText("Decoded: 2.00s");
 
   await page.click("#run");
   await expect(

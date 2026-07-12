@@ -141,16 +141,14 @@ export function App() {
 
   const outputs = handleRunMutation.data?.outputs ?? [];
 
-  const status =
-    handleRunMutation.submittedAt > handleAudioFileMutation.submittedAt
-      ? handleRunMutation.data
-        ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
-        : ""
-      : handleAudioFileMutation.isPending
-        ? "Decoding..."
-        : decoded
-          ? `Decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
-          : "";
+  const audioStatus = handleAudioFileMutation.isPending
+    ? "Decoding..."
+    : decoded
+      ? `Decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
+      : "";
+  const runStatus = handleRunMutation.data
+    ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
+    : "";
 
   return (
     <main className="mx-auto w-full max-w-[800px] px-3 py-9 sm:px-5 sm:py-18 md:pb-24">
@@ -193,6 +191,11 @@ export function App() {
                   handleAudioFileMutation.mutate(event.target.files?.[0])
                 }
               />
+              {audioStatus && (
+                <p className="text-muted mt-3.5 text-sm" id="audio-status">
+                  {audioStatus}
+                </p>
+              )}
             </section>
           </div>
 
@@ -391,12 +394,12 @@ export function App() {
                 Separate track
               </button>
               {runProgress && <RunProgressPanel progress={runProgress} />}
-              {!handleRunMutation.isPending && status && (
+              {runStatus && (
                 <p
                   className="text-muted mt-3.5 text-sm leading-normal whitespace-pre-line"
                   id="status"
                 >
-                  {status}
+                  {runStatus}
                 </p>
               )}
             </section>
