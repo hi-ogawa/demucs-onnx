@@ -28,25 +28,32 @@ struct SeparateArgs {
     #[arg(long = "models", value_name = "DIR")]
     models_dir: PathBuf,
 
-    /// Model name
+    /// Model: htdemucs or htdemucs_ft
     #[arg(
         long,
         default_value = "htdemucs",
         value_name = "MODEL",
-        value_parser = ["htdemucs", "htdemucs_ft"]
+        value_parser = ["htdemucs", "htdemucs_ft"],
+        hide_possible_values = true
     )]
     name: String,
 
-    /// Emit a source and its complement
+    /// Emit drums, bass, other, or vocals and its complement
     #[arg(
         long,
         value_name = "SOURCE",
-        value_parser = ["drums", "bass", "other", "vocals"]
+        value_parser = ["drums", "bass", "other", "vocals"],
+        hide_possible_values = true
     )]
     two_stems: Option<String>,
 
     /// Two-stem method: add or minus
-    #[arg(long, value_name = "METHOD", value_parser = ["add", "minus"])]
+    #[arg(
+        long,
+        value_name = "METHOD",
+        value_parser = ["add", "minus"],
+        hide_possible_values = true
+    )]
     method: Option<String>,
 
     /// Number of seeded-offset passes
@@ -155,9 +162,10 @@ mod tests {
         assert_eq!(error.kind(), ErrorKind::DisplayHelp);
         let help = error.to_string();
         assert!(help.contains("--models <DIR>"));
-        assert!(help.contains("possible values: htdemucs, htdemucs_ft"));
-        assert!(help.contains("possible values: drums, bass, other, vocals"));
-        assert!(help.contains("possible values: add, minus"));
+        assert!(help.contains("Model: htdemucs or htdemucs_ft"));
+        assert!(help.contains("Emit drums, bass, other, or vocals and its complement"));
+        assert!(help.contains("Two-stem method: add or minus"));
+        assert!(!help.contains("possible values"));
     }
 
     #[test]
