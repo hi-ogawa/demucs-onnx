@@ -142,7 +142,7 @@ fn separate(argv: &[String]) -> Result<()> {
 //   htdemucs.onnx
 //     Load      done | 5.2s
 //     Separate  [======----] 65% | 11/17 | running
-//   Overall     [======----] 65% | 11/17 | ETA 00:00:23 | elapsed 00:00:42
+//   Overall     [======----] 65% | 11/17 | elapsed 00:00:42 (ETA 00:00:23)
 // Multi-model runs repeat the heading and phase rows as Model 1/4, Model 2/4, etc.
 struct CliProgress {
     multi: MultiProgress,
@@ -179,7 +179,7 @@ impl CliProgress {
             Progress::Started { total_chunks } => {
                 self.overall.set_style(
                     ProgressStyle::with_template(
-                        "Overall     [{bar:16.cyan/bright_black}] {percent:>3}% | {pos}/{len} | {msg} | elapsed {elapsed_precise}",
+                        "Overall     [{bar:16.cyan/bright_black}] {percent:>3}% | {pos}/{len} | elapsed {elapsed_precise}{msg:.dim}",
                     )
                     .unwrap()
                     .progress_chars("=>-"),
@@ -208,16 +208,9 @@ impl CliProgress {
                 phase.set_style(ProgressStyle::with_template("  Load      running").unwrap());
                 phase.tick();
                 self.phase = Some(phase);
-                self.overall.set_message(format!(
-                    "loading model {index}/{total} | ETA {}",
-                    format_eta(self.eta)
-                ));
+                self.overall.set_message(format_eta(self.eta));
             }
-            Progress::LoadFinished {
-                index,
-                total,
-                elapsed,
-            } => {
+            Progress::LoadFinished { elapsed } => {
                 self.load_elapsed += elapsed;
                 self.loaded += 1;
                 if let Some(phase) = self.phase.take() {
@@ -240,10 +233,7 @@ impl CliProgress {
                 );
                 phase.tick();
                 self.phase = Some(phase);
-                self.overall.set_message(format!(
-                    "starting model {index}/{total} | ETA {}",
-                    format_eta(self.eta)
-                ));
+                self.overall.set_message(format_eta(self.eta));
             }
             Progress::Inference {
                 done,
@@ -277,15 +267,9 @@ impl CliProgress {
                         .mul_f64(remaining_loads as f64 / self.loaded as f64)
                 };
                 self.eta = Some(chunk_eta + load_eta);
-                self.overall
-                    .set_message(format!("ETA {}", format_eta(self.eta)));
+                self.overall.set_message(format_eta(self.eta));
             }
-            Progress::MemberFinished {
-                index,
-                total,
-                chunks,
-                elapsed,
-            } => {
+            Progress::MemberFinished { chunks, elapsed } => {
                 if let Some(phase) = self.phase.take() {
                     phase.finish_and_clear();
                 }
@@ -295,10 +279,7 @@ impl CliProgress {
                     style("done").green().for_stderr(),
                     format_duration(elapsed)
                 ));
-                self.overall.set_message(format!(
-                    "finished model {index}/{total} ({chunks} chunks) | ETA {}",
-                    format_eta(self.eta)
-                ));
+                self.overall.set_message(format_eta(self.eta));
             }
             Progress::FinalizeStarted => {
                 let phase = self
@@ -307,7 +288,7 @@ impl CliProgress {
                 phase.set_style(ProgressStyle::with_template("  Finalize  running").unwrap());
                 phase.tick();
                 self.phase = Some(phase);
-                self.overall.set_message("finalizing | ETA --:--:--");
+                self.overall.set_message("");
             }
             Progress::FinalizeFinished { elapsed } => {
                 self.finalize_elapsed = elapsed;
@@ -319,7 +300,7 @@ impl CliProgress {
                     style("done").green().for_stderr(),
                     format_duration(elapsed)
                 ));
-                self.overall.set_message("complete | ETA 00:00:00");
+                self.overall.set_message("");
             }
         }
     }
@@ -330,8 +311,8 @@ impl CliProgress {
 }
 
 fn format_eta(eta: Option<Duration>) -> String {
-    eta.map(format_clock)
-        .unwrap_or_else(|| "--:--:--".to_string())
+    eta.map(|eta| format!(" (ETA {})", format_clock(eta)))
+        .unwrap_or_default()
 }
 
 fn format_clock(duration: Duration) -> String {

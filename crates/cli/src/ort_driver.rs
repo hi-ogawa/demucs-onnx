@@ -16,8 +16,6 @@ pub enum Progress<'a> {
         chunks: usize,
     },
     LoadFinished {
-        index: usize,
-        total: usize,
         elapsed: Duration,
     },
     Inference {
@@ -30,8 +28,6 @@ pub enum Progress<'a> {
         elapsed: Duration,
     },
     MemberFinished {
-        index: usize,
-        total: usize,
         chunks: usize,
         elapsed: Duration,
     },
@@ -102,8 +98,6 @@ pub fn run_all(
             .map_err(ort_err)
             .with_context(|| format!("load {}", path.display()))?;
         on_progress(Progress::LoadFinished {
-            index: member_index + 1,
-            total: members.len(),
             elapsed: load_started.elapsed(),
         });
         let inference_started = Instant::now();
@@ -146,8 +140,6 @@ pub fn run_all(
             .stem_finalizer
             .add(member_index, shift_merger.finish());
         on_progress(Progress::MemberFinished {
-            index: member_index + 1,
-            total: members.len(),
             chunks: member_total,
             elapsed: inference_started.elapsed(),
         });
