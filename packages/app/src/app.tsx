@@ -9,7 +9,7 @@ import {
   type ModelSource,
 } from "./lib/audio/models";
 import type { SeparateRequest, SeparatedStem } from "./lib/audio/separate";
-import { separateInWorker } from "./lib/audio/separate-worker";
+import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
