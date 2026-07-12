@@ -12,6 +12,17 @@ const MODEL = resolve(MODELS_DIR, "htdemucs.onnx");
 const DFT = resolve(MODELS_DIR, "dft.bin");
 const FIXTURE = resolve(import.meta.dirname, "../../../fixtures/sine-2s.wav");
 
+test("configures outputs before selecting their required models", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await expect(
+    page.locator('section[aria-label="Separation setup"] h2'),
+  ).toHaveText(["1. Choose audio", "2. Configure", "3. Add models"]);
+  await expect(page.locator("#modelFilesStatus")).toHaveCount(0);
+});
+
 test("separates a clip fully client-side", async ({ page }) => {
   expect(existsSync(MODEL), `model missing at ${MODEL}`).toBe(true);
   expect(existsSync(DFT), `external data missing at ${DFT}`).toBe(true);
