@@ -207,15 +207,15 @@ export function App() {
 
       <section className="grid gap-6" aria-label="Separation setup">
         <div className="grid gap-6">
-          <fieldset className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
-            <legend className="px-2 text-[1.35rem] font-semibold text-[#18201b]">
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+            <h2 className="mb-2 text-xl font-semibold text-[#18201b]">
               1. Choose audio
-            </legend>
+            </h2>
             <p className="mb-5.5 leading-relaxed text-[#667068]">
               Select the track you want to separate.
             </p>
             <input
-              className="w-full rounded-[10px] border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded-[7px] file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
+              className="w-full rounded-md border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
               type="file"
               id="file"
               accept="audio/*"
@@ -223,12 +223,12 @@ export function App() {
                 void handleAudioFile(event.target.files?.[0])
               }
             />
-          </fieldset>
+          </section>
 
-          <fieldset className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
-            <legend className="px-2 text-[1.35rem] font-semibold text-[#18201b]">
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+            <h2 className="mb-2 text-xl font-semibold text-[#18201b]">
               2. Add models
-            </legend>
+            </h2>
             <p className="mb-5.5 leading-relaxed text-[#667068]">
               Download model assets from the{" "}
               <a
@@ -242,7 +242,7 @@ export function App() {
               , then select the required files.
             </p>
             <input
-              className="w-full rounded-[10px] border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded-[7px] file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
+              className="w-full rounded-md border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
               type="file"
               id="modelFiles"
               accept=".bin,.onnx"
@@ -265,19 +265,19 @@ export function App() {
             >
               {modelFilesStatus}
             </p>
-          </fieldset>
+          </section>
         </div>
 
         <aside className="grid gap-6">
-          <fieldset className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
-            <legend className="px-2 text-[1.35rem] font-semibold text-[#18201b]">
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+            <h2 className="mb-5 text-xl font-semibold text-[#18201b]">
               3. Configure
-            </legend>
+            </h2>
             <div className="grid grid-cols-2 gap-4.5 max-[480px]:grid-cols-1">
               <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
                 <span>Model</span>
                 <select
-                  className="min-h-11 w-full rounded-lg border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   id="model"
                   value={model}
                   onChange={(event) => setModel(event.target.value)}
@@ -289,7 +289,7 @@ export function App() {
               <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
                 <span>Two-stems</span>
                 <select
-                  className="min-h-11 w-full rounded-lg border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   id="twoStems"
                   value={twoStems}
                   onChange={(event) => setTwoStems(event.target.value)}
@@ -304,7 +304,7 @@ export function App() {
               <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
                 <span>Method</span>
                 <select
-                  className="min-h-11 w-full rounded-lg border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   id="method"
                   value={method}
                   onChange={(event) =>
@@ -318,7 +318,7 @@ export function App() {
               <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
                 <span>Shifts</span>
                 <input
-                  className="min-h-11 w-full rounded-lg border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   type="number"
                   id="shifts"
                   value={shifts}
@@ -328,11 +328,11 @@ export function App() {
                 />
               </label>
             </div>
-          </fieldset>
+          </section>
 
-          <div className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-6 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
+          <div className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-6 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
             <button
-              className="min-h-13 w-full cursor-pointer rounded-[10px] border border-transparent bg-[#78d09b] font-bold text-[#102b1d] hover:not-disabled:bg-[#91dfad] disabled:cursor-not-allowed disabled:border-[#c9ccc7] disabled:bg-[#eeeee9] disabled:text-[#777f79]"
+              className="min-h-13 w-full cursor-pointer rounded-md border border-transparent bg-[#78d09b] font-bold text-[#102b1d] hover:not-disabled:bg-[#91dfad] disabled:cursor-not-allowed disabled:border-[#c9ccc7] disabled:bg-[#eeeee9] disabled:text-[#777f79]"
               id="run"
               disabled={running || !decoded || !modelsReady}
               onClick={handleRun}
@@ -359,7 +359,7 @@ export function App() {
 
       {outputs.length > 0 && (
         <section
-          className="mt-12 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-9 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:px-5 max-[480px]:py-6"
+          className="mt-12 min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-9 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:px-5 max-[480px]:py-6"
           aria-labelledby="results-title"
         >
           <div className="mb-7">
@@ -376,7 +376,7 @@ export function App() {
           <div className="grid gap-3.5" id="stems">
             {outputs.map((output) => (
               <div
-                className="grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-xl border border-[#d9d8ce] bg-[#f8f7f1] p-4.5"
+                className="grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-md border border-[#d9d8ce] bg-[#f8f7f1] p-4.5"
                 key={output.name}
               >
                 <b className="text-xl font-semibold capitalize">
