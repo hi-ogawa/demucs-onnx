@@ -41,11 +41,9 @@ export function App() {
     twoStems || undefined,
     twoStems ? method : undefined,
   );
-  const missingModelFiles = requiredFiles.filter(
-    (filename) => !modelFiles[filename],
-  );
-  const modelsReady = missingModelFiles.length === 0;
-  const modelSource: ModelSource | null = modelsReady
+  const modelSource: ModelSource | null = requiredFiles.every(
+    (filename) => modelFiles[filename],
+  )
     ? { files: selectedModelFiles }
     : null;
   function addModelFiles(files: File[], expected?: ModelFilename) {
@@ -387,7 +385,7 @@ export function App() {
                 className="bg-primary-bright text-primary-foreground shadow-action hover:not-disabled:bg-primary-bright-hover disabled:border-primary-border disabled:bg-primary-soft disabled:text-primary-muted min-h-13 w-full cursor-pointer rounded-md border border-transparent font-bold disabled:cursor-not-allowed disabled:shadow-none"
                 id="run"
                 disabled={
-                  handleRunMutation.isPending || !decodedAudio || !modelsReady
+                  handleRunMutation.isPending || !decodedAudio || !modelSource
                 }
                 onClick={() => handleRunMutation.mutate()}
               >
