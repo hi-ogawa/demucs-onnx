@@ -18,6 +18,10 @@ test("separates a clip fully client-side", async ({ page }) => {
   expect(existsSync(FIXTURE), `fixture missing at ${FIXTURE}`).toBe(true);
 
   await page.goto("/");
+  await page.setInputFiles("#modelFiles", [DFT, MODEL]);
+  await expect(page.locator("#modelFilesStatus")).toHaveText(
+    "Required model files selected.",
+  );
   await page.setInputFiles("#file", FIXTURE);
   await expect(page.locator("#status")).toContainText("decoded: 2.00s");
 
@@ -33,23 +37,4 @@ test("separates a clip fully client-side", async ({ page }) => {
   }
   await expect(page.locator("#stems audio")).toHaveCount(4);
   await expect(page.locator("#stems a")).toHaveCount(4);
-});
-
-test("separates a clip with imported model files", async ({ page }) => {
-  expect(existsSync(MODEL), `model missing at ${MODEL}`).toBe(true);
-  expect(existsSync(DFT), `external data missing at ${DFT}`).toBe(true);
-
-  await page.goto("/");
-  await page.setInputFiles("#modelFiles", [DFT, MODEL]);
-  await expect(page.locator("#modelFilesStatus")).toHaveText(
-    "Required model files selected.",
-  );
-  await page.setInputFiles("#file", FIXTURE);
-  await expect(page.locator("#run")).toBeEnabled();
-
-  await page.click("#run");
-  await expect(page.locator("#status")).toContainText("done in", {
-    timeout: 300_000,
-  });
-  await expect(page.locator("#stems > div")).toHaveCount(4);
 });

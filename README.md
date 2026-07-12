@@ -17,6 +17,14 @@ pnpm install
 pnpm model-release download models-2026-07-11 htdemucs
 ```
 
+In a secondary Git worktree, reuse the main worktree's gitignored `data/` directory instead of downloading the models again:
+
+```bash
+pnpm link-wt
+```
+
+This creates a `data` symlink and refuses to replace an existing file, directory, or symlink.
+
 Separate a WAV file into four stems:
 
 ```bash
@@ -55,7 +63,7 @@ pnpm build-wasm
 pnpm dev
 ```
 
-Open `http://localhost:5173`, choose a local audio file, and run separation. Audio and models stay in the browser. During development, Vite serves the generated models from `data/onnx-lean/`.
+Open `http://localhost:5173`, choose a local audio file and the required model files from `data/onnx-lean/`, then run separation. Audio and models stay in the browser.
 
 Build the static app with:
 

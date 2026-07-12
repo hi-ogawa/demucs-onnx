@@ -8,8 +8,6 @@ import type { SeparateRequest, SeparatedStem } from "./audio/separate";
 import { encodeWavF32 } from "./wav";
 import type { WorkerResponse } from "./worker";
 
-declare const __MODELS_URL__: string | null;
-
 type DecodedAudio = { left: Float32Array; right: Float32Array };
 type Output = SeparatedStem & { url: string };
 
@@ -34,28 +32,20 @@ export function App() {
   const decodeIdRef = useRef(0);
 
   const modelSource: ModelSource | null = selectedModelFiles
-    ? { kind: "files", files: selectedModelFiles }
-    : __MODELS_URL__
-      ? { kind: "url", baseUrl: __MODELS_URL__ }
-      : null;
-  const missingModelFiles =
-    modelSource?.kind === "url"
-      ? []
-      : requiredModelFiles(
-          model,
-          twoStems || undefined,
-          twoStems ? method : undefined,
-        ).filter(
-          (filename) =>
-            !selectedModelFiles?.some((file) => file.name === filename),
-        );
+    ? { files: selectedModelFiles }
+    : null;
+  const missingModelFiles = requiredModelFiles(
+    model,
+    twoStems || undefined,
+    twoStems ? method : undefined,
+  ).filter(
+    (filename) => !selectedModelFiles?.some((file) => file.name === filename),
+  );
   const modelsReady = modelSource !== null && missingModelFiles.length === 0;
   let modelFilesStatus =
-    modelSource?.kind === "url"
-      ? "Using development model files."
-      : missingModelFiles.length > 0
-        ? `Missing model files: ${missingModelFiles.join(", ")}`
-        : "Required model files selected.";
+    missingModelFiles.length > 0
+      ? `Missing model files: ${missingModelFiles.join(", ")}`
+      : "Required model files selected.";
   if (unsupportedModelFiles.length > 0) {
     modelFilesStatus += ` Unsupported files: ${unsupportedModelFiles.join(", ")}`;
   }
@@ -224,54 +214,12 @@ export function App() {
               }
             />
           </section>
-
-          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] px-7 pt-5 pb-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:px-5 max-[480px]:pt-4 max-[480px]:pb-5">
-            <h2 className="mb-2 text-xl font-semibold text-[#18201b]">
-              2. Add models
-            </h2>
-            <p className="mb-5.5 leading-relaxed text-[#667068]">
-              Download model assets from the{" "}
-              <a
-                className="font-semibold text-[#174331] underline underline-offset-3 hover:text-[#b85c2c]"
-                href="https://github.com/hi-ogawa/demucs-onnx/releases"
-                target="_blank"
-                rel="noreferrer"
-              >
-                GitHub Releases page
-              </a>
-              , then select the required files.
-            </p>
-            <input
-              className="w-full rounded-md border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
-              type="file"
-              id="modelFiles"
-              accept=".bin,.onnx"
-              multiple
-              onChange={(event) => {
-                const files = [...(event.target.files ?? [])];
-                setSelectedModelFiles(
-                  files.filter((file) => isModelFilename(file.name)),
-                );
-                setUnsupportedModelFiles(
-                  files
-                    .filter((file) => !isModelFilename(file.name))
-                    .map((file) => file.name),
-                );
-              }}
-            />
-            <p
-              className="mt-4 text-sm leading-normal whitespace-pre-line text-[#667068]"
-              id="modelFilesStatus"
-            >
-              {modelFilesStatus}
-            </p>
-          </section>
         </div>
 
         <aside className="grid gap-6">
           <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] px-7 pt-5 pb-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:px-5 max-[480px]:pt-4 max-[480px]:pb-5">
             <h2 className="mb-5 text-xl font-semibold text-[#18201b]">
-              3. Configure
+              2. Configure
             </h2>
             <div className="grid grid-cols-2 gap-4.5 max-[480px]:grid-cols-1">
               <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
@@ -328,6 +276,48 @@ export function App() {
                 />
               </label>
             </div>
+          </section>
+
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] px-7 pt-5 pb-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:px-5 max-[480px]:pt-4 max-[480px]:pb-5">
+            <h2 className="mb-2 text-xl font-semibold text-[#18201b]">
+              3. Add models
+            </h2>
+            <p className="mb-5.5 leading-relaxed text-[#667068]">
+              Download model assets from the{" "}
+              <a
+                className="font-semibold text-[#174331] underline underline-offset-3 hover:text-[#b85c2c]"
+                href="https://github.com/hi-ogawa/demucs-onnx/releases"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub Releases page
+              </a>
+              , then select the required files.
+            </p>
+            <input
+              className="w-full rounded-md border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
+              type="file"
+              id="modelFiles"
+              accept=".bin,.onnx"
+              multiple
+              onChange={(event) => {
+                const files = [...(event.target.files ?? [])];
+                setSelectedModelFiles(
+                  files.filter((file) => isModelFilename(file.name)),
+                );
+                setUnsupportedModelFiles(
+                  files
+                    .filter((file) => !isModelFilename(file.name))
+                    .map((file) => file.name),
+                );
+              }}
+            />
+            <p
+              className="mt-4 text-sm leading-normal whitespace-pre-line text-[#667068]"
+              id="modelFilesStatus"
+            >
+              {modelFilesStatus}
+            </p>
           </section>
 
           <div className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-6 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
