@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -7,7 +8,7 @@ const repoDir = resolve(__dirname, "../..");
 const modelsDir = resolve(repoDir, "data/onnx-lean");
 
 export default defineConfig(({ command }) => ({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       // ORT does not expose a subpath for its external-WASM entry.
