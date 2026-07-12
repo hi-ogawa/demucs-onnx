@@ -25,7 +25,7 @@ function FieldHelp({ children }: { children: React.ReactNode }) {
       >
         <CircleHelp aria-hidden="true" className="size-5" />
       </summary>
-      <div className="text-copy max-compact:w-56 absolute top-7 right-0 z-10 w-64 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg">
+      <div className="text-copy absolute top-7 right-0 z-10 w-56 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg sm:w-64">
         {children}
       </div>
     </details>
@@ -243,7 +243,7 @@ export function App() {
   }
 
   return (
-    <main className="max-compact:w-[calc(100%-24px)] max-compact:py-9 mx-auto w-[min(760px,calc(100%-40px))] py-18 md:pb-24">
+    <main className="mx-auto w-full max-w-[800px] px-3 py-9 sm:px-5 sm:py-18 md:pb-24">
       <header className="mb-8 max-w-190">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
           <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
@@ -266,7 +266,7 @@ export function App() {
 
       <section className="grid gap-6" aria-label="Separation setup">
         <div className="grid gap-6">
-          <section className="bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
+          <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
             <h2 className="text-foreground mb-2 text-xl font-semibold">
               1. Choose audio
             </h2>
@@ -286,11 +286,11 @@ export function App() {
         </div>
 
         <aside className="grid gap-6">
-          <section className="bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
+          <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
             <h2 className="text-foreground mb-5 text-xl font-semibold">
               2. Configure
             </h2>
-            <div className="max-compact:grid-cols-1 grid grid-cols-2 gap-4.5">
+            <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2">
               <div className="grid gap-2">
                 <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
                   <label htmlFor="model">Model</label>
@@ -395,7 +395,7 @@ export function App() {
                 </select>
               </div>
               <p
-                className="bg-surface-note text-copy max-compact:col-span-1 col-span-2 rounded-md px-3 py-2.5 text-sm leading-relaxed"
+                className="bg-surface-note text-copy rounded-md px-3 py-2.5 text-sm leading-relaxed sm:col-span-2"
                 id="outputSummary"
               >
                 {twoStems ? (
@@ -414,7 +414,7 @@ export function App() {
             </div>
           </section>
 
-          <section className="bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
+          <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
             <h2 className="text-foreground mb-2 text-xl font-semibold">
               3. Add models
             </h2>
@@ -465,7 +465,7 @@ export function App() {
             )}
           </section>
 
-          <section className="bg-surface shadow-card max-compact:p-5 min-w-0 rounded-lg border p-6">
+          <section className="bg-surface shadow-card min-w-0 rounded-lg border p-5 sm:p-6">
             <h2 className="text-foreground mb-4 text-xl font-semibold">
               4. Separate
             </h2>
@@ -494,7 +494,7 @@ export function App() {
 
       {outputs.length > 0 && (
         <section
-          className="bg-surface shadow-card max-compact:px-5 max-compact:py-6 mt-12 min-w-0 rounded-lg border p-9"
+          className="bg-surface shadow-card mt-12 min-w-0 rounded-lg border px-5 py-6 sm:p-9"
           aria-labelledby="results-title"
         >
           <div className="mb-7">

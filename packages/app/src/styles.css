@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  --breakpoint-compact: 30rem;
   --color-page: #f2f0e9;
   --color-foreground: #18201b;
   --color-copy: #3f4942;
