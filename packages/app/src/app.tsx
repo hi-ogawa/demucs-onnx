@@ -20,7 +20,6 @@ export function App() {
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
 
-  // TODO: probably do something with model stuff
   const [modelFiles, setModelFiles] = useState<
     Partial<Record<ModelFilename, File>>
   >({});
