@@ -1,5 +1,6 @@
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { decodeAudioFile, type DecodedAudio } from "./lib/audio/decode";
 import {
   isModelFilename,
   requiredModelFiles,
@@ -7,13 +8,12 @@ import {
   type ModelSource,
 } from "./lib/audio/models";
 import type { SeparateRequest, SeparatedStem } from "./lib/audio/separate";
+import { separateInWorker } from "./lib/audio/separate-worker";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 import { encodeWavF32 } from "./lib/wav";
-import type { WorkerResponse } from "./worker";
 
-type DecodedAudio = { left: Float32Array; right: Float32Array };
 type Output = SeparatedStem & { url: string };
 
 function FieldHelp({ children }: { children: React.ReactNode }) {
@@ -49,7 +49,7 @@ export function App() {
   const [now, setNow] = useState(Date.now());
   const [status, setStatus] = useState("");
   const [outputs, setOutputs] = useState<Output[]>([]);
-  const workerRef = useRef<Worker | null>(null);
+  const runAbortRef = useRef<AbortController | null>(null);
   const outputUrlsRef = useRef<string[]>([]);
   const decodeIdRef = useRef(0);
   const { model, method, shifts } = preferences;
@@ -106,7 +106,7 @@ export function App() {
 
   useEffect(
     () => () => {
-      workerRef.current?.terminate();
+      runAbortRef.current?.abort();
       for (const url of outputUrlsRef.current) {
         URL.revokeObjectURL(url);
       }
@@ -135,22 +135,13 @@ export function App() {
     setDecoded(null);
     setStatus("decoding...");
     try {
-      const bytes = await file.arrayBuffer();
-      const context = new OfflineAudioContext({
-        numberOfChannels: 2,
-        length: 1,
-        sampleRate: 44100,
-      });
-      const buffer = await context.decodeAudioData(bytes);
+      const audio = await decodeAudioFile(file);
       if (decodeId !== decodeIdRef.current) {
         return;
       }
-      const left = buffer.getChannelData(0);
-      const right =
-        buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
-      setDecoded({ left, right });
+      setDecoded(audio);
       setStatus(
-        `decoded: ${(buffer.length / 44100).toFixed(2)}s, ${buffer.numberOfChannels}ch @44.1k`,
+        `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
       );
     } catch (error) {
       if (decodeId === decodeIdRef.current) {
@@ -161,17 +152,7 @@ export function App() {
     }
   }
 
-  function finishRun(worker: Worker) {
-    if (workerRef.current !== worker) {
-      return false;
-    }
-    workerRef.current = null;
-    worker.terminate();
-    setRunning(false);
-    return true;
-  }
-
-  function handleRun() {
+  async function handleRun() {
     if (!decoded || !modelSource) {
       return;
     }
@@ -189,57 +170,46 @@ export function App() {
       finalizeMs: 0,
     });
     const started = performance.now();
-    const worker = new Worker(new URL("./worker.ts", import.meta.url), {
-      type: "module",
-    });
-    workerRef.current = worker;
-
-    worker.onerror = (event) => {
-      if (finishRun(worker)) {
-        setRunProgress(null);
-        setStatus(`error: worker failed: ${event.message}`);
-      }
-    };
-    worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      if (workerRef.current !== worker) {
-        return;
-      }
-      const message = event.data;
-      if (message.type === "progress") {
-        setRunProgress((progress) =>
-          progress
-            ? updateRunProgress(progress, message.event, message.at)
-            : progress,
-        );
-      } else if (message.type === "done") {
-        const nextOutputs = message.outputs.map((output) => {
-          const blob = encodeWavF32([output.left, output.right], 44100);
-          return { ...output, url: URL.createObjectURL(blob) };
-        });
-        outputUrlsRef.current = nextOutputs.map((output) => output.url);
-        setOutputs(nextOutputs);
-        setStatus(
-          `done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
-        );
-        finishRun(worker);
-      } else {
-        setRunProgress(null);
-        setStatus(`error: ${message.message}`);
-        finishRun(worker);
-      }
-    };
-
-    const left = decoded.left.slice();
-    const right = decoded.right.slice();
     const request: SeparateRequest = {
-      left,
-      right,
+      left: decoded.left.slice(),
+      right: decoded.right.slice(),
       model,
       twoStems: twoStems ? { source: twoStems, method } : undefined,
       shifts,
       modelSource,
     };
-    worker.postMessage(request, [left.buffer, right.buffer]);
+    const controller = new AbortController();
+    runAbortRef.current = controller;
+    try {
+      const separated = await separateInWorker(request, {
+        signal: controller.signal,
+        onProgress: (event, at) =>
+          setRunProgress((progress) =>
+            progress ? updateRunProgress(progress, event, at) : progress,
+          ),
+      });
+      const nextOutputs = separated.map((output) => {
+        const blob = encodeWavF32([output.left, output.right], 44100);
+        return { ...output, url: URL.createObjectURL(blob) };
+      });
+      outputUrlsRef.current = nextOutputs.map((output) => output.url);
+      setOutputs(nextOutputs);
+      setStatus(
+        `done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
+      );
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setRunProgress(null);
+        setStatus(
+          `error: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    } finally {
+      if (runAbortRef.current === controller) {
+        runAbortRef.current = null;
+        setRunning(false);
+      }
+    }
   }
 
   return (
