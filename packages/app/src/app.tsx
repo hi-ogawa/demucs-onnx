@@ -188,10 +188,10 @@ export function App() {
   return (
     <main className="mx-auto w-[min(760px,calc(100%-40px))] py-18 max-[480px]:w-[calc(100%-24px)] max-[480px]:py-9 md:pb-24">
       <header className="mb-12 max-w-190 max-[480px]:mb-9">
-        <h1 className="text-[clamp(3rem,8vw,5.5rem)] leading-[0.95] font-semibold tracking-[-0.045em]">
+        <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
           Demucs ONNX
         </h1>
-        <p className="my-6 max-w-162.5 text-[clamp(1.1rem,2vw,1.35rem)] leading-[1.55] text-[#3f4942]">
+        <p className="my-5 max-w-162.5 text-lg leading-relaxed text-[#3f4942]">
           Separate music into vocals, drums, bass, and other stems, entirely in
           your browser.
         </p>
@@ -365,7 +365,7 @@ export function App() {
               Separation complete
             </p>
             <h2
-              className="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-[-0.035em]"
+              className="text-3xl font-semibold tracking-[-0.025em]"
               id="results-title"
             >
               Your stems
