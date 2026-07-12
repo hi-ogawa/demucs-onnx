@@ -16,6 +16,11 @@ import { RunProgressPanel } from "./lib/progress/panel";
 import { encodeWavF32 } from "./lib/wav";
 
 export function App() {
+  // synchronize preferences with localStorage
+  const [preferences, setPreferences] = useState(loadPreferences);
+  useEffect(() => savePreferences(preferences), [preferences]);
+
+  // TODO: probably do something with model stuff
   const [modelFiles, setModelFiles] = useState<
     Partial<Record<ModelFilename, File>>
   >({});
@@ -25,10 +30,6 @@ export function App() {
   const [modelFileErrors, setModelFileErrors] = useState<
     Partial<Record<ModelFilename, string>>
   >({});
-  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
-
-  const [preferences, setPreferences] = useState(loadPreferences);
-  useEffect(() => savePreferences(preferences), [preferences]);
 
   const { model, method, shifts } = preferences;
   const twoStems =
@@ -75,10 +76,16 @@ export function App() {
   }
 
   const handleAudioFileMutation = useMutation({
-    mutationFn: (file: File | undefined) =>
-      file ? decodeAudioFile(file) : Promise.resolve(null),
+    mutationFn: async (file: File | undefined) => {
+      if (file) {
+        return decodeAudioFile(file);
+      }
+      return null;
+    },
   });
   const decoded = handleAudioFileMutation.data ?? null;
+
+  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
   const handleRunMutation = useMutation({
     mutationFn: async () => {
@@ -124,6 +131,7 @@ export function App() {
   });
 
   const outputs = handleRunMutation.data?.outputs ?? [];
+
   useEffect(() => {
     const currentOutputs = handleRunMutation.data?.outputs;
     return () => {
