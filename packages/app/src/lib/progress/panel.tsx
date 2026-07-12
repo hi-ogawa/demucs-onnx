@@ -52,10 +52,10 @@ export function RunProgressPanel({
             : "Preparing separation";
 
   return (
-    <section className="mt-5 grid gap-4 border-t border-[#d9d8ce] pt-5">
+    <section className="mt-5 grid gap-4 border-t pt-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-semibold text-[#18201b]">{title}</h3>
-        <span className="text-xs font-bold tracking-[0.05em] text-[#667068] uppercase">
+        <h3 className="text-foreground font-semibold">{title}</h3>
+        <span className="text-muted text-xs font-bold tracking-[0.05em] uppercase">
           {Math.round(percent)}%
         </span>
       </div>
@@ -66,7 +66,7 @@ export function RunProgressPanel({
             model.chunks > 0 ? (100 * model.done) / model.chunks : 0;
           return (
             <div
-              className="rounded-md border border-[#d9d8ce] bg-[#f8f7f1] px-3.5 py-3"
+              className="bg-surface-muted rounded-md border px-3.5 py-3"
               key={model.index}
             >
               <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -74,7 +74,7 @@ export function RunProgressPanel({
                   {model.total > 1 && `Model ${model.index}/${model.total} · `}
                   {model.file}
                 </b>
-                <span className="text-xs text-[#667068]">
+                <span className="text-muted text-xs">
                   Load{" "}
                   {model.loadMs === undefined
                     ? "in progress"
@@ -82,10 +82,10 @@ export function RunProgressPanel({
                 </span>
               </div>
               {model.phase !== "loading" && (
-                <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-3 text-xs text-[#667068]">
-                  <div className="h-2 overflow-hidden rounded-full bg-[#d9d8ce]">
+                <div className="text-muted mt-2 grid grid-cols-[1fr_auto] items-center gap-3 text-xs">
+                  <div className="bg-border h-2 overflow-hidden rounded-full">
                     <div
-                      className="h-full rounded-full bg-[#48a875] transition-[width] duration-300"
+                      className="bg-primary-progress h-full rounded-full transition-[width] duration-300"
                       style={{ width: `${modelPercent}%` }}
                     />
                   </div>
@@ -110,16 +110,16 @@ export function RunProgressPanel({
           aria-valuemax={Math.max(progress.total, 1)}
           aria-valuemin={0}
           aria-valuenow={progress.done}
-          className="h-3 overflow-hidden rounded-full bg-[#d9d8ce]"
+          className="bg-border h-3 overflow-hidden rounded-full"
           id="progress"
           role="progressbar"
         >
           <div
-            className={`h-full rounded-full bg-[#245f46] transition-[width] duration-300 ${progress.total === 0 ? "animate-pulse" : ""}`}
+            className={`bg-primary-strong h-full rounded-full transition-[width] duration-300 ${progress.total === 0 ? "animate-pulse" : ""}`}
             style={{ width: progress.total === 0 ? "35%" : `${percent}%` }}
           />
         </div>
-        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm text-[#667068]">
+        <div className="text-muted flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
           <span>
             {progress.total === 0
               ? "Preparing browser runtime"
@@ -130,7 +130,7 @@ export function RunProgressPanel({
             {etaMs !== undefined &&
               progress.phase !== "finalizing" &&
               progress.phase !== "complete" && (
-                <span className="text-[#8a918b]">
+                <span className="text-muted-light">
                   {" "}
                   (ETA {formatClock(etaMs)})
                 </span>
@@ -140,7 +140,7 @@ export function RunProgressPanel({
       </div>
 
       {progress.phase === "complete" && (
-        <p className="text-sm text-[#667068]" data-testid="timing-summary">
+        <p className="text-muted text-sm" data-testid="timing-summary">
           Load {formatSeconds(loadMs)} · Inference {formatSeconds(inferenceMs)}{" "}
           · Finalize {formatSeconds(progress.finalizeMs)}
         </p>
