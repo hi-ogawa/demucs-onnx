@@ -187,11 +187,11 @@ export function App() {
 
   return (
     <main className="mx-auto w-[min(760px,calc(100%-40px))] py-18 max-[480px]:w-[calc(100%-24px)] max-[480px]:py-9 md:pb-24">
-      <header className="mb-12 max-w-190 max-[480px]:mb-9">
+      <header className="mb-8 max-w-190">
         <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
           Demucs ONNX
         </h1>
-        <p className="my-5 max-w-162.5 text-lg leading-relaxed text-[#3f4942]">
+        <p className="mt-4 mb-2 max-w-162.5 text-lg leading-relaxed text-[#3f4942]">
           Separate music into vocals, drums, bass, and other stems, entirely in
           your browser. Your audio and model files stay on this device.
         </p>
@@ -207,7 +207,7 @@ export function App() {
 
       <section className="grid gap-6" aria-label="Separation setup">
         <div className="grid gap-6">
-          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] px-7 pt-5 pb-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:px-5 max-[480px]:pt-4 max-[480px]:pb-5">
             <h2 className="mb-2 text-xl font-semibold text-[#18201b]">
               1. Choose audio
             </h2>
@@ -225,7 +225,7 @@ export function App() {
             />
           </section>
 
-          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] px-7 pt-5 pb-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:px-5 max-[480px]:pt-4 max-[480px]:pb-5">
             <h2 className="mb-2 text-xl font-semibold text-[#18201b]">
               2. Add models
             </h2>
@@ -269,7 +269,7 @@ export function App() {
         </div>
 
         <aside className="grid gap-6">
-          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] px-7 pt-5 pb-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:px-5 max-[480px]:pt-4 max-[480px]:pb-5">
             <h2 className="mb-5 text-xl font-semibold text-[#18201b]">
               3. Configure
             </h2>
