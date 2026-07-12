@@ -29,15 +29,24 @@ struct SeparateArgs {
     models_dir: PathBuf,
 
     /// Model name
-    #[arg(long, default_value = "htdemucs", value_name = "MODEL")]
+    #[arg(
+        long,
+        default_value = "htdemucs",
+        value_name = "MODEL",
+        value_parser = ["htdemucs", "htdemucs_ft"]
+    )]
     name: String,
 
     /// Emit a source and its complement
-    #[arg(long, value_name = "SOURCE")]
+    #[arg(
+        long,
+        value_name = "SOURCE",
+        value_parser = ["drums", "bass", "other", "vocals"]
+    )]
     two_stems: Option<String>,
 
     /// Two-stem method: add or minus
-    #[arg(long, value_name = "METHOD")]
+    #[arg(long, value_name = "METHOD", value_parser = ["add", "minus"])]
     method: Option<String>,
 
     /// Number of seeded-offset passes
@@ -144,7 +153,11 @@ mod tests {
     fn separate_help() {
         let error = Cli::try_parse_from(["demucs", "separate", "--help"]).unwrap_err();
         assert_eq!(error.kind(), ErrorKind::DisplayHelp);
-        assert!(error.to_string().contains("--models <DIR>"));
+        let help = error.to_string();
+        assert!(help.contains("--models <DIR>"));
+        assert!(help.contains("possible values: htdemucs, htdemucs_ft"));
+        assert!(help.contains("possible values: drums, bass, other, vocals"));
+        assert!(help.contains("possible values: add, minus"));
     }
 
     #[test]
