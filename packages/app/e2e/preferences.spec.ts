@@ -3,11 +3,10 @@ import { expect, test } from "@playwright/test";
 test("restores and updates configuration preferences", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem(
-      "demucs-onnx:main:v1",
+      "demucs-onnx:main:v2",
       JSON.stringify({
         model: "htdemucs_ft",
-        outputMode: "two-stems",
-        targetStem: "bass",
+        twoStems: "bass",
         method: "minus",
         shifts: 3,
       }),
@@ -23,9 +22,7 @@ test("restores and updates configuration preferences", async ({ page }) => {
     "Creates bass.wav and no_bass.wav.",
   );
   await expect(page.locator("#shifts")).toHaveValue("3");
-  await expect(page.locator("#modelFilesStatus")).toContainText(
-    "htdemucs_ft_bass.onnx",
-  );
+  await expect(page.getByLabel("Select htdemucs_ft_bass.onnx")).toBeAttached();
 
   await page.locator("#twoStems").selectOption("");
   await expect(page.locator("#method")).toBeDisabled();
@@ -34,7 +31,7 @@ test("restores and updates configuration preferences", async ({ page }) => {
   );
   await expect
     .poll(() =>
-      page.evaluate(() => localStorage.getItem("demucs-onnx:main:v1")),
+      page.evaluate(() => localStorage.getItem("demucs-onnx:main:v2")),
     )
-    .toContain('"outputMode":"four-stems"');
+    .toContain('"twoStems":null');
 });

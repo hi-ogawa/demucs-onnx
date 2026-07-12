@@ -14,12 +14,12 @@ test("restores selected model files after reload", async ({ page }) => {
       buffer: Buffer.from("model"),
     },
   ]);
-  await expect(page.locator("#modelFilesStatus")).toHaveText(
-    "Required model files selected and stored.",
+  await expect(page.locator("#model-storage-status")).toHaveText(
+    "Model files stored in browser.",
   );
 
   await page.reload();
-  await expect(page.locator("#modelFilesStatus")).toHaveText(
-    "Required model files restored from browser storage.",
-  );
+  await expect(
+    page.getByTestId("model-file-slot").getByText("Ready"),
+  ).toHaveCount(2);
 });
