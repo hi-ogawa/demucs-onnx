@@ -83,14 +83,14 @@ export function App() {
       return null;
     },
   });
-  const decoded = handleAudioFileMutation.data ?? null;
+  const decodedAudio = handleAudioFileMutation.data ?? null;
 
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
   const outputCleanupRef = useRef<Array<() => void>>([]);
   const handleRunMutation = useMutation({
     mutationFn: async () => {
-      if (!decoded || !modelSource) {
+      if (!decodedAudio || !modelSource) {
         throw new Error("Audio and model files are required");
       }
 
@@ -110,8 +110,8 @@ export function App() {
       });
       const started = performance.now();
       const request: SeparateRequest = {
-        left: decoded.left.slice(),
-        right: decoded.right.slice(),
+        left: decodedAudio.left.slice(),
+        right: decodedAudio.right.slice(),
         model,
         twoStems: twoStems ? { source: twoStems, method } : undefined,
         shifts,
@@ -141,12 +141,12 @@ export function App() {
 
   const outputs = handleRunMutation.data?.outputs ?? [];
 
-  const audioStatus = handleAudioFileMutation.isPending
+  const audioFileStatusText = handleAudioFileMutation.isPending
     ? "Decoding..."
-    : decoded
-      ? `Decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
+    : decodedAudio
+      ? `Decoded: ${decodedAudio.duration.toFixed(2)}s, ${decodedAudio.numberOfChannels}ch @${decodedAudio.sampleRate / 1000}k`
       : "";
-  const runStatus = handleRunMutation.data
+  const separationStatusText = handleRunMutation.data
     ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
     : "";
 
@@ -191,9 +191,9 @@ export function App() {
                   handleAudioFileMutation.mutate(event.target.files?.[0])
                 }
               />
-              {audioStatus && (
+              {audioFileStatusText && (
                 <p className="text-muted mt-3.5 text-sm" id="audio-status">
-                  {audioStatus}
+                  {audioFileStatusText}
                 </p>
               )}
             </section>
@@ -387,19 +387,19 @@ export function App() {
                 className="bg-primary-bright text-primary-foreground shadow-action hover:not-disabled:bg-primary-bright-hover disabled:border-primary-border disabled:bg-primary-soft disabled:text-primary-muted min-h-13 w-full cursor-pointer rounded-md border border-transparent font-bold disabled:cursor-not-allowed disabled:shadow-none"
                 id="run"
                 disabled={
-                  handleRunMutation.isPending || !decoded || !modelsReady
+                  handleRunMutation.isPending || !decodedAudio || !modelsReady
                 }
                 onClick={() => handleRunMutation.mutate()}
               >
                 Separate track
               </button>
               {runProgress && <RunProgressPanel progress={runProgress} />}
-              {runStatus && (
+              {separationStatusText && (
                 <p
                   className="text-muted mt-3.5 text-sm leading-normal whitespace-pre-line"
                   id="status"
                 >
-                  {runStatus}
+                  {separationStatusText}
                 </p>
               )}
             </section>
