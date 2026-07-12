@@ -9,9 +9,7 @@ const MODEL_FILENAMES = [
 
 export type ModelFilename = (typeof MODEL_FILENAMES)[number];
 
-export type ModelSource =
-  | { kind: "url"; baseUrl: string }
-  | { kind: "files"; files: File[] };
+export type ModelSource = { files: File[] };
 
 export function isModelFilename(name: string): name is ModelFilename {
   return MODEL_FILENAMES.includes(name as ModelFilename);
@@ -41,20 +39,9 @@ export async function readModelFile(
   source: ModelSource,
   filename: ModelFilename,
 ): Promise<Uint8Array> {
-  if (source.kind === "files") {
-    const file = source.files.find((candidate) => candidate.name === filename);
-    if (!file) {
-      throw new Error(`missing model file: ${filename}`);
-    }
-    return new Uint8Array(await file.arrayBuffer());
+  const file = source.files.find((candidate) => candidate.name === filename);
+  if (!file) {
+    throw new Error(`missing model file: ${filename}`);
   }
-
-  const url = `${source.baseUrl}/${filename}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(
-      `failed to fetch ${filename}: ${response.status} ${response.statusText}`,
-    );
-  }
-  return new Uint8Array(await response.arrayBuffer());
+  return new Uint8Array(await file.arrayBuffer());
 }
