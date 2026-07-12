@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { decodeAudioFile, type DecodedAudio } from "./lib/audio/decode";
+import { decodeAudioFile } from "./lib/audio/decode";
 import {
   isModelFilename,
   requiredModelFiles,
@@ -16,9 +16,6 @@ import { RunProgressPanel } from "./lib/progress/panel";
 import { encodeWavF32 } from "./lib/wav";
 
 export function App() {
-  // TODO: bad. mutation result?
-  const [decoded, setDecoded] = useState<DecodedAudio | null>(null);
-
   const [modelFiles, setModelFiles] = useState<
     Partial<Record<ModelFilename, File>>
   >({});
@@ -82,7 +79,6 @@ export function App() {
 
   const handleAudioFileMutation = useMutation({
     mutationFn: async (file: File | undefined) => {
-      setDecoded(null);
       if (!file) {
         setStatus("");
         return null;
@@ -90,7 +86,6 @@ export function App() {
 
       setStatus("decoding...");
       const audio = await decodeAudioFile(file);
-      setDecoded(audio);
       setStatus(
         `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
       );
@@ -102,6 +97,7 @@ export function App() {
       }
     },
   });
+  const decoded = handleAudioFileMutation.data ?? null;
 
   const handleRunMutation = useMutation({
     mutationFn: async () => {
