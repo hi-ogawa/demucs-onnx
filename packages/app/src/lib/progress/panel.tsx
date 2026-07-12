@@ -126,7 +126,7 @@ export function RunProgressPanel({
               : `Overall · ${progress.done}/${progress.total} chunks`}
           </span>
           <span>
-            elapsed {formatClock(elapsed)}
+            Elapsed {formatClock(elapsed)}
             {etaMs !== undefined &&
               progress.phase !== "finalizing" &&
               progress.phase !== "complete" && (
