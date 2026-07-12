@@ -191,7 +191,7 @@ export function App() {
         <p className="mb-2.5 text-xs font-extrabold tracking-[0.14em] text-[#245f46] uppercase">
           Browser-based source separation
         </p>
-        <h1 className="font-serif text-[clamp(3rem,8vw,5.5rem)] leading-[0.95] font-medium tracking-[-0.035em]">
+        <h1 className="text-[clamp(3rem,8vw,5.5rem)] leading-[0.95] font-semibold tracking-[-0.045em]">
           Demucs ONNX
         </h1>
         <p className="my-6 max-w-162.5 text-[clamp(1.1rem,2vw,1.35rem)] leading-[1.55] text-[#3f4942]">
@@ -212,7 +212,7 @@ export function App() {
       >
         <div className="grid gap-6">
           <fieldset className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
-            <legend className="px-2 font-serif text-[1.35rem] font-semibold text-[#18201b]">
+            <legend className="px-2 text-[1.35rem] font-semibold text-[#18201b]">
               1. Choose audio
             </legend>
             <p className="mb-5.5 leading-relaxed text-[#667068]">
@@ -230,7 +230,7 @@ export function App() {
           </fieldset>
 
           <fieldset className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
-            <legend className="px-2 font-serif text-[1.35rem] font-semibold text-[#18201b]">
+            <legend className="px-2 text-[1.35rem] font-semibold text-[#18201b]">
               2. Add models
             </legend>
             <p className="mb-5.5 leading-relaxed text-[#667068]">
@@ -274,7 +274,7 @@ export function App() {
 
         <aside className="grid gap-6">
           <fieldset className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
-            <legend className="px-2 font-serif text-[1.35rem] font-semibold text-[#18201b]">
+            <legend className="px-2 text-[1.35rem] font-semibold text-[#18201b]">
               3. Configure
             </legend>
             <div className="grid grid-cols-2 gap-4.5 max-[480px]:grid-cols-1">
@@ -371,7 +371,7 @@ export function App() {
               Separation complete
             </p>
             <h2
-              className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium tracking-[-0.035em]"
+              className="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-[-0.035em]"
               id="results-title"
             >
               Your stems
@@ -383,7 +383,9 @@ export function App() {
                 className="grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-xl border border-[#d9d8ce] bg-[#f8f7f1] p-4.5"
                 key={output.name}
               >
-                <b className="font-serif text-xl capitalize">{output.name}</b>
+                <b className="text-xl font-semibold capitalize">
+                  {output.name}
+                </b>
                 <audio
                   className="col-span-full w-full"
                   controls
