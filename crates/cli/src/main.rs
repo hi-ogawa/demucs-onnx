@@ -28,7 +28,7 @@ struct SeparateArgs {
     #[arg(long = "models", value_name = "DIR")]
     models_dir: PathBuf,
 
-    /// Model: htdemucs or htdemucs_ft
+    /// Separation model: standard (htdemucs) or fine-tuned (htdemucs_ft)
     #[arg(
         long,
         default_value = "htdemucs",
@@ -38,25 +38,27 @@ struct SeparateArgs {
     )]
     name: String,
 
-    /// Create two stems: the selected source and a mix without it (drums, bass, other, or vocals)
+    /// Output SOURCE and a mix without it instead of all four stems
     #[arg(
         long,
         value_name = "SOURCE",
         value_parser = ["drums", "bass", "other", "vocals"],
-        hide_possible_values = true
+        hide_possible_values = true,
+        long_help = "Output SOURCE and a mix without it instead of all four stems\n\nSources: drums, bass, other, vocals"
     )]
     two_stems: Option<String>,
 
-    /// Two-stem method: add or minus
+    /// How to create the mix without SOURCE
     #[arg(
         long,
         value_name = "METHOD",
         value_parser = ["add", "minus"],
-        hide_possible_values = true
+        hide_possible_values = true,
+        long_help = "How to create the mix without SOURCE\n\nadd sums the other stems; minus subtracts SOURCE from the original mix\n\nDefault: add"
     )]
     method: Option<String>,
 
-    /// Number of seeded-offset passes
+    /// Number of processing passes to average; more passes take proportionally longer
     #[arg(long, default_value_t = 1, value_name = "N")]
     shifts: u32,
 
@@ -162,11 +164,12 @@ mod tests {
         assert_eq!(error.kind(), ErrorKind::DisplayHelp);
         let help = error.to_string();
         assert!(help.contains("--models <DIR>"));
-        assert!(help.contains("Model: htdemucs or htdemucs_ft"));
-        assert!(help.contains(
-            "Create two stems: the selected source and a mix without it (drums, bass, other, or vocals)"
-        ));
-        assert!(help.contains("Two-stem method: add or minus"));
+        assert!(help.contains("standard (htdemucs) or fine-tuned (htdemucs_ft)"));
+        assert!(help.contains("Output SOURCE and a mix without it instead of all four stems"));
+        assert!(help.contains("Sources: drums, bass, other, vocals"));
+        assert!(help.contains("add sums the other stems"));
+        assert!(help.contains("minus subtracts SOURCE from the original mix"));
+        assert!(help.contains("more passes take proportionally longer"));
         assert!(!help.contains("possible values"));
     }
 
