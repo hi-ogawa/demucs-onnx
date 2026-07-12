@@ -120,8 +120,8 @@ export function RunProgressPanel({ progress }: { progress: RunProgress }) {
           role="progressbar"
         >
           <div
-            className={`bg-primary-strong h-full rounded-full transition-[width] duration-300 ${progress.total === 0 ? "animate-pulse" : ""}`}
-            style={{ width: progress.total === 0 ? "35%" : `${percent}%` }}
+            className="bg-primary-strong h-full rounded-full transition-[width] duration-300"
+            style={{ width: `${percent}%` }}
           />
         </div>
         <div className="text-muted flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
