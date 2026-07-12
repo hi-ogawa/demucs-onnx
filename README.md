@@ -55,7 +55,7 @@ pnpm build-wasm
 pnpm dev
 ```
 
-Open `http://localhost:5173`, choose a local audio file, and run separation. Audio and models stay in the browser. During development, Vite serves the generated models from `data/onnx-lean/`.
+Open `http://localhost:5173`, choose a local audio file and the required model files from `data/onnx-lean/`, then run separation. Audio and models stay in the browser.
 
 Build the static app with:
 

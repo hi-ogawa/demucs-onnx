@@ -8,8 +8,6 @@ import type { SeparateRequest, SeparatedStem } from "./audio/separate";
 import { encodeWavF32 } from "./wav";
 import type { WorkerResponse } from "./worker";
 
-declare const __MODELS_URL__: string | null;
-
 type DecodedAudio = { left: Float32Array; right: Float32Array };
 type Output = SeparatedStem & { url: string };
 
@@ -34,28 +32,20 @@ export function App() {
   const decodeIdRef = useRef(0);
 
   const modelSource: ModelSource | null = selectedModelFiles
-    ? { kind: "files", files: selectedModelFiles }
-    : __MODELS_URL__
-      ? { kind: "url", baseUrl: __MODELS_URL__ }
-      : null;
-  const missingModelFiles =
-    modelSource?.kind === "url"
-      ? []
-      : requiredModelFiles(
-          model,
-          twoStems || undefined,
-          twoStems ? method : undefined,
-        ).filter(
-          (filename) =>
-            !selectedModelFiles?.some((file) => file.name === filename),
-        );
+    ? { files: selectedModelFiles }
+    : null;
+  const missingModelFiles = requiredModelFiles(
+    model,
+    twoStems || undefined,
+    twoStems ? method : undefined,
+  ).filter(
+    (filename) => !selectedModelFiles?.some((file) => file.name === filename),
+  );
   const modelsReady = modelSource !== null && missingModelFiles.length === 0;
   let modelFilesStatus =
-    modelSource?.kind === "url"
-      ? ""
-      : missingModelFiles.length > 0
-        ? `Missing model files: ${missingModelFiles.join(", ")}`
-        : "Required model files selected.";
+    missingModelFiles.length > 0
+      ? `Missing model files: ${missingModelFiles.join(", ")}`
+      : "Required model files selected.";
   if (unsupportedModelFiles.length > 0) {
     modelFilesStatus += ` Unsupported files: ${unsupportedModelFiles.join(", ")}`;
   }
@@ -322,14 +312,12 @@ export function App() {
                 );
               }}
             />
-            {modelFilesStatus && (
-              <p
-                className="mt-4 text-sm leading-normal whitespace-pre-line text-[#667068]"
-                id="modelFilesStatus"
-              >
-                {modelFilesStatus}
-              </p>
-            )}
+            <p
+              className="mt-4 text-sm leading-normal whitespace-pre-line text-[#667068]"
+              id="modelFilesStatus"
+            >
+              {modelFilesStatus}
+            </p>
           </section>
 
           <div className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-6 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">

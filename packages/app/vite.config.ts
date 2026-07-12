@@ -3,11 +3,9 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// Models are served straight from the repository data dir via /@fs (no 300MB copies).
 const repoDir = resolve(__dirname, "../..");
-const modelsDir = resolve(repoDir, "data/onnx-lean");
 
-export default defineConfig(({ command }) => ({
+export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -17,11 +15,6 @@ export default defineConfig(({ command }) => ({
         "node_modules/onnxruntime-web/dist/ort.wasm.min.mjs",
       ),
     },
-  },
-  define: {
-    __MODELS_URL__: JSON.stringify(
-      command === "serve" ? `/@fs${modelsDir}` : null,
-    ),
   },
   optimizeDeps: {
     // keep ort un-prebundled so its internal import.meta.url asset resolution works in dev
@@ -34,8 +27,8 @@ export default defineConfig(({ command }) => ({
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
     fs: {
-      // allow serving the wasm pkg and model files from the repository
+      // Allow serving the generated WASM package from the repository.
       allow: [repoDir],
     },
   },
-}));
+});
