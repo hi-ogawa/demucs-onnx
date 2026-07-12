@@ -38,7 +38,7 @@ struct SeparateArgs {
     )]
     name: String,
 
-    /// Emit drums, bass, other, or vocals and its complement
+    /// Separate one source from its complement: drums, bass, other, or vocals
     #[arg(
         long,
         value_name = "SOURCE",
@@ -163,7 +163,9 @@ mod tests {
         let help = error.to_string();
         assert!(help.contains("--models <DIR>"));
         assert!(help.contains("Model: htdemucs or htdemucs_ft"));
-        assert!(help.contains("Emit drums, bass, other, or vocals and its complement"));
+        assert!(
+            help.contains("Separate one source from its complement: drums, bass, other, or vocals")
+        );
         assert!(help.contains("Two-stem method: add or minus"));
         assert!(!help.contains("possible values"));
     }
