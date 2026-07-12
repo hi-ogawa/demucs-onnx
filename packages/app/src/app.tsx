@@ -9,11 +9,11 @@ import {
   type ModelSource,
 } from "./lib/audio/models";
 import type { SeparateRequest } from "./lib/audio/separate";
+import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
-import { encodeWavF32 } from "./lib/wav";
 
 export function App() {
   // synchronize preferences with localStorage
