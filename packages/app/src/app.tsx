@@ -357,7 +357,7 @@ export function App() {
                     className="sr-only"
                     type="file"
                     id="modelFiles"
-                    accept=".bin,.onnx"
+                    accept=".onnx"
                     multiple
                     onChange={(event) =>
                       addModelFiles([...(event.target.files ?? [])])

@@ -42,12 +42,16 @@ jobs:
         with:
           path: |
             ~/.cache/torch/hub/checkpoints
+            ~/.cache/huggingface/hub
             data/onnx
-          key: ${{ runner.os }}-htdemucs-${{ hashFiles('uv.lock', 'tools/model-export/build_models.py', 'tools/model-export/export_onnx.py') }}
+            data/onnx-split
+          key: ${{ runner.os }}-htdemucs-${{ hashFiles('uv.lock', 'tools/model-export-v2/uv.lock', 'tools/model-export/build_models.py', 'tools/model-export-v2/*.py') }}
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build-model htdemucs
+
+      - run: pnpm build-model-v2 htdemucs
 
       - run: |
           pnpm verify-parity \
@@ -63,6 +67,14 @@ jobs:
             fixtures/sine-10s.wav data/ci-output
           test -s data/ci-output/bass.wav
           test -s data/ci-output/no_bass.wav
+
+      - run: |
+          pnpm cli-separate-v2 \
+            fixtures/sine-2s.wav data/output-split
+          test -s data/output-split/drums.wav
+          test -s data/output-split/bass.wav
+          test -s data/output-split/other.wav
+          test -s data/output-split/vocals.wav
 
       - run: pnpm build-wasm
 

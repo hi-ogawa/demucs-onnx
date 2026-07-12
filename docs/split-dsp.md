@@ -196,10 +196,14 @@ pnpm cli-separate-v2 fixtures/sine-2s.wav data/output-split
 
 ### 4. Integrate WASM
 
-- Reuse the Rust DSP implementation and buffers in WASM.
-- Minimize JS/WASM copies and recreate typed-array views after memory growth.
-- Update browser model requirements so split artifacts do not request `dft.bin`.
-- Retain the current URL/file-backed model source abstraction.
+- [x] Reuse the Rust DSP implementation and buffers in WASM.
+- [x] Pass waveform/spectrogram inputs and frequency/time outputs across the JS/WASM boundary.
+- [x] Remove `dft.bin` from recognized and required browser model files.
+- [x] Compare browser-generated stems with native split CLI stems in Playwright.
+
+The browser is hard-switched to split graphs; legacy browser model loading is not retained. Native
+CLI legacy support remains available for parity checks. Browser E2E verifies all four downloaded
+stems against native split output with `2e-3` max-absolute and `1e-7` MSE limits.
 
 ### 5. Benchmark execution providers
 
@@ -211,11 +215,11 @@ pnpm cli-separate-v2 fixtures/sine-2s.wav data/output-split
 
 ### 6. Migrate distribution
 
-- Publish split artifacts as an opt-in release flavor with manifest metadata.
-- Keep self-contained artifacts available until native and browser parity and performance are
-  established.
-- Make split DSP the CPU/WASM default only after release-level verification.
-- Remove `dft.bin` from the default workflow when no supported default path requires it.
+- Publish split artifacts with manifest metadata.
+- Update release guidance so browser users receive split models rather than same-named legacy
+  graphs.
+- Keep self-contained artifacts available only for native compatibility and comparison.
+- Remove `dft.bin` from the browser-facing default workflow.
 
 ## Decision Points
 

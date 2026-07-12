@@ -15,7 +15,9 @@ ort.env.wasm.wasmPaths = { mjs: ortWasmModuleUrl, wasm: ortWasmUrl };
 
 const SEGMENT = 343980;
 const IN_LEN = 2 * SEGMENT; // (1, 2, SEGMENT)
-const OUT_LEN = 4 * 2 * SEGMENT; // (1, 4, 2, SEGMENT)
+const SPECTROGRAM_LEN = 4 * 2048 * 336; // (1, 4, 2048, 336)
+const FREQUENCY_LEN = 4 * 4 * 2048 * 336; // (1, 4, 4, 2048, 336)
+const TIME_LEN = 4 * 2 * SEGMENT; // (1, 4, 2, SEGMENT)
 
 export interface TwoStems {
   source: string;
@@ -66,7 +68,6 @@ export async function separate(
   cb: SeparateCallbacks = {},
 ): Promise<SeparatedStem[]> {
   const wasm = await init();
-  let dft: Uint8Array | undefined;
 
   const host: Host = {
     event(...event) {
@@ -99,32 +100,36 @@ export async function separate(
       }
     },
 
-    async initialize() {
-      dft = await readModelFile(req.modelSource, "dft.bin");
-    },
-
     async loadModel(model, source) {
-      if (!dft) {
-        throw new Error("host not initialized");
-      }
       const file = (
         source ? `${model}_${source}.onnx` : `${model}.onnx`
       ) as ModelFilename;
       const bytes = await readModelFile(req.modelSource, file);
       return ort.InferenceSession.create(bytes, {
         executionProviders: ["wasm"],
-        externalData: [{ data: dft, path: "dft.bin" }],
       });
     },
 
-    async runModel(session, inputPtr, outputPtr) {
+    async runModel(session, inputPtr, spectrogramPtr, frequencyPtr, timePtr) {
       const input = new Float32Array(wasm.memory.buffer, inputPtr, IN_LEN);
+      const spectrogram = new Float32Array(
+        wasm.memory.buffer,
+        spectrogramPtr,
+        SPECTROGRAM_LEN,
+      );
       const feeds = {
-        input: new ort.Tensor("float32", input, [1, 2, SEGMENT]),
+        waveform: new ort.Tensor("float32", input, [1, 2, SEGMENT]),
+        spectrogram: new ort.Tensor("float32", spectrogram, [1, 4, 2048, 336]),
       };
       const result = await (session as ort.InferenceSession).run(feeds);
-      const output = new Float32Array(wasm.memory.buffer, outputPtr, OUT_LEN);
-      output.set(result.output.data as Float32Array);
+      const frequency = new Float32Array(
+        wasm.memory.buffer,
+        frequencyPtr,
+        FREQUENCY_LEN,
+      );
+      const time = new Float32Array(wasm.memory.buffer, timePtr, TIME_LEN);
+      frequency.set(result.frequency.data as Float32Array);
+      time.set(result.time.data as Float32Array);
     },
 
     async releaseModel(session) {
