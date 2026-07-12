@@ -3,11 +3,10 @@ import { expect, test } from "@playwright/test";
 test("restores and updates configuration preferences", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem(
-      "demucs-onnx:main:v1",
+      "demucs-onnx:main:v2",
       JSON.stringify({
         model: "htdemucs_ft",
-        outputMode: "two-stems",
-        targetStem: "bass",
+        twoStems: "bass",
         method: "minus",
         shifts: 3,
       }),
@@ -32,7 +31,7 @@ test("restores and updates configuration preferences", async ({ page }) => {
   );
   await expect
     .poll(() =>
-      page.evaluate(() => localStorage.getItem("demucs-onnx:main:v1")),
+      page.evaluate(() => localStorage.getItem("demucs-onnx:main:v2")),
     )
-    .toContain('"outputMode":"four-stems"');
+    .toContain('"twoStems":null');
 });

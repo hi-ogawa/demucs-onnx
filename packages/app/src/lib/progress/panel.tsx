@@ -1,3 +1,4 @@
+import { useEffect, useReducer } from "react";
 import type { RunProgress } from "./model";
 
 function formatClock(ms: number) {
@@ -13,14 +14,18 @@ function formatSeconds(ms: number) {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-export function RunProgressPanel({
-  progress,
-  now,
-}: {
-  progress: RunProgress;
-  now: number;
-}) {
-  const elapsed = (progress.completedAt ?? now) - progress.startedAt;
+export function RunProgressPanel({ progress }: { progress: RunProgress }) {
+  // Keep the elapsed clock moving while progress events are paused.
+  const [, rerender] = useReducer((count) => count + 1, 0);
+  useEffect(() => {
+    if (progress.completedAt !== undefined) {
+      return;
+    }
+    const timer = window.setInterval(rerender, 1000);
+    return () => window.clearInterval(timer);
+  }, [progress.completedAt]);
+
+  const elapsed = (progress.completedAt ?? Date.now()) - progress.startedAt;
   const loadMs = progress.models.reduce(
     (sum, model) => sum + (model.loadMs ?? 0),
     0,
@@ -115,8 +120,8 @@ export function RunProgressPanel({
           role="progressbar"
         >
           <div
-            className={`bg-primary-strong h-full rounded-full transition-[width] duration-300 ${progress.total === 0 ? "animate-pulse" : ""}`}
-            style={{ width: progress.total === 0 ? "35%" : `${percent}%` }}
+            className="bg-primary-strong h-full rounded-full transition-[width] duration-300"
+            style={{ width: `${percent}%` }}
           />
         </div>
         <div className="text-muted flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">

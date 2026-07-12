@@ -1,39 +1,26 @@
+import { useMutation } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { AUDIO_SAMPLE_RATE } from "./lib/audio/constants";
+import { decodeAudioFile } from "./lib/audio/decode";
 import {
   isModelFilename,
   requiredModelFiles,
   type ModelFilename,
   type ModelSource,
 } from "./lib/audio/models";
-import type { SeparateRequest, SeparatedStem } from "./lib/audio/separate";
+import type { SeparateRequest } from "./lib/audio/separate";
+import { encodeWavF32 } from "./lib/audio/wav";
+import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
-import { encodeWavF32 } from "./lib/wav";
-import type { WorkerResponse } from "./worker";
-
-type DecodedAudio = { left: Float32Array; right: Float32Array };
-type Output = SeparatedStem & { url: string };
-
-function FieldHelp({ children }: { children: React.ReactNode }) {
-  return (
-    <details className="relative normal-case">
-      <summary
-        className="text-help hover:text-primary flex size-5 cursor-pointer list-none items-center justify-center [&::-webkit-details-marker]:hidden"
-        aria-label="More information"
-      >
-        <CircleHelp aria-hidden="true" className="size-5" />
-      </summary>
-      <div className="text-copy absolute top-7 right-0 z-10 w-56 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg sm:w-64">
-        {children}
-      </div>
-    </details>
-  );
-}
 
 export function App() {
-  const [decoded, setDecoded] = useState<DecodedAudio | null>(null);
+  // synchronize preferences with localStorage
+  const [preferences, setPreferences] = useState(loadPreferences);
+  useEffect(() => savePreferences(preferences), [preferences]);
+
   const [modelFiles, setModelFiles] = useState<
     Partial<Record<ModelFilename, File>>
   >({});
@@ -43,31 +30,18 @@ export function App() {
   const [modelFileErrors, setModelFileErrors] = useState<
     Partial<Record<ModelFilename, string>>
   >({});
-  const [preferences, setPreferences] = useState(loadPreferences);
-  const [running, setRunning] = useState(false);
-  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
-  const [now, setNow] = useState(Date.now());
-  const [status, setStatus] = useState("");
-  const [outputs, setOutputs] = useState<Output[]>([]);
-  const workerRef = useRef<Worker | null>(null);
-  const outputUrlsRef = useRef<string[]>([]);
-  const decodeIdRef = useRef(0);
-  const { model, method, shifts } = preferences;
-  const twoStems =
-    preferences.outputMode === "two-stems" ? preferences.targetStem : "";
 
-  const selectedModelFiles = Object.values(modelFiles);
+  const { model, method, shifts, twoStems } = preferences;
+
   const requiredFiles = requiredModelFiles(
     model,
     twoStems || undefined,
     twoStems ? method : undefined,
   );
-  const missingModelFiles = requiredFiles.filter(
-    (filename) => !modelFiles[filename],
-  );
-  const modelsReady = missingModelFiles.length === 0;
-  const modelSource: ModelSource | null = modelsReady
-    ? { files: selectedModelFiles }
+  const modelSource: ModelSource | null = requiredFiles.every(
+    (filename) => modelFiles[filename],
+  )
+    ? { files: Object.values(modelFiles) }
     : null;
   function addModelFiles(files: File[], expected?: ModelFilename) {
     const accepted = files.filter(
@@ -96,151 +70,83 @@ export function App() {
     }
   }
 
-  function clearOutputs() {
-    for (const url of outputUrlsRef.current) {
-      URL.revokeObjectURL(url);
-    }
-    outputUrlsRef.current = [];
-    setOutputs([]);
-  }
+  const handleAudioFileMutation = useMutation({
+    mutationFn: async (file: File | undefined) => {
+      if (file) {
+        return decodeAudioFile(file);
+      }
+      return null;
+    },
+  });
+  const decodedAudio = handleAudioFileMutation.data ?? null;
 
-  useEffect(
-    () => () => {
-      workerRef.current?.terminate();
-      for (const url of outputUrlsRef.current) {
-        URL.revokeObjectURL(url);
+  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
+
+  const outputCleanupRef = useRef<Array<() => void>>([]);
+  const handleRunMutation = useMutation({
+    mutationFn: async () => {
+      if (!decodedAudio || !modelSource) {
+        throw new Error("Audio and model files are required");
+      }
+
+      for (const cleanup of outputCleanupRef.current) {
+        cleanup();
+      }
+      outputCleanupRef.current = [];
+
+      const startedAt = Date.now();
+      setRunProgress({
+        phase: "preparing",
+        startedAt,
+        done: 0,
+        total: 0,
+        models: [],
+        finalizeMs: 0,
+      });
+      const started = performance.now();
+      const request: SeparateRequest = {
+        left: decodedAudio.left.slice(),
+        right: decodedAudio.right.slice(),
+        model,
+        twoStems: twoStems ? { source: twoStems, method } : undefined,
+        shifts,
+        modelSource,
+      };
+      const separated = await separateInWorker(request, {
+        onProgress: (event, at) =>
+          setRunProgress((progress) =>
+            progress ? updateRunProgress(progress, event, at) : progress,
+          ),
+      });
+      const nextOutputs = separated.map((output) => {
+        const blob = encodeWavF32(
+          [output.left, output.right],
+          AUDIO_SAMPLE_RATE,
+        );
+        return { ...output, url: URL.createObjectURL(blob) };
+      });
+      outputCleanupRef.current = nextOutputs.map(
+        (output) => () => URL.revokeObjectURL(output.url),
+      );
+      return { outputs: nextOutputs, durationMs: performance.now() - started };
+    },
+    onSettled: (_data, error) => {
+      if (error) {
+        setRunProgress(null);
       }
     },
-    [],
-  );
+  });
 
-  useEffect(() => {
-    if (!running) {
-      return;
-    }
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [running]);
+  const outputs = handleRunMutation.data?.outputs ?? [];
 
-  useEffect(() => savePreferences(preferences), [preferences]);
-
-  async function handleAudioFile(file: File | undefined) {
-    const decodeId = ++decodeIdRef.current;
-    if (!file) {
-      setDecoded(null);
-      setStatus("");
-      return;
-    }
-
-    setDecoded(null);
-    setStatus("decoding...");
-    try {
-      const bytes = await file.arrayBuffer();
-      const context = new OfflineAudioContext({
-        numberOfChannels: 2,
-        length: 1,
-        sampleRate: 44100,
-      });
-      const buffer = await context.decodeAudioData(bytes);
-      if (decodeId !== decodeIdRef.current) {
-        return;
-      }
-      const left = buffer.getChannelData(0);
-      const right =
-        buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
-      setDecoded({ left, right });
-      setStatus(
-        `decoded: ${(buffer.length / 44100).toFixed(2)}s, ${buffer.numberOfChannels}ch @44.1k`,
-      );
-    } catch (error) {
-      if (decodeId === decodeIdRef.current) {
-        setStatus(
-          `error: failed to decode audio: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-  }
-
-  function finishRun(worker: Worker) {
-    if (workerRef.current !== worker) {
-      return false;
-    }
-    workerRef.current = null;
-    worker.terminate();
-    setRunning(false);
-    return true;
-  }
-
-  function handleRun() {
-    if (!decoded || !modelSource) {
-      return;
-    }
-
-    clearOutputs();
-    setRunning(true);
-    const startedAt = Date.now();
-    setNow(startedAt);
-    setRunProgress({
-      phase: "preparing",
-      startedAt,
-      done: 0,
-      total: 0,
-      models: [],
-      finalizeMs: 0,
-    });
-    const started = performance.now();
-    const worker = new Worker(new URL("./worker.ts", import.meta.url), {
-      type: "module",
-    });
-    workerRef.current = worker;
-
-    worker.onerror = (event) => {
-      if (finishRun(worker)) {
-        setRunProgress(null);
-        setStatus(`error: worker failed: ${event.message}`);
-      }
-    };
-    worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      if (workerRef.current !== worker) {
-        return;
-      }
-      const message = event.data;
-      if (message.type === "progress") {
-        setRunProgress((progress) =>
-          progress
-            ? updateRunProgress(progress, message.event, message.at)
-            : progress,
-        );
-      } else if (message.type === "done") {
-        const nextOutputs = message.outputs.map((output) => {
-          const blob = encodeWavF32([output.left, output.right], 44100);
-          return { ...output, url: URL.createObjectURL(blob) };
-        });
-        outputUrlsRef.current = nextOutputs.map((output) => output.url);
-        setOutputs(nextOutputs);
-        setStatus(
-          `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
-        );
-        finishRun(worker);
-      } else {
-        setRunProgress(null);
-        setStatus(`error: ${message.message}`);
-        finishRun(worker);
-      }
-    };
-
-    const left = decoded.left.slice();
-    const right = decoded.right.slice();
-    const request: SeparateRequest = {
-      left,
-      right,
-      model,
-      twoStems: twoStems ? { source: twoStems, method } : undefined,
-      shifts,
-      modelSource,
-    };
-    worker.postMessage(request, [left.buffer, right.buffer]);
-  }
+  const audioFileStatusText = handleAudioFileMutation.isPending
+    ? "Decoding..."
+    : decodedAudio
+      ? `Decoded: ${decodedAudio.duration.toFixed(2)}s, ${decodedAudio.numberOfChannels}ch @${decodedAudio.sampleRate / 1000}k`
+      : "";
+  const separationStatusText = handleRunMutation.data
+    ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
+    : "";
 
   return (
     <main className="mx-auto w-full max-w-[800px] px-3 py-9 sm:px-5 sm:py-18 md:pb-24">
@@ -280,9 +186,14 @@ export function App() {
                 id="file"
                 accept="audio/*"
                 onChange={(event) =>
-                  void handleAudioFile(event.target.files?.[0])
+                  handleAudioFileMutation.mutate(event.target.files?.[0])
                 }
               />
+              {audioFileStatusText && (
+                <p className="text-muted mt-3.5 text-sm" id="audio-status">
+                  {audioFileStatusText}
+                </p>
+              )}
             </section>
           </div>
 
@@ -350,16 +261,12 @@ export function App() {
                   <select
                     className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
                     id="twoStems"
-                    value={twoStems}
+                    value={twoStems ?? ""}
                     onChange={(event) =>
                       setPreferences((current) => ({
                         ...current,
-                        outputMode: event.target.value
-                          ? "two-stems"
-                          : "four-stems",
-                        targetStem: event.target.value
-                          ? (event.target.value as typeof current.targetStem)
-                          : current.targetStem,
+                        twoStems: (event.target.value ||
+                          null) as typeof current.twoStems,
                       }))
                     }
                   >
@@ -473,20 +380,20 @@ export function App() {
               <button
                 className="bg-primary-bright text-primary-foreground shadow-action hover:not-disabled:bg-primary-bright-hover disabled:border-primary-border disabled:bg-primary-soft disabled:text-primary-muted min-h-13 w-full cursor-pointer rounded-md border border-transparent font-bold disabled:cursor-not-allowed disabled:shadow-none"
                 id="run"
-                disabled={running || !decoded || !modelsReady}
-                onClick={handleRun}
+                disabled={
+                  handleRunMutation.isPending || !decodedAudio || !modelSource
+                }
+                onClick={() => handleRunMutation.mutate()}
               >
                 Separate track
               </button>
-              {runProgress && (
-                <RunProgressPanel progress={runProgress} now={now} />
-              )}
-              {!running && status && (
+              {runProgress && <RunProgressPanel progress={runProgress} />}
+              {separationStatusText && (
                 <p
                   className="text-muted mt-3.5 text-sm leading-normal whitespace-pre-line"
                   id="status"
                 >
-                  {status}
+                  {separationStatusText}
                 </p>
               )}
             </section>
@@ -589,5 +496,21 @@ function ModelFileSlot({
       </label>
       {error && <p className="text-danger mt-1.5 text-sm">{error}</p>}
     </div>
+  );
+}
+
+function FieldHelp({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="relative normal-case">
+      <summary
+        className="text-help hover:text-primary flex size-5 cursor-pointer list-none items-center justify-center [&::-webkit-details-marker]:hidden"
+        aria-label="More information"
+      >
+        <CircleHelp aria-hidden="true" className="size-5" />
+      </summary>
+      <div className="text-copy absolute top-7 right-0 z-10 w-56 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg sm:w-64">
+        {children}
+      </div>
+    </details>
   );
 }
