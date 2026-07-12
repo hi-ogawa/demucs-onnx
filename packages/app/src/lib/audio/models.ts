@@ -8,7 +8,8 @@ const MODEL_FILENAMES = [
 
 export type ModelFilename = (typeof MODEL_FILENAMES)[number];
 
-export type ModelSource = { files: File[] };
+export type ModelArtifact = { name: ModelFilename; blob: Blob };
+export type ModelSource = { artifacts: ModelArtifact[] };
 
 export function isModelFilename(name: string): name is ModelFilename {
   return MODEL_FILENAMES.includes(name as ModelFilename);
@@ -37,9 +38,11 @@ export async function readModelFile(
   source: ModelSource,
   filename: ModelFilename,
 ): Promise<Uint8Array> {
-  const file = source.files.find((candidate) => candidate.name === filename);
-  if (!file) {
+  const artifact = source.artifacts.find(
+    (candidate) => candidate.name === filename,
+  );
+  if (!artifact) {
     throw new Error(`missing model file: ${filename}`);
   }
-  return new Uint8Array(await file.arrayBuffer());
+  return new Uint8Array(await artifact.blob.arrayBuffer());
 }
