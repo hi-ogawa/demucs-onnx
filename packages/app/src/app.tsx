@@ -1,11 +1,13 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { modelArtifactManager } from "./lib/audio/artifact-store";
 import { AUDIO_SAMPLE_RATE } from "./lib/audio/constants";
 import { decodeAudioFile } from "./lib/audio/decode";
 import {
   isModelFilename,
   requiredModelFiles,
+  type ModelArtifact,
   type ModelFilename,
   type ModelSource,
 } from "./lib/audio/models";
@@ -21,8 +23,8 @@ export function App() {
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
 
-  const [modelFiles, setModelFiles] = useState<
-    Partial<Record<ModelFilename, File>>
+  const [selectedModelFiles, setSelectedModelFiles] = useState<
+    Partial<Record<ModelFilename, ModelArtifact>>
   >({});
   const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
     [],
@@ -33,6 +35,23 @@ export function App() {
 
   const { model, method, shifts, twoStems } = preferences;
 
+  const loadStoredModelsQuery = useQuery({
+    queryKey: ["stored-models"],
+    queryFn: modelArtifactManager.load,
+  });
+  const storeModelsMutation = useMutation({
+    mutationFn: modelArtifactManager.store,
+  });
+  const modelFiles: Partial<Record<ModelFilename, ModelArtifact>> = {
+    ...Object.fromEntries(
+      (loadStoredModelsQuery.data ?? []).map((artifact) => [
+        artifact.name,
+        artifact,
+      ]),
+    ),
+    ...selectedModelFiles,
+  };
+
   const requiredFiles = requiredModelFiles(
     model,
     twoStems || undefined,
@@ -41,16 +60,18 @@ export function App() {
   const modelSource: ModelSource | null = requiredFiles.every(
     (filename) => modelFiles[filename],
   )
-    ? { files: Object.values(modelFiles) }
+    ? { artifacts: Object.values(modelFiles) }
     : null;
   function addModelFiles(files: File[], expected?: ModelFilename) {
     const accepted = files.filter(
       (file) =>
         isModelFilename(file.name) && (!expected || file.name === expected),
     );
-    setModelFiles((current) => ({
+    setSelectedModelFiles((current) => ({
       ...current,
-      ...Object.fromEntries(accepted.map((file) => [file.name, file])),
+      ...Object.fromEntries(
+        accepted.map((file) => [file.name, { name: file.name, blob: file }]),
+      ),
     }));
     setUnsupportedModelFiles(
       expected
@@ -68,7 +89,19 @@ export function App() {
           : undefined,
       }));
     }
+    if (accepted.length > 0) {
+      storeModelsMutation.mutate(accepted);
+    }
   }
+
+  const modelStorageError = loadStoredModelsQuery.error
+    ? "Browser storage is unavailable; uploads still work."
+    : storeModelsMutation.error instanceof DOMException &&
+        storeModelsMutation.error.name === "QuotaExceededError"
+      ? "Browser storage is full; files are available for this session only."
+      : storeModelsMutation.error
+        ? "Files are available for this session but could not be stored."
+        : "";
 
   const handleAudioFileMutation = useMutation({
     mutationFn: async (file: File | undefined) => {
@@ -370,6 +403,9 @@ export function App() {
                 <p className="text-danger mt-2 text-sm">
                   Unsupported files: {unsupportedModelFiles.join(", ")}.
                 </p>
+              )}
+              {modelStorageError && (
+                <p className="text-danger mt-2 text-sm">{modelStorageError}</p>
               )}
             </section>
 
