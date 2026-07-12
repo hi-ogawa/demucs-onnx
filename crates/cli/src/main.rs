@@ -44,7 +44,7 @@ struct SeparateArgs {
         value_name = "SOURCE",
         value_parser = ["drums", "bass", "other", "vocals"],
         hide_possible_values = true,
-        long_help = "Output SOURCE and a mix without it instead of all four stems\n\nSources: drums, bass, other, vocals"
+        long_help = "Output SOURCE and a mix without it instead of all four stems. Sources: drums, bass, other, vocals"
     )]
     two_stems: Option<String>,
 
@@ -54,7 +54,7 @@ struct SeparateArgs {
         value_name = "METHOD",
         value_parser = ["add", "minus"],
         hide_possible_values = true,
-        long_help = "How to create the mix without SOURCE\n\nadd sums the other stems; minus subtracts SOURCE from the original mix\n\nDefault: add"
+        long_help = "How to create the mix without SOURCE: add sums the other stems; minus subtracts SOURCE from the original mix. Default: add"
     )]
     method: Option<String>,
 
