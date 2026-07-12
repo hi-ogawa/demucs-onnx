@@ -187,120 +187,161 @@ export function App() {
 
   return (
     <main>
-      <h1>demucs-web prototype</h1>
-      <fieldset>
-        <legend>input</legend>
-        <input
-          type="file"
-          id="file"
-          accept="audio/*"
-          onChange={(event) => void handleAudioFile(event.target.files?.[0])}
-        />
-      </fieldset>
-      <fieldset>
-        <legend>models</legend>
-        <p>
-          Download model assets from the{" "}
-          <a
-            href="https://github.com/hi-ogawa/demucs-onnx/releases"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub Releases page
-          </a>
-          , then select the required files.
+      <header className="hero">
+        <p className="eyebrow">Browser-based source separation</p>
+        <h1>Demucs ONNX</h1>
+        <p className="lede">
+          Separate music into vocals, drums, bass, and other stems, entirely in
+          your browser.
         </p>
-        <input
-          type="file"
-          id="modelFiles"
-          accept=".bin,.onnx"
-          multiple
-          onChange={(event) => {
-            const files = [...(event.target.files ?? [])];
-            setSelectedModelFiles(
-              files.filter((file) => isModelFilename(file.name)),
-            );
-            setUnsupportedModelFiles(
-              files
-                .filter((file) => !isModelFilename(file.name))
-                .map((file) => file.name),
-            );
-          }}
-        />
-        <p id="modelFilesStatus">{modelFilesStatus}</p>
-      </fieldset>
-      <fieldset>
-        <legend>options</legend>
-        <label>
-          model{" "}
-          <select
-            id="model"
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-          >
-            <option>htdemucs</option>
-            <option>htdemucs_ft</option>
-          </select>
-        </label>
-        <label>
-          two-stems{" "}
-          <select
-            id="twoStems"
-            value={twoStems}
-            onChange={(event) => setTwoStems(event.target.value)}
-          >
-            <option value="">off</option>
-            <option>drums</option>
-            <option>bass</option>
-            <option>other</option>
-            <option>vocals</option>
-          </select>
-        </label>
-        <label>
-          method{" "}
-          <select
-            id="method"
-            value={method}
-            onChange={(event) =>
-              setMethod(event.target.value as "add" | "minus")
-            }
-          >
-            <option>add</option>
-            <option>minus</option>
-          </select>
-        </label>
-        <label>
-          shifts{" "}
-          <input
-            type="number"
-            id="shifts"
-            value={shifts}
-            min="1"
-            max="4"
-            onChange={(event) => setShifts(Number(event.target.value))}
-          />
-        </label>
-      </fieldset>
-      <button
-        id="run"
-        disabled={running || !decoded || !modelsReady}
-        onClick={handleRun}
-      >
-        separate
-      </button>
-      {progress !== null && <progress id="progress" value={progress} max="1" />}
-      <p id="status">{status}</p>
-      <div id="stems">
-        {outputs.map((output) => (
-          <div key={output.name}>
-            <b>{output.name} </b>
-            <audio controls src={output.url} />{" "}
-            <a href={output.url} download={`${output.name}.wav`}>
-              download
-            </a>
+        <p className="privacy-note">
+          <span aria-hidden="true">●</span> Your audio and model files stay on
+          this device.
+        </p>
+      </header>
+
+      <section className="workspace" aria-label="Separation setup">
+        <div className="setup-column">
+          <fieldset className="panel">
+            <legend>1. Choose audio</legend>
+            <p className="supporting-text">
+              Select the track you want to separate.
+            </p>
+            <input
+              type="file"
+              id="file"
+              accept="audio/*"
+              onChange={(event) =>
+                void handleAudioFile(event.target.files?.[0])
+              }
+            />
+          </fieldset>
+
+          <fieldset className="panel">
+            <legend>2. Add models</legend>
+            <p className="supporting-text">
+              Download model assets from the{" "}
+              <a
+                href="https://github.com/hi-ogawa/demucs-onnx/releases"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub Releases page
+              </a>
+              , then select the required files.
+            </p>
+            <input
+              type="file"
+              id="modelFiles"
+              accept=".bin,.onnx"
+              multiple
+              onChange={(event) => {
+                const files = [...(event.target.files ?? [])];
+                setSelectedModelFiles(
+                  files.filter((file) => isModelFilename(file.name)),
+                );
+                setUnsupportedModelFiles(
+                  files
+                    .filter((file) => !isModelFilename(file.name))
+                    .map((file) => file.name),
+                );
+              }}
+            />
+            <p id="modelFilesStatus">{modelFilesStatus}</p>
+          </fieldset>
+        </div>
+
+        <aside className="run-column">
+          <fieldset className="panel options-panel">
+            <legend>3. Configure</legend>
+            <div className="option-grid">
+              <label>
+                <span>Model</span>
+                <select
+                  id="model"
+                  value={model}
+                  onChange={(event) => setModel(event.target.value)}
+                >
+                  <option>htdemucs</option>
+                  <option>htdemucs_ft</option>
+                </select>
+              </label>
+              <label>
+                <span>Two-stems</span>
+                <select
+                  id="twoStems"
+                  value={twoStems}
+                  onChange={(event) => setTwoStems(event.target.value)}
+                >
+                  <option value="">off</option>
+                  <option>drums</option>
+                  <option>bass</option>
+                  <option>other</option>
+                  <option>vocals</option>
+                </select>
+              </label>
+              <label>
+                <span>Method</span>
+                <select
+                  id="method"
+                  value={method}
+                  onChange={(event) =>
+                    setMethod(event.target.value as "add" | "minus")
+                  }
+                >
+                  <option>add</option>
+                  <option>minus</option>
+                </select>
+              </label>
+              <label>
+                <span>Shifts</span>
+                <input
+                  type="number"
+                  id="shifts"
+                  value={shifts}
+                  min="1"
+                  max="4"
+                  onChange={(event) => setShifts(Number(event.target.value))}
+                />
+              </label>
+            </div>
+          </fieldset>
+
+          <div className="run-panel">
+            <button
+              id="run"
+              disabled={running || !decoded || !modelsReady}
+              onClick={handleRun}
+            >
+              Separate track
+            </button>
+            {progress !== null && (
+              <progress id="progress" value={progress} max="1" />
+            )}
+            <p id="status">{status}</p>
           </div>
-        ))}
-      </div>
+        </aside>
+      </section>
+
+      {outputs.length > 0 && (
+        <section className="results" aria-labelledby="results-title">
+          <div className="section-heading">
+            <p className="eyebrow">Separation complete</p>
+            <h2 id="results-title">Your stems</h2>
+          </div>
+          <div id="stems">
+            {outputs.map((output) => (
+              <div key={output.name}>
+                <b>{output.name}</b>
+                <audio controls src={output.url} />
+                <a href={output.url} download={`${output.name}.wav`}>
+                  Download WAV
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
