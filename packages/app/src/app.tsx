@@ -12,6 +12,22 @@ import type { WorkerResponse } from "./worker";
 type DecodedAudio = { left: Float32Array; right: Float32Array };
 type Output = SeparatedStem & { url: string };
 
+function FieldHelp({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="relative normal-case">
+      <summary
+        className="flex size-5 cursor-pointer list-none items-center justify-center rounded-full border border-[#aeb5ae] text-[11px] font-bold text-[#536059] hover:border-[#174331] hover:text-[#174331] [&::-webkit-details-marker]:hidden"
+        aria-label="More information"
+      >
+        ?
+      </summary>
+      <div className="absolute top-7 right-0 z-10 w-64 rounded-md border border-[#d9d8ce] bg-white p-3 text-sm leading-relaxed font-normal tracking-normal text-[#3f4942] shadow-lg max-[480px]:w-56">
+        {children}
+      </div>
+    </details>
+  );
+}
+
 export function App() {
   const [decoded, setDecoded] = useState<DecodedAudio | null>(null);
   const [selectedModelFiles, setSelectedModelFiles] = useState<File[] | null>(
@@ -225,8 +241,14 @@ export function App() {
               2. Configure
             </h2>
             <div className="grid grid-cols-2 gap-4.5 max-[480px]:grid-cols-1">
-              <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
-                <span>Model</span>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
+                  <label htmlFor="model">Model</label>
+                  <FieldHelp>
+                    Choose the standard general-purpose model or the fine-tuned
+                    source-specialist models.
+                  </FieldHelp>
+                </div>
                 <select
                   className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   id="model"
@@ -241,9 +263,39 @@ export function App() {
                   <option>htdemucs</option>
                   <option>htdemucs_ft</option>
                 </select>
-              </label>
-              <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
-                <span>Two-stems</span>
+              </div>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
+                  <label htmlFor="shifts">Shifts</label>
+                  <FieldHelp>
+                    Trade speed for separation quality by averaging multiple
+                    processing passes. Runtime grows roughly in proportion.
+                  </FieldHelp>
+                </div>
+                <input
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
+                  type="number"
+                  id="shifts"
+                  value={shifts}
+                  min="1"
+                  max="4"
+                  onChange={(event) =>
+                    setPreferences((current) => ({
+                      ...current,
+                      shifts: Number(event.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
+                  <label htmlFor="twoStems">Two-stems</label>
+                  <FieldHelp>
+                    Output the selected source and a mix without it. Other
+                    contains instruments not classified as vocals, drums, or
+                    bass.
+                  </FieldHelp>
+                </div>
                 <select
                   className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   id="twoStems"
@@ -266,13 +318,21 @@ export function App() {
                   <option>other</option>
                   <option>vocals</option>
                 </select>
-              </label>
-              <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
-                <span>Method</span>
+              </div>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
+                  <label htmlFor="method">Method</label>
+                  <FieldHelp>
+                    Add combines the other separated stems. Minus subtracts the
+                    source from the original and, with htdemucs_ft, runs about
+                    four times faster. Results vary by track.
+                  </FieldHelp>
+                </div>
                 <select
-                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] disabled:cursor-not-allowed disabled:bg-[#eeeee9] disabled:text-[#777f79]"
                   id="method"
                   value={method}
+                  disabled={!twoStems}
                   onChange={(event) =>
                     setPreferences((current) => ({
                       ...current,
@@ -283,24 +343,24 @@ export function App() {
                   <option>add</option>
                   <option>minus</option>
                 </select>
-              </label>
-              <label className="grid gap-2 text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
-                <span>Shifts</span>
-                <input
-                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
-                  type="number"
-                  id="shifts"
-                  value={shifts}
-                  min="1"
-                  max="4"
-                  onChange={(event) =>
-                    setPreferences((current) => ({
-                      ...current,
-                      shifts: Number(event.target.value),
-                    }))
-                  }
-                />
-              </label>
+              </div>
+              <p
+                className="col-span-2 rounded-md bg-[#e8eee9] px-3 py-2.5 text-sm leading-relaxed text-[#3f4942] max-[480px]:col-span-1"
+                id="outputSummary"
+              >
+                {twoStems ? (
+                  <>
+                    Creates <strong>{twoStems}.wav</strong> and{" "}
+                    <strong>no_{twoStems}.wav</strong>.
+                  </>
+                ) : (
+                  <>
+                    Creates <strong>vocals.wav</strong>,{" "}
+                    <strong>drums.wav</strong>, <strong>bass.wav</strong>, and{" "}
+                    <strong>other.wav</strong>.
+                  </>
+                )}
+              </p>
             </div>
           </section>
 
