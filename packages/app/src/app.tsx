@@ -90,14 +90,6 @@ export function App() {
     }
   }
 
-  function clearOutputs() {
-    for (const url of outputUrlsRef.current) {
-      URL.revokeObjectURL(url);
-    }
-    outputUrlsRef.current = [];
-    setOutputs([]);
-  }
-
   useEffect(
     () => () => {
       runAbortRef.current?.abort();
@@ -138,7 +130,11 @@ export function App() {
         throw new Error("Audio and model files are required");
       }
 
-      clearOutputs();
+      for (const url of outputUrlsRef.current) {
+        URL.revokeObjectURL(url);
+      }
+      outputUrlsRef.current = [];
+      setOutputs([]);
       const startedAt = Date.now();
       setRunProgress({
         phase: "preparing",
