@@ -147,9 +147,9 @@ export function App() {
         ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
         : ""
       : handleAudioFileMutation.isPending
-        ? "decoding..."
+        ? "Decoding..."
         : decoded
-          ? `decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
+          ? `Decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
           : "";
 
   return (
