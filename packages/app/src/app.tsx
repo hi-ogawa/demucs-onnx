@@ -13,7 +13,6 @@ import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
-import { useNow } from "./lib/use-now";
 import { encodeWavF32 } from "./lib/wav";
 
 // TODO: bad?
@@ -34,8 +33,6 @@ export function App() {
   >({});
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
-
-  const now = useNow(running);
 
   // TODO: probably bad
   const [status, setStatus] = useState("");
@@ -429,9 +426,7 @@ export function App() {
               >
                 Separate track
               </button>
-              {runProgress && (
-                <RunProgressPanel progress={runProgress} now={now} />
-              )}
+              {runProgress && <RunProgressPanel progress={runProgress} />}
               {!running && status && (
                 <p
                   className="text-muted mt-3.5 text-sm leading-normal whitespace-pre-line"
