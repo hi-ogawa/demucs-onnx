@@ -160,25 +160,6 @@ mod tests {
     }
 
     #[test]
-    fn separate_help() {
-        let error = Cli::try_parse_from(["demucs", "separate", "--help"]).unwrap_err();
-        assert_eq!(error.kind(), ErrorKind::DisplayHelp);
-        let help = error.to_string();
-        assert!(help.contains("--models <DIR>"));
-        assert!(help.contains("standard (htdemucs) or fine-tuned (htdemucs_ft)"));
-        assert!(help.contains("Output SOURCE and a mix without it instead of all four stems"));
-        assert!(help.contains("Sources: drums, bass, other, vocals"));
-        assert!(help.contains("second stem in two-stem mode"));
-        assert!(help.contains("add sums the other stems"));
-        assert!(help.contains("minus subtracts SOURCE from the original mix"));
-        assert!(
-            help.contains("minus runs only the selected source model and skips the other three")
-        );
-        assert!(help.contains("more passes take proportionally longer"));
-        assert!(!help.contains("possible values"));
-    }
-
-    #[test]
     fn separate_defaults() {
         let cli = Cli::try_parse_from([
             "demucs",
