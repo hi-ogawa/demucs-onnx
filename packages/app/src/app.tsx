@@ -443,12 +443,14 @@ export function App() {
             {runProgress && (
               <RunProgressPanel progress={runProgress} now={now} />
             )}
-            <p
-              className="mt-3.5 min-h-[1.3em] text-sm leading-normal whitespace-pre-line text-[#667068]"
-              id="status"
-            >
-              {running ? "" : status}
-            </p>
+            {!running && status && (
+              <p
+                className="mt-3.5 text-sm leading-normal whitespace-pre-line text-[#667068]"
+                id="status"
+              >
+                {status}
+              </p>
+            )}
           </section>
         </aside>
       </section>
