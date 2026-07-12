@@ -4,4 +4,6 @@ __pycache__/
 .venv/
 target/
 crates/wasm/pkg/
-packages/app/.playwright-cli/
+*.tsbuildinfo
+dist/
+test-results/
