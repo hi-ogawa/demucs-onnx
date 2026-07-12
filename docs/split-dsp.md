@@ -113,6 +113,14 @@ for frequency, and `5.472e-5` max absolute error and `6.695e-12` MSE for time. O
 input, the official Hugging Face model loader and the legacy fork/checkpoint loader produced
 byte-identical final output (`sha256:21d88c3dcb713451ffcf20c4c44a17306bb10f11ae0277df4ab90c3043146359`).
 
+The v2 builder accepts explicit member names or `--all`. It atomically writes the requested model
+set and a `manifest.json` containing the graph flavor, upstream version, tensor contract, source
+order, precision, specialty, artifact size and digest, and measured branch parity. A full build is:
+
+```sh
+pnpm build-model-v2 --all
+```
+
 Split artifacts must use a distinct directory, filename convention, and manifest flavor while the
 current self-contained artifacts remain supported. A split model must never be loadable as a
 waveform model by accident.
@@ -156,10 +164,10 @@ code.
 
 ### 2. Verify the split ONNX artifact
 
-- Compare frequency and time outputs independently against PyTorch.
-- Extend model-building scripts with an explicit split flavor.
-- Generate all standard and fine-tuned members only after the standard model passes.
-- Record exact model sizes and tensor metadata.
+- [x] Compare frequency and time outputs independently against PyTorch.
+- [x] Add an isolated split-model builder with explicit-member and `--all` modes.
+- [x] Generate and verify the standard model and all four fine-tuned specialists.
+- [x] Record exact model sizes, digests, parity metrics, and tensor metadata in a manifest.
 
 ### 3. Implement native runtime DSP
 

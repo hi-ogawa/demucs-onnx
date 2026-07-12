@@ -7,7 +7,7 @@
     "link-wt": "bash tools/link-wt.sh",
     "bass-cover": "uv run --no-sync tools/bass-cover.py",
     "build-model": "uv run python tools/model-export/build_models.py",
-    "build-model-v2": "uv run --project tools/model-export-v2 python tools/model-export-v2/export_split_onnx.py --out data/onnx-split/htdemucs.onnx",
+    "build-model-v2": "uv run --project tools/model-export-v2 python tools/model-export-v2/export_split_onnx.py --out data/onnx-split",
     "verify-parity": "uv run python tools/model-export/verify_parity.py",
     "model-release": "uv run --no-sync tools/model_release.py",
     "build-wasm": "wasm-pack build crates/wasm --target web --release",
