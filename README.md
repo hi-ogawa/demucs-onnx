@@ -41,12 +41,12 @@ pnpm cli-separate --name htdemucs_ft --two-stems bass --two-stems-mix minus data
 
 This creates `bass.wav` and `no_bass.wav`.
 
-| Option | Explanation |
-| --- | --- |
-| `--name htdemucs\|htdemucs_ft` | Chooses the standard general-purpose model or the fine-tuned source-specialist models. |
-| `--two-stems <source>` | Selects a `drums`, `bass`, `vocals`, or `other` source and outputs it with a mix without it. By default, outputs all four stems. |
-| `--two-stems-mix add\|minus` | Chooses the backing-mix quality and speed tradeoff. `add` combines the other separated stems. `minus` subtracts the source from the original and, with `htdemucs_ft`, runs about four times faster by using only that source's specialist. Results vary by track. |
-| `--shifts N` | Trades speed for separation quality by averaging `N` processing passes. Runtime grows roughly in proportion. The default is one pass. |
+| Option                         | Explanation                                                                                                                                                                                                                                                       |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--name htdemucs\|htdemucs_ft` | Chooses the standard general-purpose model or the fine-tuned source-specialist models.                                                                                                                                                                            |
+| `--two-stems <source>`         | Selects a `drums`, `bass`, `vocals`, or `other` source and outputs it with a mix without it. By default, outputs all four stems.                                                                                                                                  |
+| `--two-stems-mix add\|minus`   | Chooses the backing-mix quality and speed tradeoff. `add` combines the other separated stems. `minus` subtracts the source from the original and, with `htdemucs_ft`, runs about four times faster by using only that source's specialist. Results vary by track. |
+| `--shifts N`                   | Trades speed for separation quality by averaging `N` processing passes. Runtime grows roughly in proportion. The default is one pass.                                                                                                                             |
 
 ## Build Models Locally
 
