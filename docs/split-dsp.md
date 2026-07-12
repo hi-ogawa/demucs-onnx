@@ -175,10 +175,14 @@ code.
 
 ### 3. Implement native runtime DSP
 
-- Add reusable real-FFT plans, Hann window, and work buffers with `realfft`/`rustfft`.
-- Implement the padding, packing, reconstruction, and crop contract above.
+- [x] Add a reusable real-FFT plan, periodic Hann window, and work buffers with `realfft`.
+- [x] Implement and verify reflect padding, STFT framing, normalization, cropping, and CaC packing.
+- Implement inverse packing, iSTFT reconstruction, and the final crop.
 - Change the native backend to provide two inputs and consume two outputs.
 - Preserve the existing member, shift, chunk, overlap-add, and stem-finalization orchestration.
+
+The Rust STFT test compares every frame at 64 frequencies across all CaC channels with a compact
+PyTorch fixture. Initial parity measured `1.788e-7` max absolute error and `8.839e-16` MSE.
 
 ### 4. Integrate WASM
 

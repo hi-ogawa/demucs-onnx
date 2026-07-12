@@ -13,3 +13,14 @@ ffmpeg -hide_banner -loglevel error \
 ```
 
 Replace `DURATION` with `2` or `10`.
+
+`stft-reference-f32.bin` contains little-endian float32 PyTorch STFT output for the 64 frequency
+bins listed in `stft-reference-f32.json`, across every frame and complex-as-channels channel. The
+input waveform is generated from integer state in both Python and Rust, so it does not need to be
+stored. Regenerate the reference from the repository root with:
+
+```bash
+uv run --project tools/model-export-v2 python \
+  tools/model-export-v2/generate_stft_fixture.py \
+  --out fixtures/stft-reference-f32.bin
+```
