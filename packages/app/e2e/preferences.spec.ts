@@ -18,7 +18,7 @@ test("restores and updates configuration preferences", async ({ page }) => {
   await expect(page.locator("#model")).toHaveValue("htdemucs_ft");
   await expect(page.locator("#twoStems")).toHaveValue("bass");
   await expect(page.locator("#method")).toHaveValue("minus");
-  await expect(page.locator("#twoStemsOptions")).toBeVisible();
+  await expect(page.locator("#method")).toBeEnabled();
   await expect(page.locator("#outputSummary")).toContainText(
     "Creates bass.wav and no_bass.wav.",
   );
@@ -28,7 +28,7 @@ test("restores and updates configuration preferences", async ({ page }) => {
   );
 
   await page.locator("#twoStems").selectOption("");
-  await expect(page.locator("#twoStemsOptions")).toBeHidden();
+  await expect(page.locator("#method")).toBeDisabled();
   await expect(page.locator("#outputSummary")).toContainText(
     "Creates vocals.wav, drums.wav, bass.wav, and other.wav.",
   );

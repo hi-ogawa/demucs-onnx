@@ -266,6 +266,29 @@ export function App() {
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
+                  <label htmlFor="shifts">Shifts</label>
+                  <FieldHelp>
+                    Trade speed for separation quality by averaging multiple
+                    processing passes. Runtime grows roughly in proportion.
+                  </FieldHelp>
+                </div>
+                <input
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
+                  type="number"
+                  id="shifts"
+                  value={shifts}
+                  min="1"
+                  max="4"
+                  onChange={(event) =>
+                    setPreferences((current) => ({
+                      ...current,
+                      shifts: Number(event.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
                   <label htmlFor="twoStems">Two-stems</label>
                   <FieldHelp>
                     Output the selected source and a mix without it. Other
@@ -298,81 +321,46 @@ export function App() {
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
-                  <label htmlFor="shifts">Shifts</label>
+                  <label htmlFor="method">Method</label>
                   <FieldHelp>
-                    Trade speed for separation quality by averaging multiple
-                    processing passes. Runtime grows roughly in proportion.
+                    Add combines the other separated stems. Minus subtracts the
+                    source from the original and, with htdemucs_ft, runs about
+                    four times faster. Results vary by track.
                   </FieldHelp>
                 </div>
-                <input
-                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
-                  type="number"
-                  id="shifts"
-                  value={shifts}
-                  min="1"
-                  max="4"
+                <select
+                  className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] disabled:cursor-not-allowed disabled:bg-[#eeeee9] disabled:text-[#777f79]"
+                  id="method"
+                  value={method}
+                  disabled={!twoStems}
                   onChange={(event) =>
                     setPreferences((current) => ({
                       ...current,
-                      shifts: Number(event.target.value),
+                      method: event.target.value as typeof current.method,
                     }))
                   }
-                />
+                >
+                  <option>add</option>
+                  <option>minus</option>
+                </select>
               </div>
-              {twoStems && (
-                <section
-                  className="col-span-2 mt-1 rounded-md border border-[#d9d8ce] bg-[#f8f7f1] p-4 max-[480px]:col-span-1"
-                  id="twoStemsOptions"
-                >
-                  <h3 className="mb-3 text-sm font-semibold text-[#3f4942]">
-                    Two-stems options
-                  </h3>
-                  <div className="grid grid-cols-2 items-end gap-4 max-[480px]:grid-cols-1">
-                    <div className="grid gap-2">
-                      <div className="flex items-center justify-between text-xs font-bold tracking-[0.04em] text-[#667068] uppercase">
-                        <label htmlFor="method">Method</label>
-                        <FieldHelp>
-                          Add combines the other separated stems. Minus
-                          subtracts the source from the original and, with
-                          htdemucs_ft, runs about four times faster. Results
-                          vary by track.
-                        </FieldHelp>
-                      </div>
-                      <select
-                        className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b]"
-                        id="method"
-                        value={method}
-                        onChange={(event) =>
-                          setPreferences((current) => ({
-                            ...current,
-                            method: event.target.value as typeof current.method,
-                          }))
-                        }
-                      >
-                        <option>add</option>
-                        <option>minus</option>
-                      </select>
-                    </div>
-                    <p
-                      className="rounded-md bg-[#e8eee9] px-3 py-2.5 text-sm leading-relaxed text-[#3f4942]"
-                      id="outputSummary"
-                    >
-                      Creates <strong>{twoStems}.wav</strong> and{" "}
-                      <strong>no_{twoStems}.wav</strong>.
-                    </p>
-                  </div>
-                </section>
-              )}
-              {!twoStems && (
-                <p
-                  className="col-span-2 rounded-md bg-[#e8eee9] px-3 py-2.5 text-sm leading-relaxed text-[#3f4942] max-[480px]:col-span-1"
-                  id="outputSummary"
-                >
-                  Creates <strong>vocals.wav</strong>,{" "}
-                  <strong>drums.wav</strong>, <strong>bass.wav</strong>, and{" "}
-                  <strong>other.wav</strong>.
-                </p>
-              )}
+              <p
+                className="col-span-2 rounded-md bg-[#e8eee9] px-3 py-2.5 text-sm leading-relaxed text-[#3f4942] max-[480px]:col-span-1"
+                id="outputSummary"
+              >
+                {twoStems ? (
+                  <>
+                    Creates <strong>{twoStems}.wav</strong> and{" "}
+                    <strong>no_{twoStems}.wav</strong>.
+                  </>
+                ) : (
+                  <>
+                    Creates <strong>vocals.wav</strong>,{" "}
+                    <strong>drums.wav</strong>, <strong>bass.wav</strong>, and{" "}
+                    <strong>other.wav</strong>.
+                  </>
+                )}
+              </p>
             </div>
           </section>
 
