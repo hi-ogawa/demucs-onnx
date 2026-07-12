@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { loadStoredModels, storeModels } from "./lib/audio/artifact-store";
+import { modelArtifactManager } from "./lib/audio/artifact-store";
 import { AUDIO_SAMPLE_RATE } from "./lib/audio/constants";
 import { decodeAudioFile } from "./lib/audio/decode";
 import {
@@ -37,9 +37,11 @@ export function App() {
 
   const loadStoredModelsQuery = useQuery({
     queryKey: ["stored-models"],
-    queryFn: loadStoredModels,
+    queryFn: modelArtifactManager.load,
   });
-  const storeModelsMutation = useMutation({ mutationFn: storeModels });
+  const storeModelsMutation = useMutation({
+    mutationFn: modelArtifactManager.store,
+  });
   const modelFiles: Partial<Record<ModelFilename, ModelArtifact>> = {
     ...Object.fromEntries(
       (loadStoredModelsQuery.data ?? []).map((artifact) => [
