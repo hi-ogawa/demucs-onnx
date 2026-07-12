@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { decodeAudioFile, type DecodedAudio } from "./lib/audio/decode";
@@ -51,7 +52,6 @@ export function App() {
   const [outputs, setOutputs] = useState<Output[]>([]);
   const runAbortRef = useRef<AbortController | null>(null);
   const outputUrlsRef = useRef<string[]>([]);
-  const decodeIdRef = useRef(0);
   const { model, method, shifts } = preferences;
   const twoStems =
     preferences.outputMode === "two-stems" ? preferences.targetStem : "";
@@ -124,9 +124,11 @@ export function App() {
 
   useEffect(() => savePreferences(preferences), [preferences]);
 
-  async function handleAudioFile(file: File | undefined) {
-    const decodeId = ++decodeIdRef.current;
+  const decodeMutation = useMutation({ mutationFn: decodeAudioFile });
+
+  function handleAudioFile(file: File | undefined) {
     if (!file) {
+      decodeMutation.reset();
       setDecoded(null);
       setStatus("");
       return;
@@ -134,22 +136,16 @@ export function App() {
 
     setDecoded(null);
     setStatus("decoding...");
-    try {
-      const audio = await decodeAudioFile(file);
-      if (decodeId !== decodeIdRef.current) {
-        return;
-      }
-      setDecoded(audio);
-      setStatus(
-        `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
-      );
-    } catch (error) {
-      if (decodeId === decodeIdRef.current) {
+    decodeMutation.mutate(file, {
+      onSuccess: (audio) => {
+        setDecoded(audio);
         setStatus(
-          `error: failed to decode audio: ${error instanceof Error ? error.message : String(error)}`,
+          `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
         );
-      }
-    }
+      },
+      onError: (error) =>
+        setStatus(`error: failed to decode audio: ${error.message}`),
+    });
   }
 
   async function handleRun() {
@@ -249,9 +245,7 @@ export function App() {
                 type="file"
                 id="file"
                 accept="audio/*"
-                onChange={(event) =>
-                  void handleAudioFile(event.target.files?.[0])
-                }
+                onChange={(event) => handleAudioFile(event.target.files?.[0])}
               />
             </section>
           </div>
