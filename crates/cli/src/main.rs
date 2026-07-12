@@ -49,13 +49,13 @@ struct SeparateArgs {
     )]
     two_stems: Option<String>,
 
-    /// How to create the mix without SOURCE
+    /// How to create the second stem in two-stem mode
     #[arg(
         long,
         value_name = "METHOD",
         value_parser = ["add", "minus"],
         hide_possible_values = true,
-        long_help = "How to create the mix without SOURCE: add sums the other stems; minus subtracts SOURCE from the original mix. Default: add"
+        long_help = "How to create the second stem in two-stem mode: add sums the other stems; minus subtracts SOURCE from the original mix.\nWith htdemucs_ft, minus runs only the selected source model and skips the other three. Default: add"
     )]
     method: Option<String>,
 
@@ -168,8 +168,12 @@ mod tests {
         assert!(help.contains("standard (htdemucs) or fine-tuned (htdemucs_ft)"));
         assert!(help.contains("Output SOURCE and a mix without it instead of all four stems"));
         assert!(help.contains("Sources: drums, bass, other, vocals"));
+        assert!(help.contains("second stem in two-stem mode"));
         assert!(help.contains("add sums the other stems"));
         assert!(help.contains("minus subtracts SOURCE from the original mix"));
+        assert!(
+            help.contains("minus runs only the selected source model and skips the other three")
+        );
         assert!(help.contains("more passes take proportionally longer"));
         assert!(!help.contains("possible values"));
     }
