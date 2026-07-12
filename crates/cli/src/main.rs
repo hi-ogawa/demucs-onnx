@@ -6,7 +6,9 @@
 
 use anyhow::{anyhow, bail, Context, Result};
 use demucs_core as core;
+use indicatif::{ProgressBar, ProgressStyle};
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 mod ort_driver;
 
@@ -67,13 +69,16 @@ fn parse_args(argv: &[String]) -> Result<Args> {
 }
 
 fn separate(argv: &[String]) -> Result<()> {
+    let total_started = Instant::now();
     let args = parse_args(argv)?;
+    let prepare_started = Instant::now();
     let bytes = std::fs::read(&args.input).with_context(|| format!("open {}", args.input))?;
     let (raw, rate) = core::decode_wav(&bytes)?;
     if rate != core::SAMPLERATE {
         eprintln!("resampling {rate}Hz -> {}Hz", core::SAMPLERATE);
     }
     let wav = core::resample(core::conform_channels(raw), rate)?;
+    let prepare_elapsed = prepare_started.elapsed();
     eprintln!(
         "input: {} samples ({:.2}s) | model {} | shifts {}",
         wav[0].len(),
@@ -89,27 +94,12 @@ fn separate(argv: &[String]) -> Result<()> {
         mode: args.mode,
     };
 
-    // the progress line updates in place via \r; end it before other output
-    let mid_line = std::cell::Cell::new(false);
-    let outputs = ort_driver::run_all(
-        &args.models_dir,
-        &members,
-        wav,
-        opts,
-        |file| {
-            if mid_line.replace(false) {
-                eprintln!();
-            }
-            eprintln!("running {file} ...");
-        },
-        |done, total| {
-            eprint!("\r{done}/{total} chunks");
-            mid_line.set(done != total);
-            if done == total {
-                eprintln!();
-            }
-        },
-    )?;
+    eprintln!("prepared audio in {}", format_duration(prepare_elapsed));
+    let mut progress = CliProgress::new(total_started);
+    let outputs = ort_driver::run_all(&args.models_dir, &members, wav, opts, |event| {
+        progress.update(event)
+    })?;
+    progress.finish();
 
     let named: Vec<(String, [Vec<f32>; core::CHANNELS])> = match outputs {
         core::Outputs::Full(stems) => core::Source::ALL
@@ -127,10 +117,167 @@ fn separate(argv: &[String]) -> Result<()> {
         ],
     };
     std::fs::create_dir_all(&args.out_dir)?;
+    let write_started = Instant::now();
+    let stem_count = named.len();
     for (name, stem) in named {
         let path = args.out_dir.join(format!("{name}.wav"));
         std::fs::write(&path, core::encode_wav(&stem)?)?;
         eprintln!("wrote {}", path.display());
     }
+    let write_elapsed = write_started.elapsed();
+    let total_elapsed = total_started.elapsed();
+    eprintln!(
+        "complete: {stem_count} stems in {} (load {}, inference {}, finalize {}, write {})",
+        format_duration(total_elapsed),
+        format_duration(progress.load_elapsed),
+        format_duration(progress.inference_elapsed),
+        format_duration(progress.finalize_elapsed),
+        format_duration(write_elapsed),
+    );
     Ok(())
+}
+
+struct CliProgress {
+    bar: ProgressBar,
+    load_elapsed: Duration,
+    inference_elapsed: Duration,
+    finalize_elapsed: Duration,
+    loaded: usize,
+    started: Instant,
+}
+
+impl CliProgress {
+    fn new(started: Instant) -> Self {
+        let bar = ProgressBar::new_spinner();
+        bar.set_style(
+            ProgressStyle::with_template("{spinner} {msg} | elapsed {elapsed_precise}").unwrap(),
+        );
+        bar.enable_steady_tick(Duration::from_millis(100));
+        Self {
+            bar,
+            load_elapsed: Duration::ZERO,
+            inference_elapsed: Duration::ZERO,
+            finalize_elapsed: Duration::ZERO,
+            loaded: 0,
+            started,
+        }
+    }
+
+    fn update(&mut self, event: ort_driver::Progress<'_>) {
+        use ort_driver::Progress;
+        match event {
+            Progress::LoadStarted { index, total, file } => {
+                self.bar.set_style(
+                    ProgressStyle::with_template(
+                        "{spinner} load model {msg} | elapsed {elapsed_precise}",
+                    )
+                    .unwrap(),
+                );
+                self.bar.reset_elapsed();
+                self.bar.set_message(format!("{index}/{total} | {file}"));
+            }
+            Progress::LoadFinished {
+                index,
+                total,
+                file,
+                elapsed,
+            } => {
+                self.load_elapsed += elapsed;
+                self.loaded += 1;
+                self.bar.suspend(|| {
+                    eprintln!(
+                        "loaded model {index}/{total}: {file} in {}",
+                        format_duration(elapsed)
+                    )
+                });
+                self.bar.set_style(
+                    ProgressStyle::with_template(
+                        "{spinner} start inference {msg} | elapsed {elapsed_precise}",
+                    )
+                    .unwrap(),
+                );
+                self.bar.reset_elapsed();
+                self.bar.set_message(format!("model {index}/{total}"));
+            }
+            Progress::Inference {
+                done,
+                total,
+                member,
+                members,
+                shift,
+                shifts,
+                chunk,
+                chunks,
+                elapsed,
+            } => {
+                self.inference_elapsed += elapsed;
+                self.bar.set_length(total as u64);
+                self.bar.set_position(done as u64);
+                let remaining_chunks = total - done;
+                let chunk_eta = self
+                    .inference_elapsed
+                    .mul_f64(remaining_chunks as f64 / done as f64);
+                let remaining_loads = members - self.loaded;
+                let load_eta = if self.loaded == 0 {
+                    Duration::ZERO
+                } else {
+                    self.load_elapsed
+                        .mul_f64(remaining_loads as f64 / self.loaded as f64)
+                };
+                self.bar.set_style(
+                    ProgressStyle::with_template(
+                        "{spinner} separate [{bar:30}] {percent:>3}% | {pos}/{len} | {msg}",
+                    )
+                    .unwrap()
+                    .progress_chars("=>-"),
+                );
+                self.bar.set_message(format!(
+                    "elapsed {} | ETA {} | model {member}/{members} | shift {shift}/{shifts} | chunk {chunk}/{chunks}",
+                    format_duration(self.started.elapsed()),
+                    format_duration(chunk_eta + load_eta),
+                ));
+            }
+            Progress::MemberFinished {
+                index,
+                total,
+                chunks,
+                elapsed,
+            } => {
+                self.bar.suspend(|| {
+                    eprintln!(
+                        "finished model {index}/{total}: {chunks} chunks in {}",
+                        format_duration(elapsed)
+                    )
+                });
+            }
+            Progress::FinalizeStarted => {
+                self.bar.set_style(
+                    ProgressStyle::with_template(
+                        "{spinner} finalize stems | elapsed {elapsed_precise}",
+                    )
+                    .unwrap(),
+                );
+                self.bar.reset_elapsed();
+                self.bar.set_message("");
+            }
+            Progress::FinalizeFinished { elapsed } => {
+                self.finalize_elapsed = elapsed;
+                self.bar
+                    .suspend(|| eprintln!("finalized stems in {}", format_duration(elapsed)));
+            }
+        }
+    }
+
+    fn finish(&self) {
+        self.bar.finish_and_clear();
+    }
+}
+
+fn format_duration(duration: Duration) -> String {
+    let seconds = duration.as_secs();
+    if seconds < 60 {
+        format!("{:.1}s", duration.as_secs_f64())
+    } else {
+        format!("{}m {:02}s", seconds / 60, seconds % 60)
+    }
 }
