@@ -195,7 +195,7 @@ export function App() {
       outputUrlsRef.current = nextOutputs.map((output) => output.url);
       setOutputs(nextOutputs);
       setStatus(
-        `done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
+        `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
       );
     } catch (error) {
       if (!controller.signal.aborted) {
@@ -234,276 +234,278 @@ export function App() {
         </p>
       </header>
 
-      <section className="grid gap-6" aria-label="Separation setup">
-        <div className="grid gap-6">
-          <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
-            <h2 className="text-foreground mb-2 text-xl font-semibold">
-              1. Choose audio
-            </h2>
-            <p className="text-muted mb-5.5 leading-relaxed">
-              Select the track you want to separate.
-            </p>
-            <input
-              className="border-border-strong bg-surface-muted text-muted file:bg-primary-soft file:text-primary w-full rounded-md border border-dashed p-3 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:px-3.5 file:py-2 file:font-bold"
-              type="file"
-              id="file"
-              accept="audio/*"
-              onChange={(event) =>
-                void handleAudioFile(event.target.files?.[0])
-              }
-            />
-          </section>
-        </div>
-
-        <aside className="grid gap-6">
-          <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
-            <h2 className="text-foreground mb-5 text-xl font-semibold">
-              2. Configure
-            </h2>
-            <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                  <label htmlFor="model">Model</label>
-                  <FieldHelp>
-                    Choose the standard general-purpose model or the fine-tuned
-                    source-specialist models.
-                  </FieldHelp>
-                </div>
-                <select
-                  className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
-                  id="model"
-                  value={model}
-                  onChange={(event) =>
-                    setPreferences((current) => ({
-                      ...current,
-                      model: event.target.value as typeof current.model,
-                    }))
-                  }
-                >
-                  <option>htdemucs</option>
-                  <option>htdemucs_ft</option>
-                </select>
-              </div>
-              <div className="grid gap-2">
-                <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                  <label htmlFor="shifts">Shifts</label>
-                  <FieldHelp>
-                    Trade speed for separation quality by averaging multiple
-                    processing passes. Runtime grows roughly in proportion.
-                  </FieldHelp>
-                </div>
-                <input
-                  className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
-                  type="number"
-                  id="shifts"
-                  value={shifts}
-                  min="1"
-                  max="4"
-                  onChange={(event) =>
-                    setPreferences((current) => ({
-                      ...current,
-                      shifts: Number(event.target.value),
-                    }))
-                  }
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                  <label htmlFor="twoStems">Two-stems</label>
-                  <FieldHelp>
-                    Output the selected source and a mix without it. Other
-                    contains instruments not classified as vocals, drums, or
-                    bass.
-                  </FieldHelp>
-                </div>
-                <select
-                  className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
-                  id="twoStems"
-                  value={twoStems}
-                  onChange={(event) =>
-                    setPreferences((current) => ({
-                      ...current,
-                      outputMode: event.target.value
-                        ? "two-stems"
-                        : "four-stems",
-                      targetStem: event.target.value
-                        ? (event.target.value as typeof current.targetStem)
-                        : current.targetStem,
-                    }))
-                  }
-                >
-                  <option value="">off</option>
-                  <option>drums</option>
-                  <option>bass</option>
-                  <option>other</option>
-                  <option>vocals</option>
-                </select>
-              </div>
-              <div className="grid gap-2">
-                <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                  <label htmlFor="method">Method</label>
-                  <FieldHelp>
-                    Add combines the other separated stems. Minus subtracts the
-                    source from the original and, with htdemucs_ft, runs about
-                    four times faster. Results vary by track.
-                  </FieldHelp>
-                </div>
-                <select
-                  className="border-border-control text-foreground disabled:bg-surface-disabled disabled:text-disabled min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base disabled:cursor-not-allowed"
-                  id="method"
-                  value={method}
-                  disabled={!twoStems}
-                  onChange={(event) =>
-                    setPreferences((current) => ({
-                      ...current,
-                      method: event.target.value as typeof current.method,
-                    }))
-                  }
-                >
-                  <option>add</option>
-                  <option>minus</option>
-                </select>
-              </div>
-              <p
-                className="bg-surface-note text-copy rounded-md px-3 py-2.5 text-sm leading-relaxed sm:col-span-2"
-                id="outputSummary"
-              >
-                {twoStems ? (
-                  <>
-                    Creates <strong>{twoStems}.wav</strong> and{" "}
-                    <strong>no_{twoStems}.wav</strong>.
-                  </>
-                ) : (
-                  <>
-                    Creates <strong>vocals.wav</strong>,{" "}
-                    <strong>drums.wav</strong>, <strong>bass.wav</strong>, and{" "}
-                    <strong>other.wav</strong>.
-                  </>
-                )}
+      <div className="grid gap-6">
+        <section className="grid gap-6" aria-label="Separation setup">
+          <div className="grid gap-6">
+            <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
+              <h2 className="text-foreground mb-2 text-xl font-semibold">
+                1. Choose audio
+              </h2>
+              <p className="text-muted mb-5.5 leading-relaxed">
+                Select the track you want to separate.
               </p>
-            </div>
-          </section>
+              <input
+                className="border-border-strong bg-surface-muted text-muted file:bg-primary-soft file:text-primary w-full rounded-md border border-dashed p-3 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:px-3.5 file:py-2 file:font-bold"
+                type="file"
+                id="file"
+                accept="audio/*"
+                onChange={(event) =>
+                  void handleAudioFile(event.target.files?.[0])
+                }
+              />
+            </section>
+          </div>
 
-          <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
-            <h2 className="text-foreground mb-2 text-xl font-semibold">
-              3. Add models
-            </h2>
-            <p className="text-muted mb-5.5 leading-relaxed">
-              Download model assets from the{" "}
-              <a
-                className="text-primary hover:text-accent font-semibold underline underline-offset-3"
-                href="https://github.com/hi-ogawa/demucs-onnx/releases"
-                target="_blank"
-                rel="noreferrer"
+          <aside className="grid gap-6">
+            <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
+              <h2 className="text-foreground mb-5 text-xl font-semibold">
+                2. Configure
+              </h2>
+              <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
+                    <label htmlFor="model">Model</label>
+                    <FieldHelp>
+                      Choose the standard general-purpose model or the
+                      fine-tuned source-specialist models.
+                    </FieldHelp>
+                  </div>
+                  <select
+                    className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
+                    id="model"
+                    value={model}
+                    onChange={(event) =>
+                      setPreferences((current) => ({
+                        ...current,
+                        model: event.target.value as typeof current.model,
+                      }))
+                    }
+                  >
+                    <option>htdemucs</option>
+                    <option>htdemucs_ft</option>
+                  </select>
+                </div>
+                <div className="grid gap-2">
+                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
+                    <label htmlFor="shifts">Shifts</label>
+                    <FieldHelp>
+                      Trade speed for separation quality by averaging multiple
+                      processing passes. Runtime grows roughly in proportion.
+                    </FieldHelp>
+                  </div>
+                  <input
+                    className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
+                    type="number"
+                    id="shifts"
+                    value={shifts}
+                    min="1"
+                    max="4"
+                    onChange={(event) =>
+                      setPreferences((current) => ({
+                        ...current,
+                        shifts: Number(event.target.value),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
+                    <label htmlFor="twoStems">Two-stems</label>
+                    <FieldHelp>
+                      Output the selected source and a mix without it. Other
+                      contains instruments not classified as vocals, drums, or
+                      bass.
+                    </FieldHelp>
+                  </div>
+                  <select
+                    className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
+                    id="twoStems"
+                    value={twoStems}
+                    onChange={(event) =>
+                      setPreferences((current) => ({
+                        ...current,
+                        outputMode: event.target.value
+                          ? "two-stems"
+                          : "four-stems",
+                        targetStem: event.target.value
+                          ? (event.target.value as typeof current.targetStem)
+                          : current.targetStem,
+                      }))
+                    }
+                  >
+                    <option value="">off</option>
+                    <option>drums</option>
+                    <option>bass</option>
+                    <option>other</option>
+                    <option>vocals</option>
+                  </select>
+                </div>
+                <div className="grid gap-2">
+                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
+                    <label htmlFor="method">Method</label>
+                    <FieldHelp>
+                      Add combines the other separated stems. Minus subtracts
+                      the source from the original and, with htdemucs_ft, runs
+                      about four times faster. Results vary by track.
+                    </FieldHelp>
+                  </div>
+                  <select
+                    className="border-border-control text-foreground disabled:bg-surface-disabled disabled:text-disabled min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base disabled:cursor-not-allowed"
+                    id="method"
+                    value={method}
+                    disabled={!twoStems}
+                    onChange={(event) =>
+                      setPreferences((current) => ({
+                        ...current,
+                        method: event.target.value as typeof current.method,
+                      }))
+                    }
+                  >
+                    <option>add</option>
+                    <option>minus</option>
+                  </select>
+                </div>
+                <p
+                  className="bg-surface-note text-copy rounded-md px-3 py-2.5 text-sm leading-relaxed sm:col-span-2"
+                  id="outputSummary"
+                >
+                  {twoStems ? (
+                    <>
+                      Creates <strong>{twoStems}.wav</strong> and{" "}
+                      <strong>no_{twoStems}.wav</strong>.
+                    </>
+                  ) : (
+                    <>
+                      Creates <strong>vocals.wav</strong>,{" "}
+                      <strong>drums.wav</strong>, <strong>bass.wav</strong>, and{" "}
+                      <strong>other.wav</strong>.
+                    </>
+                  )}
+                </p>
+              </div>
+            </section>
+
+            <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
+              <h2 className="text-foreground mb-2 text-xl font-semibold">
+                3. Add models
+              </h2>
+              <p className="text-muted mb-5.5 leading-relaxed">
+                Download model assets from the{" "}
+                <a
+                  className="text-primary hover:text-accent font-semibold underline underline-offset-3"
+                  href="https://github.com/hi-ogawa/demucs-onnx/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub Releases page
+                </a>
+                , then select the required files.
+              </p>
+              <div className="grid gap-2.5">
+                {requiredFiles.map((filename) => (
+                  <ModelFileSlot
+                    key={filename}
+                    filename={filename}
+                    ready={Boolean(modelFiles[filename])}
+                    error={modelFileErrors[filename]}
+                    onSelect={(files) => addModelFiles(files, filename)}
+                  />
+                ))}
+              </div>
+              <p className="text-muted mt-4 text-sm">
+                Alternatively,{" "}
+                <label className="text-primary hover:text-accent cursor-pointer font-semibold underline underline-offset-3">
+                  choose multiple files at once
+                  <input
+                    className="sr-only"
+                    type="file"
+                    id="modelFiles"
+                    accept=".bin,.onnx"
+                    multiple
+                    onChange={(event) =>
+                      addModelFiles([...(event.target.files ?? [])])
+                    }
+                  />
+                </label>
+                .
+              </p>
+              {unsupportedModelFiles.length > 0 && (
+                <p className="text-danger mt-2 text-sm">
+                  Unsupported files: {unsupportedModelFiles.join(", ")}.
+                </p>
+              )}
+            </section>
+
+            <section className="bg-surface shadow-card min-w-0 rounded-lg border p-5 sm:p-6">
+              <h2 className="text-foreground mb-4 text-xl font-semibold">
+                4. Separate
+              </h2>
+              <button
+                className="bg-primary-bright text-primary-foreground shadow-action hover:not-disabled:bg-primary-bright-hover disabled:border-primary-border disabled:bg-primary-soft disabled:text-primary-muted min-h-13 w-full cursor-pointer rounded-md border border-transparent font-bold disabled:cursor-not-allowed disabled:shadow-none"
+                id="run"
+                disabled={running || !decoded || !modelsReady}
+                onClick={handleRun}
               >
-                GitHub Releases page
-              </a>
-              , then select the required files.
-            </p>
-            <div className="grid gap-2.5">
-              {requiredFiles.map((filename) => (
-                <ModelFileSlot
-                  key={filename}
-                  filename={filename}
-                  ready={Boolean(modelFiles[filename])}
-                  error={modelFileErrors[filename]}
-                  onSelect={(files) => addModelFiles(files, filename)}
-                />
+                Separate track
+              </button>
+              {runProgress && (
+                <RunProgressPanel progress={runProgress} now={now} />
+              )}
+              {!running && status && (
+                <p
+                  className="text-muted mt-3.5 text-sm leading-normal whitespace-pre-line"
+                  id="status"
+                >
+                  {status}
+                </p>
+              )}
+            </section>
+          </aside>
+        </section>
+
+        {outputs.length > 0 && (
+          <section
+            className="bg-surface shadow-card min-w-0 rounded-lg border px-5 py-6 sm:p-9"
+            aria-labelledby="results-title"
+          >
+            <div className="mb-7">
+              <p className="text-primary-strong mb-2.5 text-xs font-extrabold tracking-[0.14em] uppercase">
+                Separation complete
+              </p>
+              <h2
+                className="text-3xl font-semibold tracking-[-0.025em]"
+                id="results-title"
+              >
+                Your stems
+              </h2>
+            </div>
+            <div className="grid gap-3.5" id="stems">
+              {outputs.map((output) => (
+                <div
+                  className="bg-surface-muted grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-md border p-4.5"
+                  key={output.name}
+                >
+                  <b className="text-xl font-semibold capitalize">
+                    {output.name}
+                  </b>
+                  <audio
+                    className="col-span-full w-full"
+                    controls
+                    src={output.url}
+                  />
+                  <a
+                    className="text-primary hover:text-accent text-sm font-semibold underline underline-offset-3"
+                    href={output.url}
+                    download={`${output.name}.wav`}
+                  >
+                    Download WAV
+                  </a>
+                </div>
               ))}
             </div>
-            <p className="text-muted mt-4 text-sm">
-              Alternatively,{" "}
-              <label className="text-primary hover:text-accent cursor-pointer font-semibold underline underline-offset-3">
-                choose multiple files at once
-                <input
-                  className="sr-only"
-                  type="file"
-                  id="modelFiles"
-                  accept=".bin,.onnx"
-                  multiple
-                  onChange={(event) =>
-                    addModelFiles([...(event.target.files ?? [])])
-                  }
-                />
-              </label>
-              .
-            </p>
-            {unsupportedModelFiles.length > 0 && (
-              <p className="text-danger mt-2 text-sm">
-                Unsupported files: {unsupportedModelFiles.join(", ")}.
-              </p>
-            )}
           </section>
-
-          <section className="bg-surface shadow-card min-w-0 rounded-lg border p-5 sm:p-6">
-            <h2 className="text-foreground mb-4 text-xl font-semibold">
-              4. Separate
-            </h2>
-            <button
-              className="bg-primary-bright text-primary-foreground shadow-action hover:not-disabled:bg-primary-bright-hover disabled:border-primary-border disabled:bg-primary-soft disabled:text-primary-muted min-h-13 w-full cursor-pointer rounded-md border border-transparent font-bold disabled:cursor-not-allowed disabled:shadow-none"
-              id="run"
-              disabled={running || !decoded || !modelsReady}
-              onClick={handleRun}
-            >
-              Separate track
-            </button>
-            {runProgress && (
-              <RunProgressPanel progress={runProgress} now={now} />
-            )}
-            {!running && status && (
-              <p
-                className="text-muted mt-3.5 text-sm leading-normal whitespace-pre-line"
-                id="status"
-              >
-                {status}
-              </p>
-            )}
-          </section>
-        </aside>
-      </section>
-
-      {outputs.length > 0 && (
-        <section
-          className="bg-surface shadow-card mt-12 min-w-0 rounded-lg border px-5 py-6 sm:p-9"
-          aria-labelledby="results-title"
-        >
-          <div className="mb-7">
-            <p className="text-primary-strong mb-2.5 text-xs font-extrabold tracking-[0.14em] uppercase">
-              Separation complete
-            </p>
-            <h2
-              className="text-3xl font-semibold tracking-[-0.025em]"
-              id="results-title"
-            >
-              Your stems
-            </h2>
-          </div>
-          <div className="grid gap-3.5" id="stems">
-            {outputs.map((output) => (
-              <div
-                className="bg-surface-muted grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-md border p-4.5"
-                key={output.name}
-              >
-                <b className="text-xl font-semibold capitalize">
-                  {output.name}
-                </b>
-                <audio
-                  className="col-span-full w-full"
-                  controls
-                  src={output.url}
-                />
-                <a
-                  className="text-primary hover:text-accent text-sm font-semibold underline underline-offset-3"
-                  href={output.url}
-                  download={`${output.name}.wav`}
-                >
-                  Download WAV
-                </a>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+        )}
+      </div>
     </main>
   );
 }
