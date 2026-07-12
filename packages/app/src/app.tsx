@@ -141,17 +141,16 @@ export function App() {
 
   const outputs = handleRunMutation.data?.outputs ?? [];
 
-  const runIsLatest =
-    handleRunMutation.submittedAt > handleAudioFileMutation.submittedAt;
-  const status = runIsLatest
-    ? handleRunMutation.data
-      ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
-      : ""
-    : handleAudioFileMutation.isPending
-      ? "decoding..."
-      : decoded
-        ? `decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
-        : "";
+  const status =
+    handleRunMutation.submittedAt > handleAudioFileMutation.submittedAt
+      ? handleRunMutation.data
+        ? `Done in ${(handleRunMutation.data.durationMs / 1000).toFixed(1)}s`
+        : ""
+      : handleAudioFileMutation.isPending
+        ? "decoding..."
+        : decoded
+          ? `decoded: ${decoded.duration.toFixed(2)}s, ${decoded.numberOfChannels}ch @${decoded.sampleRate / 1000}k`
+          : "";
 
   return (
     <main className="mx-auto w-full max-w-[800px] px-3 py-9 sm:px-5 sm:py-18 md:pb-24">
