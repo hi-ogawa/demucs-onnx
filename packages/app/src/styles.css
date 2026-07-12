@@ -37,6 +37,10 @@
 }
 
 @layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
   :root {
     color: var(--color-foreground);
     background: var(--color-page);

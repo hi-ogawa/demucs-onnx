@@ -25,7 +25,7 @@ function FieldHelp({ children }: { children: React.ReactNode }) {
       >
         <CircleHelp aria-hidden="true" className="size-5" />
       </summary>
-      <div className="border-border text-copy max-compact:w-56 absolute top-7 right-0 z-10 w-64 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg">
+      <div className="text-copy max-compact:w-56 absolute top-7 right-0 z-10 w-64 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg">
         {children}
       </div>
     </details>
@@ -266,7 +266,7 @@ export function App() {
 
       <section className="grid gap-6" aria-label="Separation setup">
         <div className="grid gap-6">
-          <section className="border-border bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
+          <section className="bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
             <h2 className="text-foreground mb-2 text-xl font-semibold">
               1. Choose audio
             </h2>
@@ -286,7 +286,7 @@ export function App() {
         </div>
 
         <aside className="grid gap-6">
-          <section className="border-border bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
+          <section className="bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
             <h2 className="text-foreground mb-5 text-xl font-semibold">
               2. Configure
             </h2>
@@ -414,7 +414,7 @@ export function App() {
             </div>
           </section>
 
-          <section className="border-border bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
+          <section className="bg-surface shadow-card max-compact:px-5 max-compact:pt-4 max-compact:pb-5 min-w-0 rounded-lg border px-7 pt-5 pb-7">
             <h2 className="text-foreground mb-2 text-xl font-semibold">
               3. Add models
             </h2>
@@ -465,7 +465,7 @@ export function App() {
             )}
           </section>
 
-          <section className="border-border bg-surface shadow-card max-compact:p-5 min-w-0 rounded-lg border p-6">
+          <section className="bg-surface shadow-card max-compact:p-5 min-w-0 rounded-lg border p-6">
             <h2 className="text-foreground mb-4 text-xl font-semibold">
               4. Separate
             </h2>
@@ -494,7 +494,7 @@ export function App() {
 
       {outputs.length > 0 && (
         <section
-          className="border-border bg-surface shadow-card max-compact:px-5 max-compact:py-6 mt-12 min-w-0 rounded-lg border p-9"
+          className="bg-surface shadow-card max-compact:px-5 max-compact:py-6 mt-12 min-w-0 rounded-lg border p-9"
           aria-labelledby="results-title"
         >
           <div className="mb-7">
@@ -511,7 +511,7 @@ export function App() {
           <div className="grid gap-3.5" id="stems">
             {outputs.map((output) => (
               <div
-                className="border-border bg-surface-muted grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-md border p-4.5"
+                className="bg-surface-muted grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-md border p-4.5"
                 key={output.name}
               >
                 <b className="text-xl font-semibold capitalize">

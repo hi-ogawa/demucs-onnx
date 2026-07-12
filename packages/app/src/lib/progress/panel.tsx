@@ -52,7 +52,7 @@ export function RunProgressPanel({
             : "Preparing separation";
 
   return (
-    <section className="border-border mt-5 grid gap-4 border-t pt-5">
+    <section className="mt-5 grid gap-4 border-t pt-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-foreground font-semibold">{title}</h3>
         <span className="text-muted text-xs font-bold tracking-[0.05em] uppercase">
@@ -66,7 +66,7 @@ export function RunProgressPanel({
             model.chunks > 0 ? (100 * model.done) / model.chunks : 0;
           return (
             <div
-              className="border-border bg-surface-muted rounded-md border px-3.5 py-3"
+              className="bg-surface-muted rounded-md border px-3.5 py-3"
               key={model.index}
             >
               <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
