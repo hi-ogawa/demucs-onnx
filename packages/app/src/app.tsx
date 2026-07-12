@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { decodeAudioFile } from "./lib/audio/decode";
 import {
   isModelFilename,
@@ -87,11 +87,17 @@ export function App() {
 
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
+  const outputCleanupRef = useRef<Array<() => void>>([]);
   const handleRunMutation = useMutation({
     mutationFn: async () => {
       if (!decoded || !modelSource) {
         throw new Error("Audio and model files are required");
       }
+
+      for (const cleanup of outputCleanupRef.current) {
+        cleanup();
+      }
+      outputCleanupRef.current = [];
 
       const startedAt = Date.now();
       setRunProgress({
@@ -121,6 +127,9 @@ export function App() {
         const blob = encodeWavF32([output.left, output.right], 44100);
         return { ...output, url: URL.createObjectURL(blob) };
       });
+      outputCleanupRef.current = nextOutputs.map(
+        (output) => () => URL.revokeObjectURL(output.url),
+      );
       return { outputs: nextOutputs, durationMs: performance.now() - started };
     },
     onSettled: (_data, error) => {
@@ -131,15 +140,6 @@ export function App() {
   });
 
   const outputs = handleRunMutation.data?.outputs ?? [];
-
-  useEffect(() => {
-    const currentOutputs = handleRunMutation.data?.outputs;
-    return () => {
-      for (const output of currentOutputs ?? []) {
-        URL.revokeObjectURL(output.url);
-      }
-    };
-  }, [handleRunMutation.data]);
 
   const runIsLatest =
     handleRunMutation.submittedAt > handleAudioFileMutation.submittedAt;
