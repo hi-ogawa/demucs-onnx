@@ -23,7 +23,6 @@ pub enum Progress<'a> {
     Inference {
         done: usize,
         total: usize,
-        member: usize,
         members: usize,
         shift: usize,
         shifts: usize,
@@ -134,7 +133,6 @@ pub fn run_all(
                 on_progress(Progress::Inference {
                     done,
                     total,
-                    member: member_index + 1,
                     members: members.len(),
                     shift: shift_index + 1,
                     shifts: member_plan.shifts.len(),
