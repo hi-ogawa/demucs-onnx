@@ -22,7 +22,25 @@ extern "C" {
     pub type Host;
 
     #[wasm_bindgen(method, structural, js_name = event)]
-    fn progress_event(this: &Host, kind: &str, done: usize, total: usize);
+    fn started_event(this: &Host, kind: &str, total: usize);
+
+    #[wasm_bindgen(method, structural, js_name = event)]
+    fn model_event(this: &Host, kind: &str, index: usize, total: usize, chunks: usize, file: &str);
+
+    #[wasm_bindgen(method, structural, js_name = event)]
+    fn phase_event(this: &Host, kind: &str);
+
+    #[wasm_bindgen(method, structural, js_name = event)]
+    fn inference_event(
+        this: &Host,
+        kind: &str,
+        done: usize,
+        total: usize,
+        member_done: usize,
+        member_total: usize,
+        shift: usize,
+        shifts: usize,
+    );
 
     #[wasm_bindgen(method, structural, catch)]
     fn initialize(this: &Host) -> Result<Promise, JsValue>;
@@ -45,7 +63,12 @@ extern "C" {
 #[wasm_bindgen(typescript_custom_section)]
 const HOST_TYPES: &str = r#"
 export interface Host {
-  event(...event: [type: "status", text: string] | [type: "progress", done: number, total: number]): void;
+  event(...event:
+    | [type: "started", total: number]
+    | [type: "model-loading", index: number, total: number, chunks: number, file: string]
+    | [type: "model-loaded" | "model-complete" | "finalizing" | "finalized"]
+    | [type: "inference", done: number, total: number, memberDone: number, memberTotal: number, shift: number, shifts: number]
+  ): void;
   initialize(): Promise<void>;
   loadModel(model: string, source?: string): Promise<unknown>;
   runModel(session: unknown, inputPtr: number, outputPtr: number): Promise<void>;
@@ -76,18 +99,41 @@ pub async fn separate(
     JsFuture::from(host.initialize()?).await?;
 
     let total = separation.plan.total_chunks();
+    host.started_event("started", total);
     let mut done = 0;
     for (member_index, member) in members.into_iter().enumerate() {
-        let (member_model, source) = match member {
-            demucs::vocab::Member::Htdemucs => ("htdemucs", None),
-            demucs::vocab::Member::HtdemucsFt(source) => ("htdemucs_ft", Some(source.name())),
+        let (member_model, source, file) = match member {
+            demucs::vocab::Member::Htdemucs => ("htdemucs", None, "htdemucs.onnx"),
+            demucs::vocab::Member::HtdemucsFt(source) => {
+                let file = match source {
+                    demucs::Source::Drums => "htdemucs_ft_drums.onnx",
+                    demucs::Source::Bass => "htdemucs_ft_bass.onnx",
+                    demucs::Source::Other => "htdemucs_ft_other.onnx",
+                    demucs::Source::Vocals => "htdemucs_ft_vocals.onnx",
+                };
+                ("htdemucs_ft", Some(source.name()), file)
+            }
         };
-        let session = JsFuture::from(host.load_model(member_model, source)?).await?;
-
         let member_plan = &separation.plan.members[member_index];
+        let member_total: usize = member_plan
+            .shifts
+            .iter()
+            .map(|shift| shift.chunks.len())
+            .sum();
+        let mut member_done = 0;
+        host.model_event(
+            "model-loading",
+            member_index + 1,
+            separation.plan.members.len(),
+            member_total,
+            file,
+        );
+        let session = JsFuture::from(host.load_model(member_model, source)?).await?;
+        host.phase_event("model-loaded");
+
         let mut shift_merger =
             demucs::ShiftMerger::new(separation.plan.track_len, member_plan.shifts.len());
-        for shift in &member_plan.shifts {
+        for (shift_index, shift) in member_plan.shifts.iter().enumerate() {
             let mut chunk_processor = separation.plan.create_chunk_processor(shift);
             for &chunk in &shift.chunks {
                 chunk_processor
@@ -103,16 +149,27 @@ pub async fn separate(
                     .process_output(chunk, &output)
                     .map_err(js_err)?;
                 done += 1;
-                host.progress_event("progress", done, total);
+                member_done += 1;
+                host.inference_event(
+                    "inference",
+                    done,
+                    total,
+                    member_done,
+                    member_total,
+                    shift_index + 1,
+                    member_plan.shifts.len(),
+                );
             }
             shift_merger.add(chunk_processor.finish());
         }
         separation
             .stem_finalizer
             .add(member_index, shift_merger.finish());
+        host.phase_event("model-complete");
         JsFuture::from(host.release_model(&session)?).await?;
     }
 
+    host.phase_event("finalizing");
     let tracks: Vec<[Vec<f32>; demucs::CHANNELS]> =
         match separation.stem_finalizer.finish().map_err(js_err)? {
             demucs::Outputs::Full(stems) => stems.into(),
@@ -120,6 +177,7 @@ pub async fn separate(
                 target, complement, ..
             } => vec![target, complement],
         };
+    host.phase_event("finalized");
     Ok(tracks
         .iter()
         .flat_map(|track| {
