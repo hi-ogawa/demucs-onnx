@@ -7,17 +7,22 @@ import init, {
   separate as separateWasm,
   type Host,
 } from "../../../../../crates/wasm/pkg/demucs_wasm.js";
+import {
+  MODEL_CAC_CHANNELS,
+  MODEL_FRAMES,
+  MODEL_FREQUENCIES,
+  MODEL_FREQUENCY_LENGTH,
+  MODEL_INPUT_LENGTH,
+  MODEL_SEGMENT,
+  MODEL_SPECTROGRAM_LENGTH,
+  MODEL_TIME_LENGTH,
+  SOURCES,
+} from "./constants";
 import { readModelFile, type ModelFilename, type ModelSource } from "./models";
 
 // Keep Emscripten's pthread entry point separate from this application worker.
 // https://onnxruntime.ai/docs/tutorials/web/env-flags-and-session-options.html#envwasmwasmpaths
 ort.env.wasm.wasmPaths = { mjs: ortWasmModuleUrl, wasm: ortWasmUrl };
-
-const SEGMENT = 343980;
-const IN_LEN = 2 * SEGMENT; // (1, 2, SEGMENT)
-const SPECTROGRAM_LEN = 4 * 2048 * 336; // (1, 4, 2048, 336)
-const FREQUENCY_LEN = 4 * 4 * 2048 * 336; // (1, 4, 4, 2048, 336)
-const TIME_LEN = 4 * 2 * SEGMENT; // (1, 4, 2, SEGMENT)
 
 export interface TwoStems {
   source: string;
@@ -111,23 +116,36 @@ export async function separate(
     },
 
     async runModel(session, inputPtr, spectrogramPtr, frequencyPtr, timePtr) {
-      const input = new Float32Array(wasm.memory.buffer, inputPtr, IN_LEN);
+      const input = new Float32Array(
+        wasm.memory.buffer,
+        inputPtr,
+        MODEL_INPUT_LENGTH,
+      );
       const spectrogram = new Float32Array(
         wasm.memory.buffer,
         spectrogramPtr,
-        SPECTROGRAM_LEN,
+        MODEL_SPECTROGRAM_LENGTH,
       );
       const feeds = {
-        waveform: new ort.Tensor("float32", input, [1, 2, SEGMENT]),
-        spectrogram: new ort.Tensor("float32", spectrogram, [1, 4, 2048, 336]),
+        waveform: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
+        spectrogram: new ort.Tensor("float32", spectrogram, [
+          1,
+          MODEL_CAC_CHANNELS,
+          MODEL_FREQUENCIES,
+          MODEL_FRAMES,
+        ]),
       };
       const result = await (session as ort.InferenceSession).run(feeds);
       const frequency = new Float32Array(
         wasm.memory.buffer,
         frequencyPtr,
-        FREQUENCY_LEN,
+        MODEL_FREQUENCY_LENGTH,
       );
-      const time = new Float32Array(wasm.memory.buffer, timePtr, TIME_LEN);
+      const time = new Float32Array(
+        wasm.memory.buffer,
+        timePtr,
+        MODEL_TIME_LENGTH,
+      );
       frequency.set(result.frequency.data as Float32Array);
       time.set(result.time.data as Float32Array);
     },
@@ -148,7 +166,7 @@ export async function separate(
   );
   const names = req.twoStems
     ? [req.twoStems.source, `no_${req.twoStems.source}`]
-    : ["drums", "bass", "other", "vocals"];
+    : SOURCES;
   return names.map((name, index) => ({
     name,
     left: tracks[2 * index],

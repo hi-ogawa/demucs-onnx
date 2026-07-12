@@ -202,9 +202,10 @@ pnpm cli-separate-v2 fixtures/sine-2s.wav data/output-split
 - [x] Verify browser separation and downloadable stem output in Playwright.
 
 The browser is hard-switched to split graphs; legacy browser model loading is not retained. Native
-CLI legacy support remains available for parity checks. Cross-runtime native/WASM numerical
-alignment is tracked separately in https://github.com/hi-ogawa/demucs-onnx/issues/56 rather than in
-app E2E.
+CLI legacy support remains available for parity checks. The headless Node/WASM CLI verifies the
+same split runtime independently from app E2E. On the deterministic ten-second fixture, native and
+Node/WASM split output measured `9.770e-5` max absolute error and `3.215e-10` MSE for both generated
+tracks.
 
 ### 5. Benchmark execution providers
 
