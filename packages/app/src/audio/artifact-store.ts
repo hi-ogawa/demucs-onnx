@@ -1,4 +1,4 @@
-import { IdbStore } from "../idb";
+import { IdbStore } from "../lib/idb";
 import type { ModelArtifact, ModelFilename } from "./models";
 
 export type StoredModelArtifact = ModelArtifact & {
