@@ -32,7 +32,7 @@ test("separates a clip fully client-side", async ({ page }) => {
   await expect(page.getByTestId("model-progress")).toContainText(
     "htdemucs.onnx",
   );
-  await expect(page.locator("#status")).toContainText("done in", {
+  await expect(page.locator("#status")).toContainText("Done in", {
     timeout: 300_000,
   });
   await expect(page.getByTestId("timing-summary")).toContainText("Inference");
