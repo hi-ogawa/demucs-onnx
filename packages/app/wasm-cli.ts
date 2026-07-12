@@ -1,10 +1,12 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import * as ort from "onnxruntime-web";
 import init, {
   separate as separateWasm,
-} from "../crates/wasm/pkg/demucs_wasm.js";
+  type Host,
+} from "../../crates/wasm/pkg/demucs_wasm.js";
+import { encodeWavF32 } from "./src/lib/audio/wav";
 
 const SAMPLE_RATE = 44_100;
 const SEGMENT = 343_980;
@@ -73,10 +75,19 @@ function parseCli() {
   if (!Number.isSafeInteger(shifts) || shifts < 1) {
     throw new Error("shifts must be an integer >= 1");
   }
-  return { models, name, twoStems, method, shifts, input, outDir };
+  const cwd = process.env.INIT_CWD ?? process.cwd();
+  return {
+    models: resolve(cwd, models),
+    name,
+    twoStems,
+    method,
+    shifts,
+    input: resolve(cwd, input),
+    outDir: resolve(cwd, outDir),
+  };
 }
 
-function decodeWav(bytes) {
+function decodeWav(bytes: Uint8Array) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (readFourCc(view, 0) !== "RIFF" || readFourCc(view, 8) !== "WAVE") {
     throw new Error("expected a RIFF/WAVE file");
@@ -126,7 +137,7 @@ function decodeWav(bytes) {
   return { left, right };
 }
 
-function readFourCc(view, offset) {
+function readFourCc(view: DataView, offset: number) {
   return String.fromCharCode(
     view.getUint8(offset),
     view.getUint8(offset + 1),
@@ -135,7 +146,15 @@ function readFourCc(view, offset) {
   );
 }
 
-function readSample(view, offset, format) {
+interface WavFormat {
+  encoding: number;
+  channels: number;
+  sampleRate: number;
+  blockAlign: number;
+  bits: number;
+}
+
+function readSample(view: DataView, offset: number, format: WavFormat) {
   if (format.encoding === 3 && format.bits === 32) {
     return view.getFloat32(offset, true);
   }
@@ -164,35 +183,6 @@ function readSample(view, offset, format) {
   }
 }
 
-function encodeWav(left, right) {
-  const buffer = new ArrayBuffer(44 + left.length * 8);
-  const view = new DataView(buffer);
-  writeFourCc(view, 0, "RIFF");
-  view.setUint32(4, buffer.byteLength - 8, true);
-  writeFourCc(view, 8, "WAVE");
-  writeFourCc(view, 12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 3, true);
-  view.setUint16(22, 2, true);
-  view.setUint32(24, SAMPLE_RATE, true);
-  view.setUint32(28, SAMPLE_RATE * 8, true);
-  view.setUint16(32, 8, true);
-  view.setUint16(34, 32, true);
-  writeFourCc(view, 36, "data");
-  view.setUint32(40, left.length * 8, true);
-  for (let i = 0; i < left.length; i++) {
-    view.setFloat32(44 + i * 8, left[i], true);
-    view.setFloat32(48 + i * 8, right[i], true);
-  }
-  return new Uint8Array(buffer);
-}
-
-function writeFourCc(view, offset, value) {
-  for (let i = 0; i < 4; i++) {
-    view.setUint8(offset + i, value.charCodeAt(i));
-  }
-}
-
 async function main() {
   const args = parseCli();
   const inputBytes = await readFile(args.input);
@@ -202,11 +192,11 @@ async function main() {
   );
 
   const wasmBytes = await readFile(
-    new URL("../crates/wasm/pkg/demucs_wasm_bg.wasm", import.meta.url),
+    new URL("../../crates/wasm/pkg/demucs_wasm_bg.wasm", import.meta.url),
   );
   const wasm = await init({ module_or_path: wasmBytes });
-  let dft;
-  const host = {
+  let dft: Uint8Array;
+  const host: Host = {
     event(type, ...event) {
       if (type === "model-loading") {
         console.error(`loading ${event[3]}`);
@@ -232,7 +222,7 @@ async function main() {
         inputPtr,
         INPUT_LENGTH,
       );
-      const result = await session.run({
+      const result = await (session as ort.InferenceSession).run({
         input: new ort.Tensor("float32", input, [1, 2, SEGMENT]),
       });
       const output = new Float32Array(
@@ -240,10 +230,10 @@ async function main() {
         outputPtr,
         OUTPUT_LENGTH,
       );
-      output.set(result.output.data);
+      output.set(result.output.data as Float32Array);
     },
     async releaseModel(session) {
-      await session.release();
+      await (session as ort.InferenceSession).release();
     },
   };
 
@@ -262,7 +252,11 @@ async function main() {
   await mkdir(args.outDir, { recursive: true });
   for (const [index, name] of names.entries()) {
     const path = join(args.outDir, `${name}.wav`);
-    await writeFile(path, encodeWav(tracks[index * 2], tracks[index * 2 + 1]));
+    const wav = encodeWavF32(
+      [tracks[index * 2], tracks[index * 2 + 1]],
+      SAMPLE_RATE,
+    );
+    await writeFile(path, new Uint8Array(await wav.arrayBuffer()));
     console.error(`wrote ${path}`);
   }
 }

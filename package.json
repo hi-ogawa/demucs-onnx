@@ -10,7 +10,7 @@
     "verify-parity": "uv run python tools/model-export/verify_parity.py",
     "model-release": "uv run --no-sync tools/model_release.py",
     "build-wasm": "wasm-pack build crates/wasm --target web --release",
-    "wasm-separate": "node tools/wasm-cli.mjs separate",
+    "wasm-separate": "pnpm -C packages/app wasm-separate",
     "build": "pnpm build-wasm && pnpm -C packages/app build",
     "build-cf": "(command -v cargo >/dev/null || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal) && PATH=\"$HOME/.cargo/bin:$PATH\" pnpm build",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
@@ -20,7 +20,6 @@
     "test-e2e": "pnpm -C packages/app test-e2e"
   },
   "devDependencies": {
-    "onnxruntime-web": "^1.27.0",
     "vite-plus": "^0.2.4",
     "wasm-pack": "0.15.0",
     "wrangler": "4.110.0"
