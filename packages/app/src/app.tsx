@@ -186,7 +186,7 @@ export function App() {
   }
 
   return (
-    <main className="mx-auto w-[min(1120px,calc(100%-40px))] py-18 max-[480px]:w-[calc(100%-24px)] max-[480px]:py-9 md:pb-24">
+    <main className="mx-auto w-[min(760px,calc(100%-40px))] py-18 max-[480px]:w-[calc(100%-24px)] max-[480px]:py-9 md:pb-24">
       <header className="mb-12 max-w-190 max-[480px]:mb-9">
         <p className="mb-2.5 text-xs font-extrabold tracking-[0.14em] text-[#245f46] uppercase">
           Browser-based source separation
@@ -206,10 +206,7 @@ export function App() {
         </p>
       </header>
 
-      <section
-        className="grid items-start gap-6 min-[801px]:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.8fr)]"
-        aria-label="Separation setup"
-      >
+      <section className="grid gap-6" aria-label="Separation setup">
         <div className="grid gap-6">
           <fieldset className="m-0 min-w-0 rounded-[18px] border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-7 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:rounded-[14px] max-[480px]:p-5">
             <legend className="px-2 text-[1.35rem] font-semibold text-[#18201b]">
@@ -377,7 +374,7 @@ export function App() {
               Your stems
             </h2>
           </div>
-          <div className="grid gap-3.5 md:grid-cols-2" id="stems">
+          <div className="grid gap-3.5" id="stems">
             {outputs.map((output) => (
               <div
                 className="grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-xl border border-[#d9d8ce] bg-[#f8f7f1] p-4.5"
