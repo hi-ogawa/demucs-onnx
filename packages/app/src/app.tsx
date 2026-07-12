@@ -188,9 +188,6 @@ export function App() {
   return (
     <main className="mx-auto w-[min(760px,calc(100%-40px))] py-18 max-[480px]:w-[calc(100%-24px)] max-[480px]:py-9 md:pb-24">
       <header className="mb-12 max-w-190 max-[480px]:mb-9">
-        <p className="mb-2.5 text-xs font-extrabold tracking-[0.14em] text-[#245f46] uppercase">
-          Browser-based source separation
-        </p>
         <h1 className="text-[clamp(3rem,8vw,5.5rem)] leading-[0.95] font-semibold tracking-[-0.045em]">
           Demucs ONNX
         </h1>
