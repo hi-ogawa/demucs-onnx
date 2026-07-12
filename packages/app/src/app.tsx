@@ -8,7 +8,7 @@ import {
   type ModelFilename,
   type ModelSource,
 } from "./lib/audio/models";
-import type { SeparateRequest, SeparatedStem } from "./lib/audio/separate";
+import type { SeparateRequest } from "./lib/audio/separate";
 import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
@@ -107,18 +107,9 @@ export function App() {
   // TODO: bad
   const runAbortRef = useRef<AbortController | null>(null);
 
-  // TODO: bad. probably mutation result
-  const [outputs, setOutputs] = useState<(SeparatedStem & { url: string })[]>(
-    [],
-  );
-  const outputUrlsRef = useRef<string[]>([]);
-
   useEffect(
     () => () => {
       runAbortRef.current?.abort();
-      for (const url of outputUrlsRef.current) {
-        URL.revokeObjectURL(url);
-      }
     },
     [],
   );
@@ -129,11 +120,6 @@ export function App() {
         throw new Error("Audio and model files are required");
       }
 
-      for (const url of outputUrlsRef.current) {
-        URL.revokeObjectURL(url);
-      }
-      outputUrlsRef.current = [];
-      setOutputs([]);
       const startedAt = Date.now();
       setRunProgress({
         phase: "preparing",
@@ -166,11 +152,10 @@ export function App() {
           const blob = encodeWavF32([output.left, output.right], 44100);
           return { ...output, url: URL.createObjectURL(blob) };
         });
-        outputUrlsRef.current = nextOutputs.map((output) => output.url);
-        setOutputs(nextOutputs);
         setStatus(
           `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
         );
+        return nextOutputs;
       } catch (error) {
         if (!controller.signal.aborted) {
           setRunProgress(null);
@@ -183,6 +168,16 @@ export function App() {
       }
     },
   });
+
+  const outputs = handleRunMutation.data ?? [];
+  useEffect(() => {
+    const currentOutputs = handleRunMutation.data;
+    return () => {
+      for (const output of currentOutputs ?? []) {
+        URL.revokeObjectURL(output.url);
+      }
+    };
+  }, [handleRunMutation.data]);
 
   return (
     <main className="mx-auto w-full max-w-[800px] px-3 py-9 sm:px-5 sm:py-18 md:pb-24">
