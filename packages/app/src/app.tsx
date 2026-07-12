@@ -5,6 +5,8 @@ import {
   type ModelSource,
 } from "./audio/models";
 import type { SeparateRequest, SeparatedStem } from "./audio/separate";
+import { updateRunProgress, type RunProgress } from "./lib/progress/model";
+import { RunProgressPanel } from "./lib/progress/panel";
 import { loadPreferences, savePreferences } from "./preferences";
 import { encodeWavF32 } from "./wav";
 import type { WorkerResponse } from "./worker";
@@ -38,7 +40,8 @@ export function App() {
   );
   const [preferences, setPreferences] = useState(loadPreferences);
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<number | null>(null);
+  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
+  const [now, setNow] = useState(Date.now());
   const [status, setStatus] = useState("pick a file");
   const [outputs, setOutputs] = useState<Output[]>([]);
   const workerRef = useRef<Worker | null>(null);
@@ -84,6 +87,14 @@ export function App() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!running) {
+      return;
+    }
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
 
   useEffect(() => savePreferences(preferences), [preferences]);
 
@@ -131,7 +142,6 @@ export function App() {
     workerRef.current = null;
     worker.terminate();
     setRunning(false);
-    setProgress(null);
     return true;
   }
 
@@ -142,7 +152,16 @@ export function App() {
 
     clearOutputs();
     setRunning(true);
-    setProgress(0);
+    const startedAt = Date.now();
+    setNow(startedAt);
+    setRunProgress({
+      phase: "preparing",
+      startedAt,
+      done: 0,
+      total: 0,
+      models: [],
+      finalizeMs: 0,
+    });
     const started = performance.now();
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
@@ -151,6 +170,7 @@ export function App() {
 
     worker.onerror = (event) => {
       if (finishRun(worker)) {
+        setRunProgress(null);
         setStatus(`error: worker failed: ${event.message}`);
       }
     };
@@ -159,11 +179,12 @@ export function App() {
         return;
       }
       const message = event.data;
-      if (message.type === "status") {
-        setStatus(message.text);
-      } else if (message.type === "progress") {
-        setProgress(message.done / message.total);
-        setStatus(`inference ${message.done}/${message.total} chunks`);
+      if (message.type === "progress") {
+        setRunProgress((progress) =>
+          progress
+            ? updateRunProgress(progress, message.event, message.at)
+            : progress,
+        );
       } else if (message.type === "done") {
         const nextOutputs = message.outputs.map((output) => {
           const blob = encodeWavF32([output.left, output.right], 44100);
@@ -176,6 +197,7 @@ export function App() {
         );
         finishRun(worker);
       } else {
+        setRunProgress(null);
         setStatus(`error: ${message.message}`);
         finishRun(worker);
       }
@@ -415,19 +437,14 @@ export function App() {
             >
               Separate track
             </button>
-            {progress !== null && (
-              <progress
-                className="mt-5 w-full accent-[#78d09b]"
-                id="progress"
-                value={progress}
-                max="1"
-              />
+            {runProgress && (
+              <RunProgressPanel progress={runProgress} now={now} />
             )}
             <p
               className="mt-3.5 min-h-[1.3em] text-sm leading-normal whitespace-pre-line text-[#667068]"
               id="status"
             >
-              {status}
+              {running ? "" : status}
             </p>
           </div>
         </aside>

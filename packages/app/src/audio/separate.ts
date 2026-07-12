@@ -37,30 +37,69 @@ export interface SeparatedStem {
   right: Float32Array;
 }
 
+export type ProgressEvent =
+  | { type: "started"; total: number }
+  | {
+      type: "model-loading";
+      index: number;
+      total: number;
+      chunks: number;
+      file: string;
+    }
+  | { type: "model-loaded" | "model-complete" | "finalizing" | "finalized" }
+  | {
+      type: "inference";
+      done: number;
+      total: number;
+      memberDone: number;
+      memberTotal: number;
+      shift: number;
+      shifts: number;
+    };
+
 export interface SeparateCallbacks {
-  onStatus?: (text: string) => void;
-  onProgress?: (done: number, total: number) => void;
+  onProgress?: (event: ProgressEvent) => void;
 }
 
 export async function separate(
   req: SeparateRequest,
   cb: SeparateCallbacks = {},
 ): Promise<SeparatedStem[]> {
-  cb.onStatus?.("loading wasm core...");
   const wasm = await init();
   let dft: Uint8Array | undefined;
 
   const host: Host = {
     event(...event) {
-      if (event[0] === "status") {
-        cb.onStatus?.(event[1]);
-      } else {
-        cb.onProgress?.(event[1], event[2]);
+      switch (event[0]) {
+        case "started":
+          cb.onProgress?.({ type: event[0], total: event[1] });
+          break;
+        case "model-loading":
+          cb.onProgress?.({
+            type: event[0],
+            index: event[1],
+            total: event[2],
+            chunks: event[3],
+            file: event[4],
+          });
+          break;
+        case "inference":
+          cb.onProgress?.({
+            type: event[0],
+            done: event[1],
+            total: event[2],
+            memberDone: event[3],
+            memberTotal: event[4],
+            shift: event[5],
+            shifts: event[6],
+          });
+          break;
+        default:
+          cb.onProgress?.({ type: event[0] });
       }
     },
 
     async initialize() {
-      this.event("status", "loading dft.bin...");
       dft = await readModelFile(req.modelSource, "dft.bin");
     },
 
@@ -71,7 +110,6 @@ export async function separate(
       const file = (
         source ? `${model}_${source}.onnx` : `${model}.onnx`
       ) as ModelFilename;
-      this.event("status", `loading model ${file}...`);
       const bytes = await readModelFile(req.modelSource, file);
       return ort.InferenceSession.create(bytes, {
         executionProviders: ["wasm"],
