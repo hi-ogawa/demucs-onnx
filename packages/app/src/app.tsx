@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  loadStoredModels,
+  storeModels,
+  type StoredModelArtifact,
+} from "./audio/artifact-store";
+import {
   isModelFilename,
   requiredModelFiles,
+  type ModelArtifact,
   type ModelSource,
 } from "./audio/models";
 import type { SeparateRequest, SeparatedStem } from "./audio/separate";
@@ -17,6 +23,13 @@ export function App() {
   const [selectedModelFiles, setSelectedModelFiles] = useState<File[] | null>(
     null,
   );
+  const [storedModelFiles, setStoredModelFiles] = useState<
+    StoredModelArtifact[]
+  >([]);
+  const [storageError, setStorageError] = useState("");
+  const [storageState, setStorageState] = useState<
+    "idle" | "saving" | "stored"
+  >("idle");
   const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
     [],
   );
@@ -32,23 +45,42 @@ export function App() {
   const twoStems =
     preferences.outputMode === "two-stems" ? preferences.targetStem : "";
 
-  const modelSource: ModelSource | null = selectedModelFiles
-    ? { files: selectedModelFiles }
-    : null;
+  const selectedArtifacts: ModelArtifact[] = (selectedModelFiles ?? []).map(
+    (file) => ({ name: file.name as ModelArtifact["name"], blob: file }),
+  );
+  const modelArtifacts = [
+    ...selectedArtifacts,
+    ...storedModelFiles.filter(
+      (stored) =>
+        !selectedArtifacts.some((selected) => selected.name === stored.name),
+    ),
+  ];
+  const modelSource: ModelSource | null =
+    modelArtifacts.length > 0 ? { artifacts: modelArtifacts } : null;
   const missingModelFiles = requiredModelFiles(
     model,
     twoStems || undefined,
     twoStems ? method : undefined,
   ).filter(
-    (filename) => !selectedModelFiles?.some((file) => file.name === filename),
+    (filename) =>
+      !modelArtifacts.some((artifact) => artifact.name === filename),
   );
   const modelsReady = modelSource !== null && missingModelFiles.length === 0;
   let modelFilesStatus =
     missingModelFiles.length > 0
       ? `Missing model files: ${missingModelFiles.join(", ")}`
-      : "Required model files selected.";
+      : selectedModelFiles && storageState === "stored"
+        ? "Required model files selected and stored."
+        : selectedModelFiles && storageState === "saving"
+          ? "Required model files selected; saving to browser storage..."
+          : selectedModelFiles
+            ? "Required model files selected for this session."
+            : "Required model files restored from browser storage.";
   if (unsupportedModelFiles.length > 0) {
     modelFilesStatus += ` Unsupported files: ${unsupportedModelFiles.join(", ")}`;
+  }
+  if (storageError) {
+    modelFilesStatus += ` ${storageError}`;
   }
 
   function clearOutputs() {
@@ -70,6 +102,40 @@ export function App() {
   );
 
   useEffect(() => savePreferences(preferences), [preferences]);
+
+  useEffect(() => {
+    void loadStoredModels()
+      .then(setStoredModelFiles)
+      .catch(() =>
+        setStorageError("Browser storage is unavailable; uploads still work."),
+      );
+  }, []);
+
+  async function handleModelFiles(files: File[]) {
+    const accepted = files.filter((file) => isModelFilename(file.name));
+    setSelectedModelFiles(accepted);
+    setUnsupportedModelFiles(
+      files
+        .filter((file) => !isModelFilename(file.name))
+        .map((file) => file.name),
+    );
+    setStorageError("");
+    setStorageState("saving");
+    try {
+      await storeModels(accepted);
+      setStoredModelFiles(await loadStoredModels());
+      setStorageState("stored");
+    } catch (error) {
+      const full =
+        error instanceof DOMException && error.name === "QuotaExceededError";
+      setStorageState("idle");
+      setStorageError(
+        full
+          ? "Browser storage is full; files are available for this session only."
+          : "Files are available for this session but could not be stored.",
+      );
+    }
+  }
 
   async function handleAudioFile(file: File | undefined) {
     const decodeId = ++decodeIdRef.current;
@@ -326,17 +392,9 @@ export function App() {
               id="modelFiles"
               accept=".bin,.onnx"
               multiple
-              onChange={(event) => {
-                const files = [...(event.target.files ?? [])];
-                setSelectedModelFiles(
-                  files.filter((file) => isModelFilename(file.name)),
-                );
-                setUnsupportedModelFiles(
-                  files
-                    .filter((file) => !isModelFilename(file.name))
-                    .map((file) => file.name),
-                );
-              }}
+              onChange={(event) =>
+                void handleModelFiles([...(event.target.files ?? [])])
+              }
             />
             <p
               className="mt-4 text-sm leading-normal whitespace-pre-line text-[#667068]"

@@ -20,7 +20,7 @@ test("separates a clip fully client-side", async ({ page }) => {
   await page.goto("/");
   await page.setInputFiles("#modelFiles", [DFT, MODEL]);
   await expect(page.locator("#modelFilesStatus")).toHaveText(
-    "Required model files selected.",
+    "Required model files selected and stored.",
   );
   await page.setInputFiles("#file", FIXTURE);
   await expect(page.locator("#status")).toContainText("decoded: 2.00s");
