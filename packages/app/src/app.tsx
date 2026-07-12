@@ -31,7 +31,6 @@ export function App() {
   const [modelFileErrors, setModelFileErrors] = useState<
     Partial<Record<ModelFilename, string>>
   >({});
-  const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
   // TODO: probably bad
@@ -133,64 +132,62 @@ export function App() {
     });
   }
 
-  async function handleRun() {
-    if (!decoded || !modelSource) {
-      return;
-    }
+  const handleRunMutation = useMutation({
+    mutationFn: async () => {
+      if (!decoded || !modelSource) {
+        throw new Error("Audio and model files are required");
+      }
 
-    clearOutputs();
-    setRunning(true);
-    const startedAt = Date.now();
-    setRunProgress({
-      phase: "preparing",
-      startedAt,
-      done: 0,
-      total: 0,
-      models: [],
-      finalizeMs: 0,
-    });
-    const started = performance.now();
-    const request: SeparateRequest = {
-      left: decoded.left.slice(),
-      right: decoded.right.slice(),
-      model,
-      twoStems: twoStems ? { source: twoStems, method } : undefined,
-      shifts,
-      modelSource,
-    };
-    const controller = new AbortController();
-    runAbortRef.current = controller;
-    try {
-      const separated = await separateInWorker(request, {
-        signal: controller.signal,
-        onProgress: (event, at) =>
-          setRunProgress((progress) =>
-            progress ? updateRunProgress(progress, event, at) : progress,
-          ),
+      clearOutputs();
+      const startedAt = Date.now();
+      setRunProgress({
+        phase: "preparing",
+        startedAt,
+        done: 0,
+        total: 0,
+        models: [],
+        finalizeMs: 0,
       });
-      const nextOutputs = separated.map((output) => {
-        const blob = encodeWavF32([output.left, output.right], 44100);
-        return { ...output, url: URL.createObjectURL(blob) };
-      });
-      outputUrlsRef.current = nextOutputs.map((output) => output.url);
-      setOutputs(nextOutputs);
-      setStatus(
-        `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
-      );
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        setRunProgress(null);
+      const started = performance.now();
+      const request: SeparateRequest = {
+        left: decoded.left.slice(),
+        right: decoded.right.slice(),
+        model,
+        twoStems: twoStems ? { source: twoStems, method } : undefined,
+        shifts,
+        modelSource,
+      };
+      const controller = new AbortController();
+      runAbortRef.current = controller;
+      try {
+        const separated = await separateInWorker(request, {
+          signal: controller.signal,
+          onProgress: (event, at) =>
+            setRunProgress((progress) =>
+              progress ? updateRunProgress(progress, event, at) : progress,
+            ),
+        });
+        const nextOutputs = separated.map((output) => {
+          const blob = encodeWavF32([output.left, output.right], 44100);
+          return { ...output, url: URL.createObjectURL(blob) };
+        });
+        outputUrlsRef.current = nextOutputs.map((output) => output.url);
+        setOutputs(nextOutputs);
         setStatus(
-          `error: ${error instanceof Error ? error.message : String(error)}`,
+          `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
         );
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setRunProgress(null);
+          throw error;
+        }
+      } finally {
+        if (runAbortRef.current === controller) {
+          runAbortRef.current = null;
+        }
       }
-    } finally {
-      if (runAbortRef.current === controller) {
-        runAbortRef.current = null;
-        setRunning(false);
-      }
-    }
-  }
+    },
+  });
 
   return (
     <main className="mx-auto w-full max-w-[800px] px-3 py-9 sm:px-5 sm:py-18 md:pb-24">
@@ -421,13 +418,15 @@ export function App() {
               <button
                 className="bg-primary-bright text-primary-foreground shadow-action hover:not-disabled:bg-primary-bright-hover disabled:border-primary-border disabled:bg-primary-soft disabled:text-primary-muted min-h-13 w-full cursor-pointer rounded-md border border-transparent font-bold disabled:cursor-not-allowed disabled:shadow-none"
                 id="run"
-                disabled={running || !decoded || !modelsReady}
-                onClick={handleRun}
+                disabled={
+                  handleRunMutation.isPending || !decoded || !modelsReady
+                }
+                onClick={() => handleRunMutation.mutate()}
               >
                 Separate track
               </button>
               {runProgress && <RunProgressPanel progress={runProgress} />}
-              {!running && status && (
+              {!handleRunMutation.isPending && status && (
                 <p
                   className="text-muted mt-3.5 text-sm leading-normal whitespace-pre-line"
                   id="status"
