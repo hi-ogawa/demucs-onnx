@@ -15,26 +15,13 @@ import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 import { encodeWavF32 } from "./lib/wav";
 
+// TODO: bad?
 type Output = SeparatedStem & { url: string };
 
-function FieldHelp({ children }: { children: React.ReactNode }) {
-  return (
-    <details className="relative normal-case">
-      <summary
-        className="text-help hover:text-primary flex size-5 cursor-pointer list-none items-center justify-center [&::-webkit-details-marker]:hidden"
-        aria-label="More information"
-      >
-        <CircleHelp aria-hidden="true" className="size-5" />
-      </summary>
-      <div className="text-copy absolute top-7 right-0 z-10 w-56 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg sm:w-64">
-        {children}
-      </div>
-    </details>
-  );
-}
-
 export function App() {
+  // TODO: bad. mutation result?
   const [decoded, setDecoded] = useState<DecodedAudio | null>(null);
+
   const [modelFiles, setModelFiles] = useState<
     Partial<Record<ModelFilename, File>>
   >({});
@@ -44,14 +31,25 @@ export function App() {
   const [modelFileErrors, setModelFileErrors] = useState<
     Partial<Record<ModelFilename, string>>
   >({});
-  const [preferences, setPreferences] = useState(loadPreferences);
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
+
+  // TODO: hook
   const [now, setNow] = useState(Date.now());
+
+  // TODO: probably bad
   const [status, setStatus] = useState("");
-  const [outputs, setOutputs] = useState<Output[]>([]);
+
+  // TODO: bad
   const runAbortRef = useRef<AbortController | null>(null);
+
+  // TODO: bad. probably mutation result
+  const [outputs, setOutputs] = useState<Output[]>([]);
   const outputUrlsRef = useRef<string[]>([]);
+
+  const [preferences, setPreferences] = useState(loadPreferences);
+  useEffect(() => savePreferences(preferences), [preferences]);
+
   const { model, method, shifts } = preferences;
   const twoStems =
     preferences.outputMode === "two-stems" ? preferences.targetStem : "";
@@ -122,8 +120,7 @@ export function App() {
     return () => window.clearInterval(timer);
   }, [running]);
 
-  useEffect(() => savePreferences(preferences), [preferences]);
-
+  // TODO: bad. pending/error?
   const decodeMutation = useMutation({ mutationFn: decodeAudioFile });
 
   function handleAudioFile(file: File | undefined) {
@@ -552,5 +549,21 @@ function ModelFileSlot({
       </label>
       {error && <p className="text-danger mt-1.5 text-sm">{error}</p>}
     </div>
+  );
+}
+
+function FieldHelp({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="relative normal-case">
+      <summary
+        className="text-help hover:text-primary flex size-5 cursor-pointer list-none items-center justify-center [&::-webkit-details-marker]:hidden"
+        aria-label="More information"
+      >
+        <CircleHelp aria-hidden="true" className="size-5" />
+      </summary>
+      <div className="text-copy absolute top-7 right-0 z-10 w-56 rounded-md border bg-white p-3 text-sm leading-relaxed font-normal tracking-normal shadow-lg sm:w-64">
+        {children}
+      </div>
+    </details>
   );
 }
