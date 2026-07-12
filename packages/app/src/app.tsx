@@ -219,21 +219,23 @@ export function App() {
   return (
     <main className="mx-auto w-[min(760px,calc(100%-40px))] py-18 max-[480px]:w-[calc(100%-24px)] max-[480px]:py-9 md:pb-24">
       <header className="mb-8 max-w-190">
-        <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
-          Demucs ONNX
-        </h1>
-        <p className="mt-4 mb-2 max-w-162.5 text-lg leading-relaxed text-[#3f4942]">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+          <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
+            Demucs ONNX
+          </h1>
+          <a
+            className="ml-auto text-sm font-semibold text-[#174331] underline underline-offset-3 hover:text-[#b85c2c]"
+            href="https://github.com/hi-ogawa/demucs-onnx"
+            target="_blank"
+            rel="noreferrer"
+          >
+            View on GitHub
+          </a>
+        </div>
+        <p className="mt-4 mb-2 text-lg leading-relaxed text-[#3f4942]">
           Separate music into vocals, drums, bass, and other stems, entirely in
           your browser. Your audio and model files stay on this device.
         </p>
-        <a
-          className="text-sm font-semibold text-[#174331] underline underline-offset-3 hover:text-[#b85c2c]"
-          href="https://github.com/hi-ogawa/demucs-onnx"
-          target="_blank"
-          rel="noreferrer"
-        >
-          View on GitHub
-        </a>
       </header>
 
       <section className="grid gap-6" aria-label="Separation setup">
