@@ -431,50 +431,13 @@ export function App() {
             </p>
             <div className="grid gap-2.5">
               {requiredFiles.map((filename) => (
-                <div data-testid="model-file-slot" key={filename}>
-                  <label
-                    className={`flex min-h-13 cursor-pointer items-center gap-3 rounded-md border px-4 py-3 transition-colors ${
-                      modelFiles[filename]
-                        ? "border-[#8fbea1] bg-[#edf7f0] hover:bg-[#e5f3e9]"
-                        : "border-dashed border-[#aeb5ae] bg-[#f8f7f1] hover:border-[#779181] hover:bg-[#f3f5ef]"
-                    }`}
-                  >
-                    <span
-                      className={`flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                        modelFiles[filename]
-                          ? "bg-[#78d09b] text-[#102b1d]"
-                          : "border border-[#aeb5ae] text-[#536059]"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      {modelFiles[filename] ? "✓" : "+"}
-                    </span>
-                    <code className="min-w-0 flex-1 overflow-hidden text-sm font-semibold text-ellipsis text-[#18201b]">
-                      {filename}
-                    </code>
-                    <span className="shrink-0 text-sm font-bold text-[#245f46]">
-                      {modelFiles[filename] ? "Ready" : "Choose file"}
-                    </span>
-                    <input
-                      className="sr-only"
-                      type="file"
-                      aria-label={`Select ${filename}`}
-                      accept={filename.endsWith(".onnx") ? ".onnx" : ".bin"}
-                      onChange={(event) => {
-                        addModelFiles(
-                          [...(event.target.files ?? [])],
-                          filename,
-                        );
-                        event.target.value = "";
-                      }}
-                    />
-                  </label>
-                  {modelFileErrors[filename] && (
-                    <p className="mt-1.5 text-sm text-[#9b3f2b]">
-                      {modelFileErrors[filename]}
-                    </p>
-                  )}
-                </div>
+                <ModelFileSlot
+                  key={filename}
+                  filename={filename}
+                  ready={Boolean(modelFiles[filename])}
+                  error={modelFileErrors[filename]}
+                  onSelect={(files) => addModelFiles(files, filename)}
+                />
               ))}
             </div>
             <p className="mt-4 text-sm text-[#667068]">
@@ -571,5 +534,57 @@ export function App() {
         </section>
       )}
     </main>
+  );
+}
+
+function ModelFileSlot({
+  filename,
+  ready,
+  error,
+  onSelect,
+}: {
+  filename: ModelFilename;
+  ready: boolean;
+  error?: string;
+  onSelect: (files: File[]) => void;
+}) {
+  return (
+    <div data-testid="model-file-slot">
+      <label
+        className={`flex min-h-13 cursor-pointer items-center gap-3 rounded-md border px-4 py-3 transition-colors ${
+          ready
+            ? "border-[#8fbea1] bg-[#edf7f0] hover:bg-[#e5f3e9]"
+            : "border-dashed border-[#aeb5ae] bg-[#f8f7f1] hover:border-[#779181] hover:bg-[#f3f5ef]"
+        }`}
+      >
+        <span
+          className={`flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+            ready
+              ? "bg-[#78d09b] text-[#102b1d]"
+              : "border border-[#aeb5ae] text-[#536059]"
+          }`}
+          aria-hidden="true"
+        >
+          {ready ? "✓" : "+"}
+        </span>
+        <code className="min-w-0 flex-1 overflow-hidden text-sm font-semibold text-ellipsis text-[#18201b]">
+          {filename}
+        </code>
+        <span className="shrink-0 text-sm font-bold text-[#245f46]">
+          {ready ? "Ready" : "Choose file"}
+        </span>
+        <input
+          className="sr-only"
+          type="file"
+          aria-label={`Select ${filename}`}
+          accept={filename.endsWith(".onnx") ? ".onnx" : ".bin"}
+          onChange={(event) => {
+            onSelect([...(event.target.files ?? [])]);
+            event.target.value = "";
+          }}
+        />
+      </label>
+      {error && <p className="mt-1.5 text-sm text-[#9b3f2b]">{error}</p>}
+    </div>
   );
 }
