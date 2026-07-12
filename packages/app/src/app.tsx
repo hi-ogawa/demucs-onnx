@@ -42,7 +42,7 @@ export function App() {
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
   const [now, setNow] = useState(Date.now());
-  const [status, setStatus] = useState("Choose an audio file to continue.");
+  const [status, setStatus] = useState("");
   const [outputs, setOutputs] = useState<Output[]>([]);
   const workerRef = useRef<Worker | null>(null);
   const outputUrlsRef = useRef<string[]>([]);
@@ -102,7 +102,7 @@ export function App() {
     const decodeId = ++decodeIdRef.current;
     if (!file) {
       setDecoded(null);
-      setStatus("Choose an audio file to continue.");
+      setStatus("");
       return;
     }
 
