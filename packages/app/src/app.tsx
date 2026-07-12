@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   isModelFilename,
   requiredModelFiles,
+  type ModelFilename,
   type ModelSource,
 } from "./audio/models";
 import type { SeparateRequest, SeparatedStem } from "./audio/separate";
@@ -32,9 +33,9 @@ function FieldHelp({ children }: { children: React.ReactNode }) {
 
 export function App() {
   const [decoded, setDecoded] = useState<DecodedAudio | null>(null);
-  const [selectedModelFiles, setSelectedModelFiles] = useState<File[] | null>(
-    null,
-  );
+  const [modelFiles, setModelFiles] = useState<
+    Partial<Record<ModelFilename, File>>
+  >({});
   const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
     [],
   );
@@ -51,23 +52,44 @@ export function App() {
   const twoStems =
     preferences.outputMode === "two-stems" ? preferences.targetStem : "";
 
-  const modelSource: ModelSource | null = selectedModelFiles
-    ? { files: selectedModelFiles }
-    : null;
-  const missingModelFiles = requiredModelFiles(
+  const selectedModelFiles = Object.values(modelFiles);
+  const requiredFiles = requiredModelFiles(
     model,
     twoStems || undefined,
     twoStems ? method : undefined,
-  ).filter(
-    (filename) => !selectedModelFiles?.some((file) => file.name === filename),
   );
-  const modelsReady = modelSource !== null && missingModelFiles.length === 0;
+  const missingModelFiles = requiredFiles.filter(
+    (filename) => !modelFiles[filename],
+  );
+  const modelsReady = missingModelFiles.length === 0;
+  const modelSource: ModelSource | null = modelsReady
+    ? { files: selectedModelFiles }
+    : null;
   let modelFilesStatus =
     missingModelFiles.length > 0
       ? `Missing model files: ${missingModelFiles.join(", ")}`
       : "Required model files selected.";
   if (unsupportedModelFiles.length > 0) {
     modelFilesStatus += ` Unsupported files: ${unsupportedModelFiles.join(", ")}`;
+  }
+
+  function addModelFiles(files: File[], expected?: ModelFilename) {
+    const accepted = files.filter(
+      (file) =>
+        isModelFilename(file.name) && (!expected || file.name === expected),
+    );
+    setModelFiles((current) => ({
+      ...current,
+      ...Object.fromEntries(accepted.map((file) => [file.name, file])),
+    }));
+    setUnsupportedModelFiles(
+      files
+        .filter(
+          (file) =>
+            !isModelFilename(file.name) || (expected && file.name !== expected),
+        )
+        .map((file) => file.name),
+    );
   }
 
   function clearOutputs() {
@@ -402,24 +424,52 @@ export function App() {
               </a>
               , then select the required files.
             </p>
-            <input
-              className="w-full rounded-md border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
-              type="file"
-              id="modelFiles"
-              accept=".bin,.onnx"
-              multiple
-              onChange={(event) => {
-                const files = [...(event.target.files ?? [])];
-                setSelectedModelFiles(
-                  files.filter((file) => isModelFilename(file.name)),
-                );
-                setUnsupportedModelFiles(
-                  files
-                    .filter((file) => !isModelFilename(file.name))
-                    .map((file) => file.name),
-                );
-              }}
-            />
+            <div className="grid gap-3">
+              {requiredFiles.map((filename) => (
+                <div
+                  className="rounded-md border border-[#d9d8ce] bg-[#f8f7f1] p-3.5"
+                  data-testid="model-file-slot"
+                  key={filename}
+                >
+                  <div className="mb-2.5 flex items-center justify-between gap-3">
+                    <code className="min-w-0 overflow-hidden text-sm font-semibold text-ellipsis text-[#18201b]">
+                      {filename}
+                    </code>
+                    <span className="shrink-0 text-xs font-bold text-[#536059]">
+                      {modelFiles[filename] ? "Selected" : "Required"}
+                    </span>
+                  </div>
+                  <input
+                    className="w-full text-sm text-[#667068] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[#dcebe1] file:px-3 file:py-2 file:font-bold file:text-[#174331]"
+                    type="file"
+                    aria-label={`Select ${filename}`}
+                    accept={filename.endsWith(".onnx") ? ".onnx" : ".bin"}
+                    onChange={(event) => {
+                      addModelFiles([...(event.target.files ?? [])], filename);
+                      event.target.value = "";
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 border-t border-[#d9d8ce] pt-4">
+              <label
+                className="mb-2 block text-xs font-bold tracking-[0.04em] text-[#667068] uppercase"
+                htmlFor="modelFiles"
+              >
+                Select multiple files
+              </label>
+              <input
+                className="w-full rounded-md border border-dashed border-[#aeb5ae] bg-[#f8f7f1] p-3 text-[#667068] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[#dcebe1] file:px-3.5 file:py-2 file:font-bold file:text-[#174331]"
+                type="file"
+                id="modelFiles"
+                accept=".bin,.onnx"
+                multiple
+                onChange={(event) =>
+                  addModelFiles([...(event.target.files ?? [])])
+                }
+              />
+            </div>
             <p
               className="mt-4 text-sm leading-normal whitespace-pre-line text-[#667068]"
               id="modelFilesStatus"
