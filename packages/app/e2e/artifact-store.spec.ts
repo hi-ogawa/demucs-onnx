@@ -14,9 +14,25 @@ test("restores selected model files after reload", async ({ page }) => {
       buffer: Buffer.from("model"),
     },
   ]);
-  await expect(page.locator("#model-storage-status")).toHaveText(
-    "Model files stored in browser.",
-  );
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const request = indexedDB.open("demucs-artifacts-v1", 1);
+        const database = await new Promise<IDBDatabase>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        const countRequest = database
+          .transaction("artifacts", "readonly")
+          .objectStore("artifacts")
+          .count();
+        return new Promise<number>((resolve, reject) => {
+          countRequest.onsuccess = () => resolve(countRequest.result);
+          countRequest.onerror = () => reject(countRequest.error);
+        });
+      }),
+    )
+    .toBe(2);
 
   await page.reload();
   await expect(

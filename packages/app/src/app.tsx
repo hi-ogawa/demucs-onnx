@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { loadStoredModels, storeModels } from "./lib/audio/artifact-store";
@@ -23,10 +23,9 @@ export function App() {
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
 
-  const [modelFiles, setModelFiles] = useState<
+  const [selectedModelFiles, setSelectedModelFiles] = useState<
     Partial<Record<ModelFilename, ModelArtifact>>
   >({});
-  const [modelStorageStatus, setModelStorageStatus] = useState("");
   const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
     [],
   );
@@ -35,6 +34,21 @@ export function App() {
   >({});
 
   const { model, method, shifts, twoStems } = preferences;
+
+  const loadStoredModelsQuery = useQuery({
+    queryKey: ["stored-models"],
+    queryFn: loadStoredModels,
+  });
+  const storeModelsMutation = useMutation({ mutationFn: storeModels });
+  const modelFiles: Partial<Record<ModelFilename, ModelArtifact>> = {
+    ...Object.fromEntries(
+      (loadStoredModelsQuery.data ?? []).map((artifact) => [
+        artifact.name,
+        artifact,
+      ]),
+    ),
+    ...selectedModelFiles,
+  };
 
   const requiredFiles = requiredModelFiles(
     model,
@@ -46,28 +60,12 @@ export function App() {
   )
     ? { artifacts: Object.values(modelFiles) }
     : null;
-  useEffect(() => {
-    void loadStoredModels()
-      .then((artifacts) =>
-        setModelFiles(
-          Object.fromEntries(
-            artifacts.map((artifact) => [artifact.name, artifact]),
-          ),
-        ),
-      )
-      .catch(() =>
-        setModelStorageStatus(
-          "Browser storage is unavailable; uploads still work.",
-        ),
-      );
-  }, []);
-
-  async function addModelFiles(files: File[], expected?: ModelFilename) {
+  function addModelFiles(files: File[], expected?: ModelFilename) {
     const accepted = files.filter(
       (file) =>
         isModelFilename(file.name) && (!expected || file.name === expected),
     );
-    setModelFiles((current) => ({
+    setSelectedModelFiles((current) => ({
       ...current,
       ...Object.fromEntries(
         accepted.map((file) => [file.name, { name: file.name, blob: file }]),
@@ -90,21 +88,18 @@ export function App() {
       }));
     }
     if (accepted.length > 0) {
-      setModelStorageStatus("Saving model files to browser storage...");
-      try {
-        await storeModels(accepted);
-        setModelStorageStatus("Model files stored in browser.");
-      } catch (error) {
-        const full =
-          error instanceof DOMException && error.name === "QuotaExceededError";
-        setModelStorageStatus(
-          full
-            ? "Browser storage is full; files are available for this session only."
-            : "Files are available for this session but could not be stored.",
-        );
-      }
+      storeModelsMutation.mutate(accepted);
     }
   }
+
+  const modelStorageError = loadStoredModelsQuery.error
+    ? "Browser storage is unavailable; uploads still work."
+    : storeModelsMutation.error instanceof DOMException &&
+        storeModelsMutation.error.name === "QuotaExceededError"
+      ? "Browser storage is full; files are available for this session only."
+      : storeModelsMutation.error
+        ? "Files are available for this session but could not be stored."
+        : "";
 
   const handleAudioFileMutation = useMutation({
     mutationFn: async (file: File | undefined) => {
@@ -381,7 +376,7 @@ export function App() {
                     filename={filename}
                     ready={Boolean(modelFiles[filename])}
                     error={modelFileErrors[filename]}
-                    onSelect={(files) => void addModelFiles(files, filename)}
+                    onSelect={(files) => addModelFiles(files, filename)}
                   />
                 ))}
               </div>
@@ -396,7 +391,7 @@ export function App() {
                     accept=".bin,.onnx"
                     multiple
                     onChange={(event) =>
-                      void addModelFiles([...(event.target.files ?? [])])
+                      addModelFiles([...(event.target.files ?? [])])
                     }
                   />
                 </label>
@@ -407,13 +402,8 @@ export function App() {
                   Unsupported files: {unsupportedModelFiles.join(", ")}.
                 </p>
               )}
-              {modelStorageStatus && (
-                <p
-                  className="text-muted mt-2 text-sm"
-                  id="model-storage-status"
-                >
-                  {modelStorageStatus}
-                </p>
+              {modelStorageError && (
+                <p className="text-danger mt-2 text-sm">{modelStorageError}</p>
               )}
             </section>
 
