@@ -42,12 +42,16 @@ jobs:
         with:
           path: |
             ~/.cache/torch/hub/checkpoints
+            ~/.cache/huggingface/hub
             data/onnx
-          key: ${{ runner.os }}-htdemucs-${{ hashFiles('uv.lock', 'tools/model-export/build_models.py', 'tools/model-export/export_onnx.py') }}
+            data/onnx-split
+          key: ${{ runner.os }}-htdemucs-${{ hashFiles('uv.lock', 'tools/model-export-v2/uv.lock', 'tools/model-export/build_models.py', 'tools/model-export-v2/*.py') }}
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build-model htdemucs
+
+      - run: pnpm build-model-v2 htdemucs
 
       - run: |
           pnpm verify-parity \
@@ -60,6 +64,14 @@ jobs:
             --name htdemucs \
             --two-stems bass \
             --two-stems-mix minus \
+            fixtures/sine-10s.wav data/ci-output/legacy
+          test -s data/ci-output/legacy/bass.wav
+          test -s data/ci-output/legacy/no_bass.wav
+
+      - run: |
+          pnpm cli-separate-v2 \
+            --two-stems bass \
+            --two-stems-mix minus \
             fixtures/sine-10s.wav data/ci-output/native
           test -s data/ci-output/native/bass.wav
           test -s data/ci-output/native/no_bass.wav
@@ -68,7 +80,7 @@ jobs:
 
       - run: |
           pnpm wasm-separate \
-            --models data/onnx-lean \
+            --models data/onnx-split \
             --name htdemucs \
             --two-stems bass \
             --two-stems-mix minus \

@@ -14,4 +14,5 @@ resample = ["dep:rubato"]
 [dependencies]
 anyhow = "1"
 hound = { version = "3.5", optional = true }
+realfft = "3.5"
 rubato = { version = "0.16", optional = true }

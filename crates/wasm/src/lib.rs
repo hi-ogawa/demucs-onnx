@@ -42,9 +42,6 @@ extern "C" {
         shifts: usize,
     );
 
-    #[wasm_bindgen(method, structural, catch)]
-    fn initialize(this: &Host) -> Result<Promise, JsValue>;
-
     #[wasm_bindgen(method, structural, catch, js_name = loadModel)]
     fn load_model(this: &Host, model: &str, source: Option<&str>) -> Result<Promise, JsValue>;
 
@@ -53,7 +50,9 @@ extern "C" {
         this: &Host,
         session: &JsValue,
         input_ptr: usize,
-        output_ptr: usize,
+        spectrogram_ptr: usize,
+        frequency_ptr: usize,
+        time_ptr: usize,
     ) -> Result<Promise, JsValue>;
 
     #[wasm_bindgen(method, structural, catch, js_name = releaseModel)]
@@ -69,9 +68,8 @@ export interface Host {
     | [type: "model-loaded" | "model-complete" | "finalizing" | "finalized"]
     | [type: "inference", done: number, total: number, memberDone: number, memberTotal: number, shift: number, shifts: number]
   ): void;
-  initialize(): Promise<void>;
   loadModel(model: string, source?: string): Promise<unknown>;
-  runModel(session: unknown, inputPtr: number, outputPtr: number): Promise<void>;
+  runModel(session: unknown, inputPtr: number, spectrogramPtr: number, frequencyPtr: number, timePtr: number): Promise<void>;
   releaseModel(session: unknown): Promise<void>;
 }
 
@@ -94,9 +92,16 @@ pub async fn separate(
     let opts = demucs::Options { bag, shifts, mode };
     let mut separation = demucs::Separation::new([left, right], opts).map_err(js_err)?;
     let mut model_input = vec![0f32; demucs::CHANNELS * demucs::SEGMENT];
-    let mut output = vec![0f32; demucs::NUM_SOURCES * demucs::CHANNELS * demucs::SEGMENT];
-
-    JsFuture::from(host.initialize()?).await?;
+    let mut frequency = vec![
+        0f32;
+        demucs::NUM_SOURCES
+            * demucs::dsp::CAC_CHANNELS
+            * demucs::dsp::FREQUENCIES
+            * demucs::dsp::FRAMES
+    ];
+    let mut time = vec![0f32; demucs::NUM_SOURCES * demucs::CHANNELS * demucs::SEGMENT];
+    let mut stft = demucs::dsp::Stft::new();
+    let mut istft = demucs::dsp::Istft::new();
 
     let total = separation.plan.total_chunks();
     host.started_event("started", total);
@@ -139,12 +144,19 @@ pub async fn separate(
                 chunk_processor
                     .prepare_input(chunk, &mut model_input)
                     .map_err(js_err)?;
+                let spectrogram = stft.process(&model_input).map_err(js_err)?;
                 JsFuture::from(host.run_model(
                     &session,
                     model_input.as_ptr() as usize,
-                    output.as_mut_ptr() as usize,
+                    spectrogram.as_ptr() as usize,
+                    frequency.as_mut_ptr() as usize,
+                    time.as_mut_ptr() as usize,
                 )?)
                 .await?;
+                let mut output = istft.process(&frequency).map_err(js_err)?;
+                for (sample, time_sample) in output.iter_mut().zip(&time) {
+                    *sample += time_sample;
+                }
                 chunk_processor
                     .process_output(chunk, &output)
                     .map_err(js_err)?;

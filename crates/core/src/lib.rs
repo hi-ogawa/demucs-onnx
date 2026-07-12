@@ -36,6 +36,7 @@
 //! preserves stems-sum-to-mix).
 
 mod audio;
+pub mod dsp;
 mod engine;
 pub mod vocab;
 #[cfg(feature = "wav")]

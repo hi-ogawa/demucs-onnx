@@ -46,7 +46,7 @@ Run the same separation flow through the Rust/WASM driver and
 
 ```bash
 pnpm build-wasm
-pnpm wasm-separate --models data/onnx-lean data/input/song.wav data/output/song
+pnpm wasm-separate --models data/onnx-split data/input/song.wav data/output/song
 ```
 
 The WASM CLI accepts the same `--name`, `--two-stems`, `--two-stems-mix`, and

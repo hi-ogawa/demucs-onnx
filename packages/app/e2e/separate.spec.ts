@@ -2,21 +2,19 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { test, expect } from "@playwright/test";
 
-const MODELS_DIR = resolve(import.meta.dirname, "../../../data/onnx-lean");
+const MODELS_DIR = resolve(import.meta.dirname, "../../../data/onnx-split");
 const MODEL = resolve(MODELS_DIR, "htdemucs.onnx");
-const DFT = resolve(MODELS_DIR, "dft.bin");
 const FIXTURE = resolve(import.meta.dirname, "../../../fixtures/sine-2s.wav");
 
 test("separates a clip fully client-side", async ({ page }) => {
   expect(existsSync(MODEL), `model missing at ${MODEL}`).toBe(true);
-  expect(existsSync(DFT), `external data missing at ${DFT}`).toBe(true);
   expect(existsSync(FIXTURE), `fixture missing at ${FIXTURE}`).toBe(true);
 
   await page.goto("/");
-  await page.setInputFiles("#modelFiles", [DFT, MODEL]);
+  await page.setInputFiles("#modelFiles", MODEL);
   await expect(
     page.getByTestId("model-file-slot").getByText("Ready"),
-  ).toHaveCount(2);
+  ).toHaveCount(1);
   await page.setInputFiles("#file", FIXTURE);
   await expect(page.locator("#audio-status")).toContainText("Decoded: 2.00s");
 

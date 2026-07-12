@@ -8,9 +8,14 @@ import init, {
 } from "../../../../crates/wasm/pkg/demucs_wasm.js";
 import {
   AUDIO_SAMPLE_RATE,
+  MODEL_CAC_CHANNELS,
+  MODEL_FRAMES,
+  MODEL_FREQUENCIES,
+  MODEL_FREQUENCY_LENGTH,
   MODEL_INPUT_LENGTH,
-  MODEL_OUTPUT_LENGTH,
   MODEL_SEGMENT,
+  MODEL_SPECTROGRAM_LENGTH,
+  MODEL_TIME_LENGTH,
   SOURCES,
 } from "../lib/audio/constants";
 import { decodeWav, encodeWavF32 } from "../lib/audio/wav";
@@ -103,7 +108,6 @@ async function main() {
     new URL("../../../../crates/wasm/pkg/demucs_wasm_bg.wasm", import.meta.url),
   );
   const wasm = await init({ module_or_path: wasmBytes });
-  let dft: Uint8Array;
   const host: Host = {
     event(type, ...event) {
       if (type === "model-loading") {
@@ -113,32 +117,45 @@ async function main() {
         console.error("model complete");
       }
     },
-    async initialize() {
-      dft = await readFile(join(args.models, "dft.bin"));
-    },
     async loadModel(model, source) {
       const file = source ? `${model}_${source}.onnx` : `${model}.onnx`;
       const modelBytes = await readFile(join(args.models, file));
       return ort.InferenceSession.create(modelBytes, {
         executionProviders: ["wasm"],
-        externalData: [{ data: dft, path: "dft.bin" }],
       });
     },
-    async runModel(session, inputPtr, outputPtr) {
+    async runModel(session, inputPtr, spectrogramPtr, frequencyPtr, timePtr) {
       const input = new Float32Array(
         wasm.memory.buffer,
         inputPtr,
         MODEL_INPUT_LENGTH,
       );
-      const result = await (session as ort.InferenceSession).run({
-        input: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
-      });
-      const output = new Float32Array(
+      const spectrogram = new Float32Array(
         wasm.memory.buffer,
-        outputPtr,
-        MODEL_OUTPUT_LENGTH,
+        spectrogramPtr,
+        MODEL_SPECTROGRAM_LENGTH,
       );
-      output.set(result.output.data as Float32Array);
+      const result = await (session as ort.InferenceSession).run({
+        waveform: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
+        spectrogram: new ort.Tensor("float32", spectrogram, [
+          1,
+          MODEL_CAC_CHANNELS,
+          MODEL_FREQUENCIES,
+          MODEL_FRAMES,
+        ]),
+      });
+      const frequency = new Float32Array(
+        wasm.memory.buffer,
+        frequencyPtr,
+        MODEL_FREQUENCY_LENGTH,
+      );
+      const time = new Float32Array(
+        wasm.memory.buffer,
+        timePtr,
+        MODEL_TIME_LENGTH,
+      );
+      frequency.set(result.frequency.data as Float32Array);
+      time.set(result.time.data as Float32Array);
     },
     async releaseModel(session) {
       await (session as ort.InferenceSession).release();

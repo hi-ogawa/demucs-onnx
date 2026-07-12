@@ -1,5 +1,4 @@
 const MODEL_FILENAMES = [
-  "dft.bin",
   "htdemucs.onnx",
   "htdemucs_ft_drums.onnx",
   "htdemucs_ft_bass.onnx",
@@ -22,13 +21,12 @@ export function requiredModelFiles(
   method?: "add" | "minus",
 ): ModelFilename[] {
   if (model === "htdemucs") {
-    return ["dft.bin", "htdemucs.onnx"];
+    return ["htdemucs.onnx"];
   }
   if (source && method === "minus") {
-    return ["dft.bin", `htdemucs_ft_${source}.onnx` as ModelFilename];
+    return [`htdemucs_ft_${source}.onnx` as ModelFilename];
   }
   return [
-    "dft.bin",
     "htdemucs_ft_drums.onnx",
     "htdemucs_ft_bass.onnx",
     "htdemucs_ft_other.onnx",
