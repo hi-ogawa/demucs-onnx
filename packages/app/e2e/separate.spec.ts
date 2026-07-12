@@ -26,9 +26,16 @@ test("separates a clip fully client-side", async ({ page }) => {
   await expect(page.locator("#status")).toContainText("decoded: 2.00s");
 
   await page.click("#run");
+  await expect(
+    page.getByRole("progressbar", { name: "Overall separation progress" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("model-progress")).toContainText(
+    "htdemucs.onnx",
+  );
   await expect(page.locator("#status")).toContainText("done in", {
     timeout: 300_000,
   });
+  await expect(page.getByTestId("timing-summary")).toContainText("Inference");
 
   const stems = page.locator("#stems > div");
   await expect(stems).toHaveCount(4);

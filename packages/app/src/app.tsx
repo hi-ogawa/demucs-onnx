@@ -4,12 +4,262 @@ import {
   requiredModelFiles,
   type ModelSource,
 } from "./audio/models";
-import type { SeparateRequest, SeparatedStem } from "./audio/separate";
+import type {
+  ProgressEvent,
+  SeparateRequest,
+  SeparatedStem,
+} from "./audio/separate";
 import { encodeWavF32 } from "./wav";
 import type { WorkerResponse } from "./worker";
 
 type DecodedAudio = { left: Float32Array; right: Float32Array };
 type Output = SeparatedStem & { url: string };
+type ModelProgress = {
+  index: number;
+  total: number;
+  file: string;
+  done: number;
+  chunks: number;
+  shifts: number;
+  shift: number;
+  phase: "loading" | "separating" | "complete";
+  loadStartedAt: number;
+  inferenceStartedAt?: number;
+  loadMs?: number;
+  inferenceMs?: number;
+};
+type RunProgress = {
+  phase: "preparing" | "loading" | "separating" | "finalizing" | "complete";
+  startedAt: number;
+  completedAt?: number;
+  finalizeStartedAt?: number;
+  done: number;
+  total: number;
+  models: ModelProgress[];
+  finalizeMs: number;
+};
+
+function formatClock(ms: number) {
+  const seconds = Math.max(0, Math.round(ms / 1000));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return [hours, minutes, seconds % 60]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
+}
+
+function formatSeconds(ms: number) {
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function updateRunProgress(
+  progress: RunProgress,
+  event: ProgressEvent,
+  at: number,
+): RunProgress {
+  const models = progress.models.map((model) => ({ ...model }));
+  const current = models.at(-1);
+  switch (event.type) {
+    case "started":
+      return { ...progress, total: event.total };
+    case "model-loading":
+      return {
+        ...progress,
+        phase: "loading",
+        models: [
+          ...models,
+          {
+            index: event.index,
+            total: event.total,
+            file: event.file,
+            done: 0,
+            chunks: event.chunks,
+            shift: 1,
+            shifts: 1,
+            phase: "loading",
+            loadStartedAt: at,
+          },
+        ],
+      };
+    case "model-loaded":
+      if (!current) {
+        return progress;
+      }
+      current.phase = "separating";
+      current.loadMs = at - current.loadStartedAt;
+      current.inferenceStartedAt = at;
+      return { ...progress, phase: "separating", models };
+    case "inference":
+      if (!current) {
+        return progress;
+      }
+      current.done = event.memberDone;
+      current.chunks = event.memberTotal;
+      current.shift = event.shift;
+      current.shifts = event.shifts;
+      current.inferenceMs = at - (current.inferenceStartedAt ?? at);
+      return { ...progress, done: event.done, total: event.total, models };
+    case "model-complete":
+      if (!current) {
+        return progress;
+      }
+      current.phase = "complete";
+      current.done = current.chunks;
+      current.inferenceMs = at - (current.inferenceStartedAt ?? at);
+      return { ...progress, models };
+    case "finalizing":
+      return {
+        ...progress,
+        phase: "finalizing",
+        finalizeStartedAt: at,
+        models,
+      };
+    case "finalized":
+      return {
+        ...progress,
+        phase: "complete",
+        completedAt: at,
+        finalizeMs: at - (progress.finalizeStartedAt ?? at),
+        models,
+      };
+  }
+}
+
+function RunProgressPanel({
+  progress,
+  now,
+}: {
+  progress: RunProgress;
+  now: number;
+}) {
+  const elapsed = (progress.completedAt ?? now) - progress.startedAt;
+  const loadMs = progress.models.reduce(
+    (sum, model) => sum + (model.loadMs ?? 0),
+    0,
+  );
+  const inferenceMs = progress.models.reduce(
+    (sum, model) => sum + (model.inferenceMs ?? 0),
+    0,
+  );
+  const loaded = progress.models.filter(
+    (model) => model.loadMs !== undefined,
+  ).length;
+  const modelTotal = progress.models.at(-1)?.total ?? 0;
+  const etaMs =
+    progress.done > 0
+      ? (inferenceMs / progress.done) * (progress.total - progress.done) +
+        (loaded > 0 ? (loadMs / loaded) * (modelTotal - loaded) : 0)
+      : undefined;
+  const percent =
+    progress.total > 0 ? (100 * progress.done) / progress.total : 0;
+  const title =
+    progress.phase === "complete"
+      ? "Separation complete"
+      : progress.phase === "finalizing"
+        ? "Finalizing stems"
+        : progress.phase === "loading"
+          ? "Loading model"
+          : progress.phase === "separating"
+            ? "Separating track"
+            : "Preparing separation";
+
+  return (
+    <section className="mt-5 grid gap-4 border-t border-[#d9d8ce] pt-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="font-semibold text-[#18201b]">{title}</h3>
+        <span className="text-xs font-bold tracking-[0.05em] text-[#667068] uppercase">
+          {Math.round(percent)}%
+        </span>
+      </div>
+
+      <div className="grid gap-2.5" data-testid="model-progress">
+        {progress.models.map((model) => {
+          const modelPercent =
+            model.chunks > 0 ? (100 * model.done) / model.chunks : 0;
+          return (
+            <div
+              className="rounded-md border border-[#d9d8ce] bg-[#f8f7f1] px-3.5 py-3"
+              key={model.index}
+            >
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <b className="min-w-0 truncate text-sm font-semibold">
+                  {model.total > 1 && `Model ${model.index}/${model.total} · `}
+                  {model.file}
+                </b>
+                <span className="text-xs text-[#667068]">
+                  Load{" "}
+                  {model.loadMs === undefined
+                    ? "in progress"
+                    : `done · ${formatSeconds(model.loadMs)}`}
+                </span>
+              </div>
+              {model.phase !== "loading" && (
+                <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-3 text-xs text-[#667068]">
+                  <div className="h-2 overflow-hidden rounded-full bg-[#d9d8ce]">
+                    <div
+                      className="h-full rounded-full bg-[#48a875] transition-[width] duration-300"
+                      style={{ width: `${modelPercent}%` }}
+                    />
+                  </div>
+                  <span>
+                    {model.done}/{model.chunks}
+                    {model.shifts > 1 &&
+                      ` · shift ${model.shift}/${model.shifts}`}
+                    {model.phase === "complete" &&
+                      model.inferenceMs !== undefined &&
+                      ` · ${formatSeconds(model.inferenceMs)}`}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-2">
+        <div
+          aria-label="Overall separation progress"
+          aria-valuemax={Math.max(progress.total, 1)}
+          aria-valuemin={0}
+          aria-valuenow={progress.done}
+          className="h-3 overflow-hidden rounded-full bg-[#d9d8ce]"
+          id="progress"
+          role="progressbar"
+        >
+          <div
+            className={`h-full rounded-full bg-[#245f46] transition-[width] duration-300 ${progress.total === 0 ? "animate-pulse" : ""}`}
+            style={{ width: progress.total === 0 ? "35%" : `${percent}%` }}
+          />
+        </div>
+        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm text-[#667068]">
+          <span>
+            {progress.total === 0
+              ? "Preparing browser runtime"
+              : `Overall · ${progress.done}/${progress.total} chunks`}
+          </span>
+          <span>
+            elapsed {formatClock(elapsed)}
+            {etaMs !== undefined &&
+              progress.phase !== "finalizing" &&
+              progress.phase !== "complete" && (
+                <span className="text-[#8a918b]">
+                  {" "}
+                  (ETA {formatClock(etaMs)})
+                </span>
+              )}
+          </span>
+        </div>
+      </div>
+
+      {progress.phase === "complete" && (
+        <p className="text-sm text-[#667068]" data-testid="timing-summary">
+          Load {formatSeconds(loadMs)} · Inference {formatSeconds(inferenceMs)}{" "}
+          · Finalize {formatSeconds(progress.finalizeMs)}
+        </p>
+      )}
+    </section>
+  );
+}
 
 export function App() {
   const [decoded, setDecoded] = useState<DecodedAudio | null>(null);
@@ -24,7 +274,8 @@ export function App() {
   const [method, setMethod] = useState<"add" | "minus">("add");
   const [shifts, setShifts] = useState(1);
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<number | null>(null);
+  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
+  const [now, setNow] = useState(Date.now());
   const [status, setStatus] = useState("pick a file");
   const [outputs, setOutputs] = useState<Output[]>([]);
   const workerRef = useRef<Worker | null>(null);
@@ -67,6 +318,14 @@ export function App() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!running) {
+      return;
+    }
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
 
   async function handleAudioFile(file: File | undefined) {
     const decodeId = ++decodeIdRef.current;
@@ -112,7 +371,6 @@ export function App() {
     workerRef.current = null;
     worker.terminate();
     setRunning(false);
-    setProgress(null);
     return true;
   }
 
@@ -123,7 +381,16 @@ export function App() {
 
     clearOutputs();
     setRunning(true);
-    setProgress(0);
+    const startedAt = Date.now();
+    setNow(startedAt);
+    setRunProgress({
+      phase: "preparing",
+      startedAt,
+      done: 0,
+      total: 0,
+      models: [],
+      finalizeMs: 0,
+    });
     const started = performance.now();
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
@@ -132,6 +399,7 @@ export function App() {
 
     worker.onerror = (event) => {
       if (finishRun(worker)) {
+        setRunProgress(null);
         setStatus(`error: worker failed: ${event.message}`);
       }
     };
@@ -143,8 +411,11 @@ export function App() {
       if (message.type === "status") {
         setStatus(message.text);
       } else if (message.type === "progress") {
-        setProgress(message.done / message.total);
-        setStatus(`inference ${message.done}/${message.total} chunks`);
+        setRunProgress((progress) =>
+          progress
+            ? updateRunProgress(progress, message.event, message.at)
+            : progress,
+        );
       } else if (message.type === "done") {
         const nextOutputs = message.outputs.map((output) => {
           const blob = encodeWavF32([output.left, output.right], 44100);
@@ -157,6 +428,7 @@ export function App() {
         );
         finishRun(worker);
       } else {
+        setRunProgress(null);
         setStatus(`error: ${message.message}`);
         finishRun(worker);
       }
@@ -329,13 +601,8 @@ export function App() {
             >
               Separate track
             </button>
-            {progress !== null && (
-              <progress
-                className="mt-5 w-full accent-[#78d09b]"
-                id="progress"
-                value={progress}
-                max="1"
-              />
+            {runProgress && (
+              <RunProgressPanel progress={runProgress} now={now} />
             )}
             <p
               className="mt-3.5 min-h-[1.3em] text-sm leading-normal whitespace-pre-line text-[#667068]"
