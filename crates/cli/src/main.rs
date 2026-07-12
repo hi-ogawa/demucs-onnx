@@ -1,9 +1,11 @@
 //! demucs CLI: ONNX Runtime-backed driver over demucs-core's separation engine.
-//!
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
+use console::style;
 use demucs_core as core;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 mod ort_driver;
 
@@ -58,13 +60,16 @@ fn main() -> Result<()> {
 }
 
 fn separate(args: SeparateArgs) -> Result<()> {
+    let total_started = Instant::now();
     let mode = core::Mode::parse(args.two_stems.as_deref(), args.method.as_deref())?;
+    let prepare_started = Instant::now();
     let bytes = std::fs::read(&args.input).with_context(|| format!("open {}", args.input))?;
     let (raw, rate) = core::decode_wav(&bytes)?;
     if rate != core::SAMPLERATE {
         eprintln!("resampling {rate}Hz -> {}Hz", core::SAMPLERATE);
     }
     let wav = core::resample(core::conform_channels(raw), rate)?;
+    let prepare_elapsed = prepare_started.elapsed();
     eprintln!(
         "input: {} samples ({:.2}s) | model {} | shifts {}",
         wav[0].len(),
@@ -80,27 +85,12 @@ fn separate(args: SeparateArgs) -> Result<()> {
         mode,
     };
 
-    // the progress line updates in place via \r; end it before other output
-    let mid_line = std::cell::Cell::new(false);
-    let outputs = ort_driver::run_all(
-        &args.models_dir,
-        &members,
-        wav,
-        opts,
-        |file| {
-            if mid_line.replace(false) {
-                eprintln!();
-            }
-            eprintln!("running {file} ...");
-        },
-        |done, total| {
-            eprint!("\r{done}/{total} chunks");
-            mid_line.set(done != total);
-            if done == total {
-                eprintln!();
-            }
-        },
-    )?;
+    eprintln!("prepared audio in {}", format_duration(prepare_elapsed));
+    let mut progress = CliProgress::new();
+    let outputs = ort_driver::run_all(&args.models_dir, &members, wav, opts, |event| {
+        progress.update(event)
+    })?;
+    progress.finish();
 
     let named: Vec<(String, [Vec<f32>; core::CHANNELS])> = match outputs {
         core::Outputs::Full(stems) => core::Source::ALL
@@ -118,11 +108,23 @@ fn separate(args: SeparateArgs) -> Result<()> {
         ],
     };
     std::fs::create_dir_all(&args.out_dir)?;
+    let write_started = Instant::now();
+    let stem_count = named.len();
     for (name, stem) in named {
         let path = args.out_dir.join(format!("{name}.wav"));
         std::fs::write(&path, core::encode_wav(&stem)?)?;
         eprintln!("wrote {}", path.display());
     }
+    let write_elapsed = write_started.elapsed();
+    let total_elapsed = total_started.elapsed();
+    eprintln!(
+        "complete: {stem_count} stems in {} (load {}, inference {}, finalize {}, write {})",
+        format_duration(total_elapsed),
+        format_duration(progress.load_elapsed),
+        format_duration(progress.inference_elapsed),
+        format_duration(progress.finalize_elapsed),
+        format_duration(write_elapsed),
+    );
     Ok(())
 }
 
@@ -180,5 +182,201 @@ mod tests {
         ])
         .unwrap_err();
         assert_eq!(error.kind(), ErrorKind::UnknownArgument);
+    }
+}
+
+// Interactive layouts stay model-oriented while the overall row remains stable:
+//   htdemucs.onnx
+//     Load      done | 5.2s
+//     Separate  [======----] 65% | 11/17 | running
+//   Overall     [======----] 65% | 11/17 | elapsed 00:00:42 (ETA 00:00:23)
+// Multi-model runs repeat the heading and phase rows as Model 1/4, Model 2/4, etc.
+struct CliProgress {
+    multi: MultiProgress,
+    overall: ProgressBar,
+    phase: Option<ProgressBar>,
+    load_elapsed: Duration,
+    inference_elapsed: Duration,
+    finalize_elapsed: Duration,
+    loaded: usize,
+    eta: Option<Duration>,
+    model_chunks: usize,
+}
+
+impl CliProgress {
+    fn new() -> Self {
+        let multi = MultiProgress::new();
+        let overall = multi.add(ProgressBar::new(0));
+        Self {
+            multi,
+            overall,
+            phase: None,
+            load_elapsed: Duration::ZERO,
+            inference_elapsed: Duration::ZERO,
+            finalize_elapsed: Duration::ZERO,
+            loaded: 0,
+            eta: None,
+            model_chunks: 0,
+        }
+    }
+
+    fn update(&mut self, event: ort_driver::Progress<'_>) {
+        use ort_driver::Progress;
+        match event {
+            Progress::Started { total_chunks } => {
+                self.overall.set_style(
+                    ProgressStyle::with_template(
+                        "Overall     [{bar:16.cyan/bright_black}] {percent:>3}% | {pos}/{len} | elapsed {elapsed_precise}{msg:.dim}",
+                    )
+                    .unwrap()
+                    .progress_chars("=>-"),
+                );
+                self.overall.set_length(total_chunks as u64);
+                self.overall.enable_steady_tick(Duration::from_millis(250));
+            }
+            Progress::LoadStarted {
+                index,
+                total,
+                file,
+                chunks,
+            } => {
+                let heading = if total == 1 {
+                    file.to_string()
+                } else {
+                    format!("Model {index}/{total}  {file}")
+                };
+                let _ = self
+                    .multi
+                    .println(format!("{}", style(heading).bold().for_stderr()));
+                self.model_chunks = chunks;
+                let phase = self
+                    .multi
+                    .insert_before(&self.overall, ProgressBar::new_spinner());
+                phase.set_style(ProgressStyle::with_template("  Load      running").unwrap());
+                phase.tick();
+                self.phase = Some(phase);
+                self.overall.set_message(format_eta(self.eta));
+            }
+            Progress::LoadFinished { elapsed } => {
+                self.load_elapsed += elapsed;
+                self.loaded += 1;
+                if let Some(phase) = self.phase.take() {
+                    phase.finish_and_clear();
+                }
+                let _ = self.multi.println(format!(
+                    "  Load      {} | {}",
+                    style("done").green().for_stderr(),
+                    format_duration(elapsed)
+                ));
+                let phase = self
+                    .multi
+                    .insert_before(&self.overall, ProgressBar::new(self.model_chunks as u64));
+                phase.set_style(
+                    ProgressStyle::with_template(
+                        "  Separate  [{bar:16.cyan/bright_black}] {percent:>3}% | {pos}/{len}{msg} | running",
+                    )
+                    .unwrap()
+                    .progress_chars("=>-"),
+                );
+                phase.tick();
+                self.phase = Some(phase);
+                self.overall.set_message(format_eta(self.eta));
+            }
+            Progress::Inference {
+                done,
+                total,
+                members,
+                shift,
+                shifts,
+                member_done,
+                elapsed,
+            } => {
+                self.inference_elapsed += elapsed;
+                self.overall.set_length(total as u64);
+                self.overall.set_position(done as u64);
+                if let Some(phase) = &self.phase {
+                    phase.set_position(member_done as u64);
+                    phase.set_message(if shifts == 1 {
+                        String::new()
+                    } else {
+                        format!(" | shift {shift}/{shifts}")
+                    });
+                }
+                let remaining_chunks = total - done;
+                let chunk_eta = self
+                    .inference_elapsed
+                    .mul_f64(remaining_chunks as f64 / done as f64);
+                let remaining_loads = members - self.loaded;
+                let load_eta = if self.loaded == 0 {
+                    Duration::ZERO
+                } else {
+                    self.load_elapsed
+                        .mul_f64(remaining_loads as f64 / self.loaded as f64)
+                };
+                self.eta = Some(chunk_eta + load_eta);
+                self.overall.set_message(format_eta(self.eta));
+            }
+            Progress::MemberFinished { chunks, elapsed } => {
+                if let Some(phase) = self.phase.take() {
+                    phase.finish_and_clear();
+                }
+                let _ = self.multi.println(format!(
+                    "  Separate  {} 100% | {chunks}/{chunks} | {} {}",
+                    style("[================]").cyan().for_stderr(),
+                    style("done").green().for_stderr(),
+                    format_duration(elapsed)
+                ));
+                self.overall.set_message(format_eta(self.eta));
+            }
+            Progress::FinalizeStarted => {
+                let phase = self
+                    .multi
+                    .insert_before(&self.overall, ProgressBar::new_spinner());
+                phase.set_style(ProgressStyle::with_template("  Finalize  running").unwrap());
+                phase.tick();
+                self.phase = Some(phase);
+                self.overall.set_message("");
+            }
+            Progress::FinalizeFinished { elapsed } => {
+                self.finalize_elapsed = elapsed;
+                if let Some(phase) = self.phase.take() {
+                    phase.finish_and_clear();
+                }
+                let _ = self.multi.println(format!(
+                    "  Finalize  {} | {}",
+                    style("done").green().for_stderr(),
+                    format_duration(elapsed)
+                ));
+                self.overall.set_message("");
+            }
+        }
+    }
+
+    fn finish(&self) {
+        self.overall.finish_and_clear();
+    }
+}
+
+fn format_eta(eta: Option<Duration>) -> String {
+    eta.map(|eta| format!(" (ETA {})", format_clock(eta)))
+        .unwrap_or_default()
+}
+
+fn format_clock(duration: Duration) -> String {
+    let seconds = duration.as_secs();
+    format!(
+        "{:02}:{:02}:{:02}",
+        seconds / 3600,
+        (seconds / 60) % 60,
+        seconds % 60
+    )
+}
+
+fn format_duration(duration: Duration) -> String {
+    let seconds = duration.as_secs();
+    if seconds < 60 {
+        format!("{:.1}s", duration.as_secs_f64())
+    } else {
+        format!("{}m {:02}s", seconds / 60, seconds % 60)
     }
 }
