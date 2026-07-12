@@ -32,7 +32,6 @@ export function App() {
 
   const { model, method, shifts, twoStems } = preferences;
 
-  const selectedModelFiles = Object.values(modelFiles);
   const requiredFiles = requiredModelFiles(
     model,
     twoStems || undefined,
@@ -41,7 +40,7 @@ export function App() {
   const modelSource: ModelSource | null = requiredFiles.every(
     (filename) => modelFiles[filename],
   )
-    ? { files: selectedModelFiles }
+    ? { files: Object.values(modelFiles) }
     : null;
   function addModelFiles(files: File[], expected?: ModelFilename) {
     const accepted = files.filter(
