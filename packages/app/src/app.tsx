@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { AUDIO_SAMPLE_RATE } from "./lib/audio/constants";
 import { decodeAudioFile } from "./lib/audio/decode";
 import {
   isModelFilename,
@@ -118,7 +119,10 @@ export function App() {
           ),
       });
       const nextOutputs = separated.map((output) => {
-        const blob = encodeWavF32([output.left, output.right], 44100);
+        const blob = encodeWavF32(
+          [output.left, output.right],
+          AUDIO_SAMPLE_RATE,
+        );
         return { ...output, url: URL.createObjectURL(blob) };
       });
       outputCleanupRef.current = nextOutputs.map(

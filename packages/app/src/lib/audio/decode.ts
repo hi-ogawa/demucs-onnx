@@ -10,7 +10,7 @@ export async function decodeAudioFile(file: File): Promise<DecodedAudio> {
   const context = new OfflineAudioContext({
     numberOfChannels: 2,
     length: 1,
-    sampleRate: 44100,
+    sampleRate: AUDIO_SAMPLE_RATE,
   });
   const buffer = await context.decodeAudioData(await file.arrayBuffer());
   const left = buffer.getChannelData(0);
@@ -24,3 +24,4 @@ export async function decodeAudioFile(file: File): Promise<DecodedAudio> {
     sampleRate: buffer.sampleRate,
   };
 }
+import { AUDIO_SAMPLE_RATE } from "./constants";
