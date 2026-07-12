@@ -28,13 +28,14 @@ struct SeparateArgs {
     #[arg(long = "models", value_name = "DIR")]
     models_dir: PathBuf,
 
-    /// Separation model: standard (htdemucs) or fine-tuned (htdemucs_ft)
+    /// Separation model: standard (htdemucs) or fine-tuned (htdemucs_ft). Default: htdemucs
     #[arg(
         long,
         default_value = "htdemucs",
         value_name = "MODEL",
         value_parser = ["htdemucs", "htdemucs_ft"],
-        hide_possible_values = true
+        hide_possible_values = true,
+        hide_default_value = true
     )]
     name: String,
 
@@ -58,8 +59,8 @@ struct SeparateArgs {
     )]
     method: Option<String>,
 
-    /// Number of processing passes to average; more passes take proportionally longer
-    #[arg(long, default_value_t = 1, value_name = "N")]
+    /// Number of processing passes to average; more passes take proportionally longer. Default: 1
+    #[arg(long, default_value_t = 1, value_name = "N", hide_default_value = true)]
     shifts: u32,
 
     /// Input WAV file
