@@ -1,5 +1,3 @@
-// Worker: messaging and the browser host for the Rust/WASM separation flow.
-// Input is a SeparateRequest verbatim; output is the WorkerResponse union.
 import { separate, type SeparateRequest } from "./separate";
 import type { WorkerResponse } from "./worker-client";
 

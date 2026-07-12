@@ -1,3 +1,5 @@
+import { AUDIO_SAMPLE_RATE } from "./constants";
+
 export interface DecodedAudio {
   left: Float32Array;
   right: Float32Array;
@@ -24,4 +26,3 @@ export async function decodeAudioFile(file: File): Promise<DecodedAudio> {
     sampleRate: buffer.sampleRate,
   };
 }
-import { AUDIO_SAMPLE_RATE } from "./constants";
