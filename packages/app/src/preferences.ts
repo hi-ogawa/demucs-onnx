@@ -1,64 +1,27 @@
+import { z } from "zod";
+
 const STORAGE_KEY = "demucs-onnx:main:v1";
 
-const MODELS = ["htdemucs", "htdemucs_ft"] as const;
-const OUTPUT_MODES = ["four-stems", "two-stems"] as const;
-const STEMS = ["drums", "bass", "other", "vocals"] as const;
-const METHODS = ["add", "minus"] as const;
+const preferencesSchema = z.preprocess(
+  (value) => (typeof value === "object" && value !== null ? value : {}),
+  z.object({
+    model: z.enum(["htdemucs", "htdemucs_ft"]).catch("htdemucs"),
+    outputMode: z.enum(["four-stems", "two-stems"]).catch("four-stems"),
+    targetStem: z.enum(["drums", "bass", "other", "vocals"]).catch("vocals"),
+    method: z.enum(["add", "minus"]).catch("add"),
+    shifts: z.number().int().min(1).max(4).catch(1),
+  }),
+);
 
-export type Preferences = {
-  model: (typeof MODELS)[number];
-  outputMode: (typeof OUTPUT_MODES)[number];
-  targetStem: (typeof STEMS)[number];
-  method: (typeof METHODS)[number];
-  shifts: number;
-};
-
-const DEFAULT_PREFERENCES: Preferences = {
-  model: "htdemucs",
-  outputMode: "four-stems",
-  targetStem: "vocals",
-  method: "add",
-  shifts: 1,
-};
-
-function includes<T extends string>(
-  values: readonly T[],
-  value: unknown,
-): value is T {
-  return typeof value === "string" && values.includes(value as T);
-}
+export type Preferences = z.output<typeof preferencesSchema>;
 
 export function loadPreferences(): Preferences {
   try {
-    const value: unknown = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) ?? "null",
+    return preferencesSchema.parse(
+      JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"),
     );
-    if (typeof value !== "object" || value === null) {
-      return DEFAULT_PREFERENCES;
-    }
-    const stored = value as Record<string, unknown>;
-    return {
-      model: includes(MODELS, stored.model)
-        ? stored.model
-        : DEFAULT_PREFERENCES.model,
-      outputMode: includes(OUTPUT_MODES, stored.outputMode)
-        ? stored.outputMode
-        : DEFAULT_PREFERENCES.outputMode,
-      targetStem: includes(STEMS, stored.targetStem)
-        ? stored.targetStem
-        : DEFAULT_PREFERENCES.targetStem,
-      method: includes(METHODS, stored.method)
-        ? stored.method
-        : DEFAULT_PREFERENCES.method,
-      shifts:
-        Number.isInteger(stored.shifts) &&
-        (stored.shifts as number) >= 1 &&
-        (stored.shifts as number) <= 4
-          ? (stored.shifts as number)
-          : DEFAULT_PREFERENCES.shifts,
-    };
   } catch {
-    return DEFAULT_PREFERENCES;
+    return preferencesSchema.parse({});
   }
 }
 
