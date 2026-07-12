@@ -107,13 +107,6 @@ export function App() {
   // TODO: bad
   const runAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(
-    () => () => {
-      runAbortRef.current?.abort();
-    },
-    [],
-  );
-
   const handleRunMutation = useMutation({
     mutationFn: async () => {
       if (!decoded || !modelSource) {
