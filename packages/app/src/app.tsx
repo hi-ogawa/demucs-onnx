@@ -32,8 +32,7 @@ export function App() {
   >({});
 
   const { model, method, shifts } = preferences;
-  const twoStems =
-    preferences.outputMode === "two-stems" ? preferences.targetStem : "";
+  const twoStems = preferences.targetStem;
 
   const selectedModelFiles = Object.values(modelFiles);
   const requiredFiles = requiredModelFiles(
@@ -261,16 +260,12 @@ export function App() {
                   <select
                     className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
                     id="twoStems"
-                    value={twoStems}
+                    value={twoStems ?? ""}
                     onChange={(event) =>
                       setPreferences((current) => ({
                         ...current,
-                        outputMode: event.target.value
-                          ? "two-stems"
-                          : "four-stems",
-                        targetStem: event.target.value
-                          ? (event.target.value as typeof current.targetStem)
-                          : current.targetStem,
+                        targetStem: (event.target.value ||
+                          null) as typeof current.targetStem,
                       }))
                     }
                   >
