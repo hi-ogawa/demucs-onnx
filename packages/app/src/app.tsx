@@ -193,24 +193,16 @@ export function App() {
         </h1>
         <p className="my-5 max-w-162.5 text-lg leading-relaxed text-[#3f4942]">
           Separate music into vocals, drums, bass, and other stems, entirely in
-          your browser.
+          your browser. Your audio and model files stay on this device.
         </p>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-[#174331]">
-          <p className="flex items-center gap-2">
-            <span className="text-[0.65rem] text-[#4d9a70]" aria-hidden="true">
-              ●
-            </span>{" "}
-            Your audio and model files stay on this device.
-          </p>
-          <a
-            className="underline underline-offset-3 hover:text-[#b85c2c]"
-            href="https://github.com/hi-ogawa/demucs-onnx"
-            target="_blank"
-            rel="noreferrer"
-          >
-            View on GitHub
-          </a>
-        </div>
+        <a
+          className="text-sm font-semibold text-[#174331] underline underline-offset-3 hover:text-[#b85c2c]"
+          href="https://github.com/hi-ogawa/demucs-onnx"
+          target="_blank"
+          rel="noreferrer"
+        >
+          View on GitHub
+        </a>
       </header>
 
       <section className="grid gap-6" aria-label="Separation setup">
