@@ -1,73 +1,64 @@
 //! demucs CLI: ONNX Runtime-backed driver over demucs-core's separation engine.
 //!
-//! Usage:
-//!   demucs separate --models <dir> [--name htdemucs|htdemucs_ft]
-//!       [--two-stems <src>] [--method add|minus] [--shifts N] <input.wav> <out_dir>
-
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result};
+use clap::{Args, Parser, Subcommand};
 use demucs_core as core;
 use std::path::PathBuf;
 
 mod ort_driver;
 
-fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    match args.first().map(String::as_str) {
-        Some("separate") => separate(&args[1..]),
-        _ => bail!(
-            "usage: separate --models <dir> [--name htdemucs|htdemucs_ft] [--two-stems <src>] \
-             [--method add|minus] [--shifts N] <input.wav> <out_dir>"
-        ),
-    }
+#[derive(Debug, Parser)]
+#[command(about = "Portable Demucs inference using ONNX Runtime")]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
 }
 
-struct Args {
+#[derive(Debug, Subcommand)]
+enum Command {
+    /// Separate a WAV file into stems
+    Separate(SeparateArgs),
+}
+
+#[derive(Args, Debug)]
+struct SeparateArgs {
+    /// Directory containing ONNX models
+    #[arg(long = "models", value_name = "DIR")]
     models_dir: PathBuf,
+
+    /// Model name
+    #[arg(long, default_value = "htdemucs", value_name = "MODEL")]
     name: String,
-    mode: core::Mode,
+
+    /// Emit a source and its complement
+    #[arg(long, value_name = "SOURCE")]
+    two_stems: Option<String>,
+
+    /// Two-stem method: add or minus
+    #[arg(long, value_name = "METHOD")]
+    method: Option<String>,
+
+    /// Number of seeded-offset passes
+    #[arg(long, default_value_t = 1, value_name = "N")]
     shifts: u32,
+
+    /// Input WAV file
+    #[arg(value_name = "INPUT.WAV")]
     input: String,
+
+    /// Directory for generated stems
+    #[arg(value_name = "OUT_DIR")]
     out_dir: PathBuf,
 }
 
-fn parse_args(argv: &[String]) -> Result<Args> {
-    let mut models_dir = None;
-    let mut name = "htdemucs".to_string();
-    let mut two_stems = None;
-    let mut method = None;
-    let mut shifts = 1u32;
-    let mut positional = Vec::new();
-    let mut it = argv.iter();
-    while let Some(a) = it.next() {
-        let mut val = |flag: &str| {
-            it.next()
-                .map(String::clone)
-                .ok_or_else(|| anyhow!("{flag} needs a value"))
-        };
-        match a.as_str() {
-            "--models" => models_dir = Some(PathBuf::from(val("--models")?)),
-            "--name" => name = val("--name")?,
-            "--two-stems" => two_stems = Some(val("--two-stems")?),
-            "--method" => method = Some(val("--method")?),
-            "--shifts" => shifts = val("--shifts")?.parse()?,
-            _ => positional.push(a.clone()),
-        }
+fn main() -> Result<()> {
+    match Cli::parse().command {
+        Command::Separate(args) => separate(args),
     }
-    let [input, out_dir]: [String; 2] = positional
-        .try_into()
-        .map_err(|_| anyhow!("expected <input.wav> <out_dir>"))?;
-    Ok(Args {
-        models_dir: models_dir.ok_or_else(|| anyhow!("--models <dir> is required"))?,
-        name,
-        mode: core::Mode::parse(two_stems.as_deref(), method.as_deref())?,
-        shifts,
-        input,
-        out_dir: PathBuf::from(out_dir),
-    })
 }
 
-fn separate(argv: &[String]) -> Result<()> {
-    let args = parse_args(argv)?;
+fn separate(args: SeparateArgs) -> Result<()> {
+    let mode = core::Mode::parse(args.two_stems.as_deref(), args.method.as_deref())?;
     let bytes = std::fs::read(&args.input).with_context(|| format!("open {}", args.input))?;
     let (raw, rate) = core::decode_wav(&bytes)?;
     if rate != core::SAMPLERATE {
@@ -82,11 +73,11 @@ fn separate(argv: &[String]) -> Result<()> {
         args.shifts
     );
 
-    let (members, bag) = core::vocab::select(&args.name, args.mode)?;
+    let (members, bag) = core::vocab::select(&args.name, mode)?;
     let opts = core::Options {
         bag,
         shifts: args.shifts,
-        mode: args.mode,
+        mode,
     };
 
     // the progress line updates in place via \r; end it before other output
@@ -133,4 +124,61 @@ fn separate(argv: &[String]) -> Result<()> {
         eprintln!("wrote {}", path.display());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::error::ErrorKind;
+
+    #[test]
+    fn top_level_help() {
+        let error = Cli::try_parse_from(["demucs", "--help"]).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::DisplayHelp);
+        assert!(error.to_string().contains("separate"));
+    }
+
+    #[test]
+    fn separate_help() {
+        let error = Cli::try_parse_from(["demucs", "separate", "--help"]).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::DisplayHelp);
+        assert!(error.to_string().contains("--models <DIR>"));
+    }
+
+    #[test]
+    fn separate_defaults() {
+        let cli = Cli::try_parse_from([
+            "demucs",
+            "separate",
+            "--models",
+            "models",
+            "input.wav",
+            "out",
+        ])
+        .unwrap();
+        let Command::Separate(args) = cli.command;
+        assert_eq!(args.name, "htdemucs");
+        assert_eq!(args.shifts, 1);
+    }
+
+    #[test]
+    fn missing_models_is_an_error() {
+        let error = Cli::try_parse_from(["demucs", "separate", "input.wav", "out"]).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::MissingRequiredArgument);
+    }
+
+    #[test]
+    fn unknown_option_is_an_error() {
+        let error = Cli::try_parse_from([
+            "demucs",
+            "separate",
+            "--models",
+            "models",
+            "--unknown",
+            "input.wav",
+            "out",
+        ])
+        .unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::UnknownArgument);
+    }
 }
