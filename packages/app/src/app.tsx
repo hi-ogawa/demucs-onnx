@@ -9,6 +9,7 @@ import type {
   SeparateRequest,
   SeparatedStem,
 } from "./audio/separate";
+import { loadPreferences, savePreferences } from "./preferences";
 import { encodeWavF32 } from "./wav";
 import type { WorkerResponse } from "./worker";
 
@@ -269,10 +270,7 @@ export function App() {
   const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
     [],
   );
-  const [model, setModel] = useState("htdemucs");
-  const [twoStems, setTwoStems] = useState("");
-  const [method, setMethod] = useState<"add" | "minus">("add");
-  const [shifts, setShifts] = useState(1);
+  const [preferences, setPreferences] = useState(loadPreferences);
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -281,6 +279,9 @@ export function App() {
   const workerRef = useRef<Worker | null>(null);
   const outputUrlsRef = useRef<string[]>([]);
   const decodeIdRef = useRef(0);
+  const { model, method, shifts } = preferences;
+  const twoStems =
+    preferences.outputMode === "two-stems" ? preferences.targetStem : "";
 
   const modelSource: ModelSource | null = selectedModelFiles
     ? { files: selectedModelFiles }
@@ -326,6 +327,8 @@ export function App() {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [running]);
+
+  useEffect(() => savePreferences(preferences), [preferences]);
 
   async function handleAudioFile(file: File | undefined) {
     const decodeId = ++decodeIdRef.current;
@@ -500,7 +503,12 @@ export function App() {
                   className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   id="model"
                   value={model}
-                  onChange={(event) => setModel(event.target.value)}
+                  onChange={(event) =>
+                    setPreferences((current) => ({
+                      ...current,
+                      model: event.target.value as typeof current.model,
+                    }))
+                  }
                 >
                   <option>htdemucs</option>
                   <option>htdemucs_ft</option>
@@ -512,7 +520,17 @@ export function App() {
                   className="min-h-11 w-full rounded-md border border-[#bdc2bc] bg-white px-2.5 py-2 text-base text-[#18201b] normal-case"
                   id="twoStems"
                   value={twoStems}
-                  onChange={(event) => setTwoStems(event.target.value)}
+                  onChange={(event) =>
+                    setPreferences((current) => ({
+                      ...current,
+                      outputMode: event.target.value
+                        ? "two-stems"
+                        : "four-stems",
+                      targetStem: event.target.value
+                        ? (event.target.value as typeof current.targetStem)
+                        : current.targetStem,
+                    }))
+                  }
                 >
                   <option value="">off</option>
                   <option>drums</option>
@@ -528,7 +546,10 @@ export function App() {
                   id="method"
                   value={method}
                   onChange={(event) =>
-                    setMethod(event.target.value as "add" | "minus")
+                    setPreferences((current) => ({
+                      ...current,
+                      method: event.target.value as typeof current.method,
+                    }))
                   }
                 >
                   <option>add</option>
@@ -544,7 +565,12 @@ export function App() {
                   value={shifts}
                   min="1"
                   max="4"
-                  onChange={(event) => setShifts(Number(event.target.value))}
+                  onChange={(event) =>
+                    setPreferences((current) => ({
+                      ...current,
+                      shifts: Number(event.target.value),
+                    }))
+                  }
                 />
               </label>
             </div>
