@@ -71,6 +71,7 @@ name = "demucs-cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "console",
  "demucs-core",
  "indicatif",
  "ort",

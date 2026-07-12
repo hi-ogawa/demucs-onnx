@@ -9,6 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"
+console = "0.16"
 demucs-core = { path = "../core" }
 indicatif = "0.18"
 # default features with tls-native swapped for tls-rustls, so the binary downloader

@@ -5,6 +5,7 @@
 //!       [--two-stems <src>] [--method add|minus] [--shifts N] <input.wav> <out_dir>
 
 use anyhow::{anyhow, bail, Context, Result};
+use console::style;
 use demucs_core as core;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::path::PathBuf;
@@ -178,7 +179,7 @@ impl CliProgress {
             Progress::Started { total_chunks } => {
                 self.overall.set_style(
                     ProgressStyle::with_template(
-                        "Overall     [{bar:16}] {percent:>3}% | {pos}/{len} | {msg} | elapsed {elapsed_precise}",
+                        "Overall     [{bar:16.cyan/bright_black}] {percent:>3}% | {pos}/{len} | {msg} | elapsed {elapsed_precise}",
                     )
                     .unwrap()
                     .progress_chars("=>-"),
@@ -197,7 +198,9 @@ impl CliProgress {
                 } else {
                     format!("Model {index}/{total}  {file}")
                 };
-                let _ = self.multi.println(heading);
+                let _ = self
+                    .multi
+                    .println(format!("{}", style(heading).bold().for_stderr()));
                 self.model_chunks = chunks;
                 let phase = self
                     .multi
@@ -220,15 +223,17 @@ impl CliProgress {
                 if let Some(phase) = self.phase.take() {
                     phase.finish_and_clear();
                 }
-                let _ = self
-                    .multi
-                    .println(format!("  Load      done | {}", format_duration(elapsed)));
+                let _ = self.multi.println(format!(
+                    "  Load      {} | {}",
+                    style("done").green().for_stderr(),
+                    format_duration(elapsed)
+                ));
                 let phase = self
                     .multi
                     .insert_before(&self.overall, ProgressBar::new(self.model_chunks as u64));
                 phase.set_style(
                     ProgressStyle::with_template(
-                        "  Separate  [{bar:16}] {percent:>3}% | {pos}/{len}{msg} | running",
+                        "  Separate  [{bar:16.cyan/bright_black}] {percent:>3}% | {pos}/{len}{msg} | running",
                     )
                     .unwrap()
                     .progress_chars("=>-"),
@@ -285,7 +290,9 @@ impl CliProgress {
                     phase.finish_and_clear();
                 }
                 let _ = self.multi.println(format!(
-                    "  Separate  [================] 100% | {chunks}/{chunks} | done {}",
+                    "  Separate  {} 100% | {chunks}/{chunks} | {} {}",
+                    style("[================]").cyan().for_stderr(),
+                    style("done").green().for_stderr(),
                     format_duration(elapsed)
                 ));
                 self.overall.set_message(format!(
@@ -307,9 +314,11 @@ impl CliProgress {
                 if let Some(phase) = self.phase.take() {
                     phase.finish_and_clear();
                 }
-                let _ = self
-                    .multi
-                    .println(format!("  Finalize  done | {}", format_duration(elapsed)));
+                let _ = self.multi.println(format!(
+                    "  Finalize  {} | {}",
+                    style("done").green().for_stderr(),
+                    format_duration(elapsed)
+                ));
                 self.overall.set_message("complete | ETA 00:00:00");
             }
         }
