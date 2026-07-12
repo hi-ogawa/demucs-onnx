@@ -1,26 +1,32 @@
 import { expect, test } from "@playwright/test";
 
-const file = (name: string) => ({
-  name,
-  mimeType: "application/octet-stream",
-  buffer: Buffer.from(name),
-});
+function getInputFile(name: string) {
+  return {
+    name,
+    mimeType: "application/octet-stream",
+    buffer: Buffer.from(name),
+  };
+}
 
 test("coordinates individual model file slots", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByTestId("model-file-slot")).toHaveCount(2);
-  await page.getByLabel("Select dft.bin").setInputFiles(file("htdemucs.onnx"));
+  await page
+    .getByLabel("Select dft.bin")
+    .setInputFiles(getInputFile("htdemucs.onnx"));
   await expect(
     page.getByText("Expected dft.bin, received htdemucs.onnx."),
   ).toBeVisible();
-  await page.getByLabel("Select dft.bin").setInputFiles(file("dft.bin"));
+  await page
+    .getByLabel("Select dft.bin")
+    .setInputFiles(getInputFile("dft.bin"));
   await expect(
     page.getByText("Expected dft.bin, received htdemucs.onnx."),
   ).toBeHidden();
   await page
     .getByLabel("Select htdemucs.onnx")
-    .setInputFiles(file("htdemucs.onnx"));
+    .setInputFiles(getInputFile("htdemucs.onnx"));
   await expect(
     page.getByTestId("model-file-slot").getByText("Ready"),
   ).toHaveCount(2);
