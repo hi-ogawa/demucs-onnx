@@ -121,6 +121,10 @@ order, precision, specialty, artifact size and digest, and measured branch parit
 pnpm build-model-v2 --all
 ```
 
+The tooling keeps responsibilities separate: `model.py` defines the learned boundary and loads
+members, `export_onnx.py` exports one prepared graph, `verify_parity.py` verifies the Python seam and
+ONNX outputs, and `build_models.py` orchestrates model sets and manifests.
+
 Split artifacts must use a distinct directory, filename convention, and manifest flavor while the
 current self-contained artifacts remain supported. A split model must never be loadable as a
 waveform model by accident.
