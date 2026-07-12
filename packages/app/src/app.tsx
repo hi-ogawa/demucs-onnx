@@ -15,9 +15,6 @@ import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 import { encodeWavF32 } from "./lib/wav";
 
-// TODO: bad?
-type Output = SeparatedStem & { url: string };
-
 export function App() {
   // TODO: bad. mutation result?
   const [decoded, setDecoded] = useState<DecodedAudio | null>(null);
@@ -111,7 +108,9 @@ export function App() {
   const runAbortRef = useRef<AbortController | null>(null);
 
   // TODO: bad. probably mutation result
-  const [outputs, setOutputs] = useState<Output[]>([]);
+  const [outputs, setOutputs] = useState<(SeparatedStem & { url: string })[]>(
+    [],
+  );
   const outputUrlsRef = useRef<string[]>([]);
 
   useEffect(
