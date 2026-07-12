@@ -428,9 +428,12 @@ export function App() {
             </p>
           </section>
 
-          <div className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-6 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+          <section className="min-w-0 rounded-lg border border-[#d9d8ce] bg-[rgb(255_253_247/90%)] p-6 shadow-[0_20px_50px_rgb(34_47_39/8%)] max-[480px]:p-5">
+            <h2 className="mb-4 text-xl font-semibold text-[#18201b]">
+              4. Separate
+            </h2>
             <button
-              className="min-h-13 w-full cursor-pointer rounded-md border border-transparent bg-[#78d09b] font-bold text-[#102b1d] hover:not-disabled:bg-[#91dfad] disabled:cursor-not-allowed disabled:border-[#c9ccc7] disabled:bg-[#eeeee9] disabled:text-[#777f79]"
+              className="min-h-13 w-full cursor-pointer rounded-md border border-transparent bg-[#78d09b] font-bold text-[#102b1d] shadow-[0_8px_18px_rgb(23_67_49/16%)] hover:not-disabled:bg-[#91dfad] disabled:cursor-not-allowed disabled:border-[#aecdb9] disabled:bg-[#dcebe1] disabled:text-[#526a5b] disabled:shadow-none"
               id="run"
               disabled={running || !decoded || !modelsReady}
               onClick={handleRun}
@@ -446,7 +449,7 @@ export function App() {
             >
               {running ? "" : status}
             </p>
-          </div>
+          </section>
         </aside>
       </section>
 
