@@ -80,29 +80,28 @@ export function App() {
     }
   }
 
-  // TODO: bad. pending/error?
-  const decodeMutation = useMutation({ mutationFn: decodeAudioFile });
-
-  function handleAudioFile(file: File | undefined) {
-    if (!file) {
-      decodeMutation.reset();
+  const handleAudioFileMutation = useMutation({
+    mutationFn: async (file: File | undefined) => {
       setDecoded(null);
-      setStatus("");
-      return;
-    }
+      if (!file) {
+        setStatus("");
+        return null;
+      }
 
-    setDecoded(null);
-    setStatus("decoding...");
-    decodeMutation.mutate(file, {
-      onSuccess: (audio) => {
-        setDecoded(audio);
-        setStatus(
-          `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
-        );
-      },
-      onError: () => setStatus(""),
-    });
-  }
+      setStatus("decoding...");
+      const audio = await decodeAudioFile(file);
+      setDecoded(audio);
+      setStatus(
+        `decoded: ${audio.duration.toFixed(2)}s, ${audio.numberOfChannels}ch @${audio.sampleRate / 1000}k`,
+      );
+      return audio;
+    },
+    onSettled: (_data, error) => {
+      if (error) {
+        setStatus("");
+      }
+    },
+  });
 
   const handleRunMutation = useMutation({
     mutationFn: async () => {
@@ -197,7 +196,9 @@ export function App() {
                 type="file"
                 id="file"
                 accept="audio/*"
-                onChange={(event) => handleAudioFile(event.target.files?.[0])}
+                onChange={(event) =>
+                  handleAudioFileMutation.mutate(event.target.files?.[0])
+                }
               />
             </section>
           </div>
