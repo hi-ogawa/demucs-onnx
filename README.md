@@ -65,8 +65,6 @@ pnpm dev
 
 Open `http://localhost:5173`, choose a local audio file and the required model files from `data/onnx-lean/`, then run separation. Audio and models stay in the browser.
 
-Separation configuration preferences are saved in this browser. Audio, model files, and generated stems are not persisted.
-
 Build the static app with:
 
 ```bash
