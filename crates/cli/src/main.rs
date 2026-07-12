@@ -6,7 +6,7 @@
 
 use anyhow::{anyhow, bail, Context, Result};
 use demucs_core as core;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -95,7 +95,7 @@ fn separate(argv: &[String]) -> Result<()> {
     };
 
     eprintln!("prepared audio in {}", format_duration(prepare_elapsed));
-    let mut progress = CliProgress::new(total_started);
+    let mut progress = CliProgress::new();
     let outputs = ort_driver::run_all(&args.models_dir, &members, wav, opts, |event| {
         progress.update(event)
     })?;
@@ -137,67 +137,114 @@ fn separate(argv: &[String]) -> Result<()> {
     Ok(())
 }
 
+// Interactive layouts stay model-oriented while the overall row remains stable:
+//   htdemucs.onnx | done Load | 5.2s
+//   htdemucs.onnx | ...  Separate [======----] 11/17 chunks | elapsed 42s
+//   Overall       | ...  [======----] 65% | ETA 23s | elapsed 42s
+// Multi-model runs repeat the first two rows as Model 1/4, Model 2/4, and so on.
 struct CliProgress {
-    bar: ProgressBar,
+    multi: MultiProgress,
+    overall: ProgressBar,
+    phase: Option<ProgressBar>,
     load_elapsed: Duration,
     inference_elapsed: Duration,
     finalize_elapsed: Duration,
     loaded: usize,
-    started: Instant,
+    eta: Option<Duration>,
+    model_label: String,
+    model_chunks: usize,
 }
 
 impl CliProgress {
-    fn new(started: Instant) -> Self {
-        let bar = ProgressBar::new_spinner();
-        bar.set_style(
-            ProgressStyle::with_template("{spinner} {msg} | elapsed {elapsed_precise}").unwrap(),
-        );
-        bar.enable_steady_tick(Duration::from_millis(100));
+    fn new() -> Self {
+        let multi = MultiProgress::new();
+        let overall = multi.add(ProgressBar::new(0));
         Self {
-            bar,
+            multi,
+            overall,
+            phase: None,
             load_elapsed: Duration::ZERO,
             inference_elapsed: Duration::ZERO,
             finalize_elapsed: Duration::ZERO,
             loaded: 0,
-            started,
+            eta: None,
+            model_label: String::new(),
+            model_chunks: 0,
         }
     }
 
     fn update(&mut self, event: ort_driver::Progress<'_>) {
         use ort_driver::Progress;
         match event {
-            Progress::LoadStarted { index, total, file } => {
-                self.bar.set_style(
+            Progress::Started { total_chunks } => {
+                self.overall.set_length(total_chunks as u64);
+                self.overall.set_style(
                     ProgressStyle::with_template(
-                        "{spinner} load model {msg} | elapsed {elapsed_precise}",
+                        "{spinner} Overall [{bar:16}] {percent:>3}% | {pos}/{len} | {msg} | {elapsed_precise}",
                     )
-                    .unwrap(),
+                    .unwrap()
+                    .progress_chars("=>-"),
                 );
-                self.bar.reset_elapsed();
-                self.bar.set_message(format!("{index}/{total} | {file}"));
+                self.overall.enable_steady_tick(Duration::from_millis(100));
+            }
+            Progress::LoadStarted {
+                index,
+                total,
+                file,
+                chunks,
+            } => {
+                self.model_label = if total == 1 {
+                    file.to_string()
+                } else {
+                    format!("Model {index}/{total} {file}")
+                };
+                self.model_chunks = chunks;
+                let phase = self.multi.insert_before(
+                    &self.overall,
+                    ProgressBar::new_spinner().with_prefix(self.model_label.clone()),
+                );
+                phase.set_style(
+                    ProgressStyle::with_template("{prefix} | {spinner} Load | {elapsed_precise}")
+                        .unwrap(),
+                );
+                phase.enable_steady_tick(Duration::from_millis(100));
+                self.phase = Some(phase);
+                self.overall.set_message(format!(
+                    "loading model {index}/{total} | ETA {}",
+                    format_eta(self.eta)
+                ));
             }
             Progress::LoadFinished {
                 index,
                 total,
-                file,
                 elapsed,
             } => {
                 self.load_elapsed += elapsed;
                 self.loaded += 1;
-                self.bar.suspend(|| {
-                    eprintln!(
-                        "loaded model {index}/{total}: {file} in {}",
-                        format_duration(elapsed)
-                    )
-                });
-                self.bar.set_style(
-                    ProgressStyle::with_template(
-                        "{spinner} start inference {msg} | elapsed {elapsed_precise}",
-                    )
-                    .unwrap(),
+                if let Some(phase) = self.phase.take() {
+                    phase.set_style(
+                        ProgressStyle::with_template("{prefix} | done Load | {msg}").unwrap(),
+                    );
+                    phase.finish_with_message(format_duration(elapsed));
+                }
+                let phase = self.multi.insert_before(
+                    &self.overall,
+                    ProgressBar::new(self.model_chunks as u64)
+                        .with_prefix(self.model_label.clone()),
                 );
-                self.bar.reset_elapsed();
-                self.bar.set_message(format!("model {index}/{total}"));
+                phase.set_style(
+                    ProgressStyle::with_template(
+                        "{prefix} | {spinner} Separate [{bar:16}] {percent:>3}% | {pos}/{len}{msg} | {elapsed_precise}",
+                    )
+                    .unwrap()
+                    .progress_chars("=>-"),
+                );
+                phase.enable_steady_tick(Duration::from_millis(100));
+                self.phase = Some(phase);
+                self.overall.set_message(format!(
+                    "starting model {index}/{total} | ETA {}",
+                    format_eta(self.eta)
+                ));
             }
             Progress::Inference {
                 done,
@@ -206,13 +253,20 @@ impl CliProgress {
                 members,
                 shift,
                 shifts,
-                chunk,
-                chunks,
+                member_done,
                 elapsed,
             } => {
                 self.inference_elapsed += elapsed;
-                self.bar.set_length(total as u64);
-                self.bar.set_position(done as u64);
+                self.overall.set_length(total as u64);
+                self.overall.set_position(done as u64);
+                if let Some(phase) = &self.phase {
+                    phase.set_position(member_done as u64);
+                    phase.set_message(if shifts == 1 {
+                        String::new()
+                    } else {
+                        format!(" | shift {shift}/{shifts}")
+                    });
+                }
                 let remaining_chunks = total - done;
                 let chunk_eta = self
                     .inference_elapsed
@@ -224,18 +278,14 @@ impl CliProgress {
                     self.load_elapsed
                         .mul_f64(remaining_loads as f64 / self.loaded as f64)
                 };
-                self.bar.set_style(
-                    ProgressStyle::with_template(
-                        "{spinner} separate [{bar:30}] {percent:>3}% | {pos}/{len} | {msg}",
-                    )
-                    .unwrap()
-                    .progress_chars("=>-"),
-                );
-                self.bar.set_message(format!(
-                    "elapsed {} | ETA {} | model {member}/{members} | shift {shift}/{shifts} | chunk {chunk}/{chunks}",
-                    format_duration(self.started.elapsed()),
-                    format_duration(chunk_eta + load_eta),
-                ));
+                self.eta = Some(chunk_eta + load_eta);
+                let context = if members == 1 {
+                    "separating".to_string()
+                } else {
+                    format!("model {member}/{members}")
+                };
+                self.overall
+                    .set_message(format!("{context} | ETA {}", format_eta(self.eta)));
             }
             Progress::MemberFinished {
                 index,
@@ -243,34 +293,55 @@ impl CliProgress {
                 chunks,
                 elapsed,
             } => {
-                self.bar.suspend(|| {
-                    eprintln!(
-                        "finished model {index}/{total}: {chunks} chunks in {}",
-                        format_duration(elapsed)
-                    )
-                });
+                if let Some(phase) = self.phase.take() {
+                    phase.set_style(
+                        ProgressStyle::with_template(
+                            "{prefix} | done Separate | {pos}/{len} chunks | {msg}",
+                        )
+                        .unwrap(),
+                    );
+                    phase.finish_with_message(format_duration(elapsed));
+                }
+                self.overall.set_message(format!(
+                    "finished model {index}/{total} ({chunks} chunks) | ETA {}",
+                    format_eta(self.eta)
+                ));
             }
             Progress::FinalizeStarted => {
-                self.bar.set_style(
+                let phase = self.multi.insert_before(
+                    &self.overall,
+                    ProgressBar::new_spinner().with_prefix("Stems"),
+                );
+                phase.set_style(
                     ProgressStyle::with_template(
-                        "{spinner} finalize stems | elapsed {elapsed_precise}",
+                        "{prefix} | {spinner} Finalize | {elapsed_precise}",
                     )
                     .unwrap(),
                 );
-                self.bar.reset_elapsed();
-                self.bar.set_message("");
+                phase.enable_steady_tick(Duration::from_millis(100));
+                self.phase = Some(phase);
+                self.overall.set_message("finalizing | ETA --");
             }
             Progress::FinalizeFinished { elapsed } => {
                 self.finalize_elapsed = elapsed;
-                self.bar
-                    .suspend(|| eprintln!("finalized stems in {}", format_duration(elapsed)));
+                if let Some(phase) = self.phase.take() {
+                    phase.set_style(
+                        ProgressStyle::with_template("{prefix} | done Finalize | {msg}").unwrap(),
+                    );
+                    phase.finish_with_message(format_duration(elapsed));
+                }
+                self.overall.set_message("complete | ETA 0.0s");
             }
         }
     }
 
     fn finish(&self) {
-        self.bar.finish_and_clear();
+        self.overall.finish_and_clear();
     }
+}
+
+fn format_eta(eta: Option<Duration>) -> String {
+    eta.map(format_duration).unwrap_or_else(|| "--".to_string())
 }
 
 fn format_duration(duration: Duration) -> String {

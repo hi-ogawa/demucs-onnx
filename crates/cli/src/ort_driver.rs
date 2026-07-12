@@ -6,15 +6,18 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 pub enum Progress<'a> {
+    Started {
+        total_chunks: usize,
+    },
     LoadStarted {
         index: usize,
         total: usize,
         file: &'a str,
+        chunks: usize,
     },
     LoadFinished {
         index: usize,
         total: usize,
-        file: &'a str,
         elapsed: Duration,
     },
     Inference {
@@ -24,8 +27,7 @@ pub enum Progress<'a> {
         members: usize,
         shift: usize,
         shifts: usize,
-        chunk: usize,
-        chunks: usize,
+        member_done: usize,
         elapsed: Duration,
     },
     MemberFinished {
@@ -71,17 +73,25 @@ pub fn run_all(
         );
     }
     let total = separation.plan.total_chunks();
+    on_progress(Progress::Started {
+        total_chunks: total,
+    });
     let mut done = 0;
     let mut input = vec![0f32; core::CHANNELS * core::SEGMENT];
     for (member_index, &member) in members.iter().enumerate() {
-        let member_started = Instant::now();
-        let member_chunk_start = done;
         let member_plan = &separation.plan.members[member_index];
+        let member_total = member_plan
+            .shifts
+            .iter()
+            .map(|shift| shift.chunks.len())
+            .sum();
+        let mut member_done = 0;
         let file = member_file(member);
         on_progress(Progress::LoadStarted {
             index: member_index + 1,
             total: members.len(),
             file,
+            chunks: member_total,
         });
         let path = models_dir.join(file);
         let load_started = Instant::now();
@@ -95,14 +105,14 @@ pub fn run_all(
         on_progress(Progress::LoadFinished {
             index: member_index + 1,
             total: members.len(),
-            file,
             elapsed: load_started.elapsed(),
         });
+        let inference_started = Instant::now();
         let mut shift_merger =
             core::ShiftMerger::new(separation.plan.track_len, member_plan.shifts.len());
         for (shift_index, shift) in member_plan.shifts.iter().enumerate() {
             let mut chunk_processor = separation.plan.create_chunk_processor(shift);
-            for (chunk_index, &chunk) in shift.chunks.iter().enumerate() {
+            for &chunk in &shift.chunks {
                 let chunk_started = Instant::now();
                 chunk_processor.prepare_input(chunk, &mut input)?;
                 let value = ort::value::TensorRef::from_array_view((
@@ -120,6 +130,7 @@ pub fn run_all(
                 }
                 chunk_processor.process_output(chunk, data)?;
                 done += 1;
+                member_done += 1;
                 on_progress(Progress::Inference {
                     done,
                     total,
@@ -127,8 +138,7 @@ pub fn run_all(
                     members: members.len(),
                     shift: shift_index + 1,
                     shifts: member_plan.shifts.len(),
-                    chunk: chunk_index + 1,
-                    chunks: shift.chunks.len(),
+                    member_done,
                     elapsed: chunk_started.elapsed(),
                 });
             }
@@ -140,8 +150,8 @@ pub fn run_all(
         on_progress(Progress::MemberFinished {
             index: member_index + 1,
             total: members.len(),
-            chunks: done - member_chunk_start,
-            elapsed: member_started.elapsed(),
+            chunks: member_total,
+            elapsed: inference_started.elapsed(),
         });
     }
     on_progress(Progress::FinalizeStarted);
