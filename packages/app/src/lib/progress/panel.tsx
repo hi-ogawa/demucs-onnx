@@ -1,4 +1,4 @@
-import type { RunProgress } from "../lib/run-progress";
+import type { RunProgress } from "./model";
 
 function formatClock(ms: number) {
   const seconds = Math.max(0, Math.round(ms / 1000));

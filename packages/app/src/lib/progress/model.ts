@@ -1,4 +1,4 @@
-import type { ProgressEvent } from "../audio/separate";
+import type { ProgressEvent } from "../../audio/separate";
 
 export type ModelProgress = {
   index: number;

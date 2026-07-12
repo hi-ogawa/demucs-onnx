@@ -5,8 +5,8 @@ import {
   type ModelSource,
 } from "./audio/models";
 import type { SeparateRequest, SeparatedStem } from "./audio/separate";
-import { RunProgressPanel } from "./components/run-progress-panel";
-import { updateRunProgress, type RunProgress } from "./lib/run-progress";
+import { updateRunProgress, type RunProgress } from "./lib/progress/model";
+import { RunProgressPanel } from "./lib/progress/panel";
 import { loadPreferences, savePreferences } from "./preferences";
 import { encodeWavF32 } from "./wav";
 import type { WorkerResponse } from "./worker";
