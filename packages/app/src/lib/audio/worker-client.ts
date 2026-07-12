@@ -6,12 +6,12 @@ export type WorkerResponse =
   | { type: "error"; message: string };
 
 export interface SeparateInWorkerOptions {
-  onProgress?: (event: ProgressEvent, at: number) => void;
+  onProgress: (event: ProgressEvent, at: number) => void;
 }
 
 export function separateInWorker(
   request: SeparateRequest,
-  options: SeparateInWorkerOptions = {},
+  options: SeparateInWorkerOptions,
 ): Promise<SeparatedStem[]> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
@@ -25,7 +25,7 @@ export function separateInWorker(
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const message = event.data;
       if (message.type === "progress") {
-        options.onProgress?.(message.event, message.at);
+        options.onProgress(message.event, message.at);
         return;
       }
 
