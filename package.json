@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config",
+    "link-wt": "bash tools/link-wt.sh",
     "bass-cover": "uv run --no-sync tools/bass-cover.py",
     "build-model": "uv run python tools/model-export/build_models.py",
     "verify-parity": "uv run python tools/model-export/verify_parity.py",

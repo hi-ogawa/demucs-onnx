@@ -17,6 +17,14 @@ pnpm install
 pnpm model-release download models-2026-07-11 htdemucs
 ```
 
+In a secondary Git worktree, reuse the main worktree's gitignored `data/` directory instead of downloading the models again:
+
+```bash
+pnpm link-wt
+```
+
+This creates a `data` symlink and refuses to replace an existing file, directory, or symlink.
+
 Separate a WAV file into four stems:
 
 ```bash
