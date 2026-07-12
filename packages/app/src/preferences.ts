@@ -2,31 +2,30 @@ import { z } from "zod";
 
 const STORAGE_KEY = "demucs-onnx:main:v1";
 
-const preferencesSchema = z
-  .object({
-    model: z.enum(["htdemucs", "htdemucs_ft"]).catch("htdemucs"),
-    outputMode: z.enum(["four-stems", "two-stems"]).catch("four-stems"),
-    targetStem: z.enum(["drums", "bass", "other", "vocals"]).catch("vocals"),
-    method: z.enum(["add", "minus"]).catch("add"),
-    shifts: z.number().int().min(1).max(4).catch(1),
-  })
-  .catch({
-    model: "htdemucs",
-    outputMode: "four-stems",
-    targetStem: "vocals",
-    method: "add",
-    shifts: 1,
-  });
+const preferencesSchema = z.object({
+  model: z.enum(["htdemucs", "htdemucs_ft"]),
+  outputMode: z.enum(["four-stems", "two-stems"]),
+  targetStem: z.enum(["drums", "bass", "other", "vocals"]),
+  method: z.enum(["add", "minus"]),
+  shifts: z.number().int().min(1).max(4),
+});
 
-export type Preferences = z.output<typeof preferencesSchema>;
+export type Preferences = z.infer<typeof preferencesSchema>;
+
+const DEFAULT_PREFERENCES: Preferences = {
+  model: "htdemucs",
+  outputMode: "four-stems",
+  targetStem: "vocals",
+  method: "add",
+  shifts: 1,
+};
 
 export function loadPreferences(): Preferences {
   try {
-    return preferencesSchema.parse(
-      JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"),
-    );
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+    return preferencesSchema.parse({ ...DEFAULT_PREFERENCES, ...stored });
   } catch {
-    return preferencesSchema.parse({});
+    return DEFAULT_PREFERENCES;
   }
 }
 
