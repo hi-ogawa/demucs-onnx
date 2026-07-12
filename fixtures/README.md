@@ -24,3 +24,13 @@ uv run --project tools/model-export-v2 python \
   tools/model-export-v2/generate_stft_fixture.py \
   --out fixtures/stft-reference-f32.bin
 ```
+
+`istft-reference-f32.bin` similarly contains every eighth reconstructed sample for all sources and
+channels. Its input frequency tensor is generated from integer state in both implementations.
+Regenerate it with:
+
+```bash
+uv run --project tools/model-export-v2 python \
+  tools/model-export-v2/generate_istft_fixture.py \
+  --out fixtures/istft-reference-f32.bin
+```

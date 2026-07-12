@@ -177,12 +177,14 @@ code.
 
 - [x] Add a reusable real-FFT plan, periodic Hann window, and work buffers with `realfft`.
 - [x] Implement and verify reflect padding, STFT framing, normalization, cropping, and CaC packing.
-- Implement inverse packing, iSTFT reconstruction, and the final crop.
+- [x] Implement and verify inverse packing, iSTFT overlap-add reconstruction, and the final crop.
 - Change the native backend to provide two inputs and consume two outputs.
 - Preserve the existing member, shift, chunk, overlap-add, and stem-finalization orchestration.
 
 The Rust STFT test compares every frame at 64 frequencies across all CaC channels with a compact
 PyTorch fixture. Initial parity measured `1.788e-7` max absolute error and `8.839e-16` MSE.
+The separate iSTFT test compares every eighth sample across all four sources and both channels;
+initial parity measured `7.153e-7` max absolute error and `1.096e-14` MSE.
 
 ### 4. Integrate WASM
 

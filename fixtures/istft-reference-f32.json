@@ -1,0 +1,13 @@
+{
+  "cac_channels": ["left.real", "left.imag", "right.real", "right.imag"],
+  "dtype": "float32-le",
+  "hop_length": 1024,
+  "n_fft": 4096,
+  "normalized": true,
+  "reference": "torch.istft",
+  "sample_step": 8,
+  "segment": 343980,
+  "shape": [4, 2, 42998],
+  "sources": ["drums", "bass", "other", "vocals"],
+  "window": "periodic-hann"
+}
