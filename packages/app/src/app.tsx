@@ -31,8 +31,7 @@ export function App() {
     Partial<Record<ModelFilename, string>>
   >({});
 
-  const { model, method, shifts } = preferences;
-  const twoStems = preferences.targetStem;
+  const { model, method, shifts, twoStems } = preferences;
 
   const selectedModelFiles = Object.values(modelFiles);
   const requiredFiles = requiredModelFiles(
@@ -264,8 +263,8 @@ export function App() {
                     onChange={(event) =>
                       setPreferences((current) => ({
                         ...current,
-                        targetStem: (event.target.value ||
-                          null) as typeof current.targetStem,
+                        twoStems: (event.target.value ||
+                          null) as typeof current.twoStems,
                       }))
                     }
                   >

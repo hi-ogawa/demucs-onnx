@@ -4,7 +4,7 @@ const STORAGE_KEY = "demucs-onnx:main:v2";
 
 const preferencesSchema = z.object({
   model: z.enum(["htdemucs", "htdemucs_ft"]),
-  targetStem: z.enum(["drums", "bass", "other", "vocals"]).nullable(),
+  twoStems: z.enum(["drums", "bass", "other", "vocals"]).nullable(),
   method: z.enum(["add", "minus"]),
   shifts: z.number().int().min(1).max(4),
 });
@@ -13,7 +13,7 @@ export type Preferences = z.infer<typeof preferencesSchema>;
 
 const DEFAULT_PREFERENCES: Preferences = {
   model: "htdemucs",
-  targetStem: null,
+  twoStems: null,
   method: "add",
   shifts: 1,
 };
