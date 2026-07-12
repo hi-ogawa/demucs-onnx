@@ -58,7 +58,6 @@ export type ProgressEvent =
     };
 
 export interface SeparateCallbacks {
-  onStatus?: (text: string) => void;
   onProgress?: (event: ProgressEvent) => void;
 }
 
@@ -66,7 +65,6 @@ export async function separate(
   req: SeparateRequest,
   cb: SeparateCallbacks = {},
 ): Promise<SeparatedStem[]> {
-  cb.onStatus?.("loading wasm core...");
   const wasm = await init();
   let dft: Uint8Array | undefined;
 
@@ -102,7 +100,6 @@ export async function separate(
     },
 
     async initialize() {
-      cb.onStatus?.("loading dft.bin...");
       dft = await readModelFile(req.modelSource, "dft.bin");
     },
 
@@ -113,7 +110,6 @@ export async function separate(
       const file = (
         source ? `${model}_${source}.onnx` : `${model}.onnx`
       ) as ModelFilename;
-      cb.onStatus?.(`loading model ${file}...`);
       const bytes = await readModelFile(req.modelSource, file);
       return ort.InferenceSession.create(bytes, {
         executionProviders: ["wasm"],

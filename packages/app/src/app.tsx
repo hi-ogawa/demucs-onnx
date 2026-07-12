@@ -162,9 +162,7 @@ export function App() {
         return;
       }
       const message = event.data;
-      if (message.type === "status") {
-        setStatus(message.text);
-      } else if (message.type === "progress") {
+      if (message.type === "progress") {
         setRunProgress((progress) =>
           progress
             ? updateRunProgress(progress, message.event, message.at)
@@ -385,7 +383,7 @@ export function App() {
               className="mt-3.5 min-h-[1.3em] text-sm leading-normal whitespace-pre-line text-[#667068]"
               id="status"
             >
-              {status}
+              {running ? "" : status}
             </p>
           </div>
         </aside>

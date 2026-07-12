@@ -8,7 +8,6 @@ import {
 } from "./audio/separate";
 
 export type WorkerResponse =
-  | { type: "status"; text: string }
   | { type: "progress"; event: ProgressEvent; at: number }
   | { type: "done"; outputs: SeparatedStem[] }
   | { type: "error"; message: string };
@@ -18,7 +17,6 @@ self.onmessage = async (e: MessageEvent<SeparateRequest>) => {
     (self as unknown as Worker).postMessage(m, t ?? []);
   try {
     const outputs = await separate(e.data, {
-      onStatus: (text) => post({ type: "status", text }),
       onProgress: (event) => post({ type: "progress", event, at: Date.now() }),
     });
     const transfers = outputs.flatMap((o) => [o.left.buffer, o.right.buffer]);
