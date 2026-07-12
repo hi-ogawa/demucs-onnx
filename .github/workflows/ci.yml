@@ -70,11 +70,11 @@ jobs:
 
       - run: |
           pnpm cli-separate-v2 \
-            fixtures/sine-2s.wav data/output-split
-          test -s data/output-split/drums.wav
-          test -s data/output-split/bass.wav
-          test -s data/output-split/other.wav
-          test -s data/output-split/vocals.wav
+            fixtures/sine-2s.wav data/ci-split-output
+          test -s data/ci-split-output/drums.wav
+          test -s data/ci-split-output/bass.wav
+          test -s data/ci-split-output/other.wav
+          test -s data/ci-split-output/vocals.wav
 
       - run: pnpm build-wasm
 

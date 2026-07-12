@@ -199,11 +199,12 @@ pnpm cli-separate-v2 fixtures/sine-2s.wav data/output-split
 - [x] Reuse the Rust DSP implementation and buffers in WASM.
 - [x] Pass waveform/spectrogram inputs and frequency/time outputs across the JS/WASM boundary.
 - [x] Remove `dft.bin` from recognized and required browser model files.
-- [x] Compare browser-generated stems with native split CLI stems in Playwright.
+- [x] Verify browser separation and downloadable stem output in Playwright.
 
 The browser is hard-switched to split graphs; legacy browser model loading is not retained. Native
-CLI legacy support remains available for parity checks. Browser E2E verifies all four downloaded
-stems against native split output with `2e-3` max-absolute and `1e-7` MSE limits.
+CLI legacy support remains available for parity checks. Cross-runtime native/WASM numerical
+alignment is tracked separately in https://github.com/hi-ogawa/demucs-onnx/issues/56 rather than in
+app E2E.
 
 ### 5. Benchmark execution providers
 
