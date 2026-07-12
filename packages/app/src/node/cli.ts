@@ -5,8 +5,8 @@ import * as ort from "onnxruntime-web";
 import init, {
   separate as separateWasm,
   type Host,
-} from "../../crates/wasm/pkg/demucs_wasm.js";
-import { encodeWavF32 } from "./src/lib/audio/wav";
+} from "../../../../crates/wasm/pkg/demucs_wasm.js";
+import { decodeWav, encodeWavF32 } from "../lib/audio/wav";
 
 const SAMPLE_RATE = 44_100;
 const SEGMENT = 343_980;
@@ -87,112 +87,19 @@ function parseCli() {
   };
 }
 
-function decodeWav(bytes: Uint8Array) {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (readFourCc(view, 0) !== "RIFF" || readFourCc(view, 8) !== "WAVE") {
-    throw new Error("expected a RIFF/WAVE file");
-  }
-  let format;
-  let dataOffset;
-  let dataLength;
-  for (let offset = 12; offset + 8 <= view.byteLength; ) {
-    const id = readFourCc(view, offset);
-    const length = view.getUint32(offset + 4, true);
-    if (id === "fmt ") {
-      format = {
-        encoding: view.getUint16(offset + 8, true),
-        channels: view.getUint16(offset + 10, true),
-        sampleRate: view.getUint32(offset + 12, true),
-        blockAlign: view.getUint16(offset + 20, true),
-        bits: view.getUint16(offset + 22, true),
-      };
-    } else if (id === "data") {
-      dataOffset = offset + 8;
-      dataLength = length;
-    }
-    offset += 8 + length + (length & 1);
-  }
-  if (!format || dataOffset === undefined || dataLength === undefined) {
-    throw new Error("WAV is missing fmt or data chunk");
-  }
-  if (format.sampleRate !== SAMPLE_RATE) {
-    throw new Error(
-      `expected ${SAMPLE_RATE}Hz WAV, got ${format.sampleRate}Hz`,
-    );
-  }
-  if (format.channels < 1) {
-    throw new Error("WAV has no channels");
-  }
-  const frames = Math.floor(dataLength / format.blockAlign);
-  const left = new Float32Array(frames);
-  const right = new Float32Array(frames);
-  for (let frame = 0; frame < frames; frame++) {
-    const offset = dataOffset + frame * format.blockAlign;
-    left[frame] = readSample(view, offset, format);
-    right[frame] =
-      format.channels === 1
-        ? left[frame]
-        : readSample(view, offset + format.bits / 8, format);
-  }
-  return { left, right };
-}
-
-function readFourCc(view: DataView, offset: number) {
-  return String.fromCharCode(
-    view.getUint8(offset),
-    view.getUint8(offset + 1),
-    view.getUint8(offset + 2),
-    view.getUint8(offset + 3),
-  );
-}
-
-interface WavFormat {
-  encoding: number;
-  channels: number;
-  sampleRate: number;
-  blockAlign: number;
-  bits: number;
-}
-
-function readSample(view: DataView, offset: number, format: WavFormat) {
-  if (format.encoding === 3 && format.bits === 32) {
-    return view.getFloat32(offset, true);
-  }
-  if (format.encoding !== 1) {
-    throw new Error(`unsupported WAV encoding ${format.encoding}`);
-  }
-  switch (format.bits) {
-    case 8:
-      return (view.getUint8(offset) - 128) / 128;
-    case 16:
-      return view.getInt16(offset, true) / 32_768;
-    case 24: {
-      let value =
-        view.getUint8(offset) |
-        (view.getUint8(offset + 1) << 8) |
-        (view.getUint8(offset + 2) << 16);
-      if (value & 0x80_0000) {
-        value |= 0xff00_0000;
-      }
-      return value / 8_388_608;
-    }
-    case 32:
-      return view.getInt32(offset, true) / 2_147_483_648;
-    default:
-      throw new Error(`unsupported PCM bit depth ${format.bits}`);
-  }
-}
-
 async function main() {
   const args = parseCli();
   const inputBytes = await readFile(args.input);
-  const { left, right } = decodeWav(inputBytes);
+  const { left, right, sampleRate } = decodeWav(inputBytes);
+  if (sampleRate !== SAMPLE_RATE) {
+    throw new Error(`expected ${SAMPLE_RATE}Hz WAV, got ${sampleRate}Hz`);
+  }
   console.error(
     `input: ${left.length} samples (${(left.length / SAMPLE_RATE).toFixed(2)}s) | model ${args.name} | shifts ${args.shifts}`,
   );
 
   const wasmBytes = await readFile(
-    new URL("../../crates/wasm/pkg/demucs_wasm_bg.wasm", import.meta.url),
+    new URL("../../../../crates/wasm/pkg/demucs_wasm_bg.wasm", import.meta.url),
   );
   const wasm = await init({ module_or_path: wasmBytes });
   let dft: Uint8Array;

@@ -9,7 +9,7 @@
     "lint": "pnpm lint-dead-code && pnpm typecheck",
     "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
     "test-e2e": "playwright test",
-    "wasm-separate": "tsx wasm-cli.ts separate"
+    "wasm-separate": "tsx src/node/cli.ts separate"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
