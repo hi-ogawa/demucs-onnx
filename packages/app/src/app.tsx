@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Check, CircleHelp, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { decodeAudioFile, type DecodedAudio } from "./lib/audio/decode";
 import {
   isModelFilename,
@@ -104,9 +104,6 @@ export function App() {
     });
   }
 
-  // TODO: bad
-  const runAbortRef = useRef<AbortController | null>(null);
-
   const handleRunMutation = useMutation({
     mutationFn: async () => {
       if (!decoded || !modelSource) {
@@ -131,33 +128,24 @@ export function App() {
         shifts,
         modelSource,
       };
-      const controller = new AbortController();
-      runAbortRef.current = controller;
-      try {
-        const separated = await separateInWorker(request, {
-          signal: controller.signal,
-          onProgress: (event, at) =>
-            setRunProgress((progress) =>
-              progress ? updateRunProgress(progress, event, at) : progress,
-            ),
-        });
-        const nextOutputs = separated.map((output) => {
-          const blob = encodeWavF32([output.left, output.right], 44100);
-          return { ...output, url: URL.createObjectURL(blob) };
-        });
-        setStatus(
-          `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
-        );
-        return nextOutputs;
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setRunProgress(null);
-          throw error;
-        }
-      } finally {
-        if (runAbortRef.current === controller) {
-          runAbortRef.current = null;
-        }
+      const separated = await separateInWorker(request, {
+        onProgress: (event, at) =>
+          setRunProgress((progress) =>
+            progress ? updateRunProgress(progress, event, at) : progress,
+          ),
+      });
+      const nextOutputs = separated.map((output) => {
+        const blob = encodeWavF32([output.left, output.right], 44100);
+        return { ...output, url: URL.createObjectURL(blob) };
+      });
+      setStatus(
+        `Done in ${((performance.now() - started) / 1000).toFixed(1)}s`,
+      );
+      return nextOutputs;
+    },
+    onSettled: (_data, error) => {
+      if (error) {
+        setRunProgress(null);
       }
     },
   });
