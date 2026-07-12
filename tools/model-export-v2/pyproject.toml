@@ -1,0 +1,20 @@
+[project]
+name = "demucs-onnx-model-tools-v2"
+version = "0.0.0"
+description = "Export split-DSP HTDemucs models from the official Demucs release"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+  "demucs==4.1.0",
+  "torch==2.1.2",
+  "onnx>=1.15",
+  "onnxruntime>=1.17",
+  "numpy<2",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

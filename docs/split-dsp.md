@@ -94,11 +94,24 @@ starts after `_spec`/complex packing and ends before complex unpacking/`_ispec` 
 This gives ONNX explicit, stable inputs and outputs and prevents DFT constants from entering the
 graph in the first place.
 
-The first implementation should be an exporter-local wrapper around the pinned `HTDemucs` model.
-It may reproduce the learned middle of `HTDemucs.forward` while reusing the model's existing
-submodules and parameters. This avoids making a new fork patch part of the artifact chain before
-the boundary is proven. If maintaining that wrapper requires copying an unreasonable amount of
-upstream control flow, extract a `forward_core` method in a new pinned fork commit instead.
+The split exporter lives in an isolated uv project under `tools/model-export-v2` and uses the
+official Demucs 4.1.0 release. Its exporter-local wrapper reproduces the learned middle of
+`HTDemucs.forward` while reusing the model's existing submodules and parameters. The legacy root
+Python project remains pinned to the ONNX export fork only for rebuilding current self-contained
+artifacts. If maintaining the wrapper requires copying an unreasonable amount of upstream control
+flow, propose a `forward_core` extraction upstream instead of extending the legacy fork.
+
+Build and verify the experimental standard model with:
+
+```sh
+pnpm build-model-v2
+```
+
+The initial upstream 4.1.0 proof produced a 174.3 MB graph. Its Python seam is bit-identical to
+`HTDemucs.forward`; ONNX branch parity measured `1.691e-3` max absolute error and `1.098e-9` MSE
+for frequency, and `5.472e-5` max absolute error and `6.695e-12` MSE for time. On the same seeded
+input, the official Hugging Face model loader and the legacy fork/checkpoint loader produced
+byte-identical final output (`sha256:21d88c3dcb713451ffcf20c4c44a17306bb10f11ae0277df4ab90c3043146359`).
 
 Split artifacts must use a distinct directory, filename convention, and manifest flavor while the
 current self-contained artifacts remain supported. A split model must never be loadable as a
@@ -132,11 +145,11 @@ scale: approximately `7.3e-4` max absolute error and `6.15e-9` MSE against PyTor
 
 ### 1. Prove the seam in Python
 
-- Add the exporter-local learned-core wrapper.
-- Add a deterministic test that reconstructs the original forward result with `_spec`, the wrapper,
-  and `_ispec`.
-- Export one experimental `htdemucs` split model.
-- Assert the graph contract and assert that no external data or large DFT constants are present.
+- [x] Add the exporter-local learned-core wrapper using official Demucs 4.1.0.
+- [x] Add a deterministic test that reconstructs the original forward result with `_spec`, the
+      wrapper, and `_ispec`.
+- [x] Export one experimental `htdemucs` split model.
+- [x] Assert the graph contract and assert that no external data or DFT constants are present.
 
 Stop here if the wrapper cannot reproduce the original model before introducing ONNX or new FFT
 code.

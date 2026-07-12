@@ -4,7 +4,8 @@ The exported graph contains only the learned middle of HTDemucs. The caller owns
 complex-as-channels packing, iSTFT, and the final frequency/time branch sum.
 
 Usage:
-    uv run python tools/model-export/export_split_onnx.py --out data/onnx-split/htdemucs.onnx
+    uv run --project tools/model-export-v2 python tools/model-export-v2/export_split_onnx.py \
+        --out data/onnx-split/htdemucs.onnx
 """
 
 import argparse
