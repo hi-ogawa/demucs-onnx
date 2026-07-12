@@ -5,7 +5,7 @@ import {
   type ProgressEvent,
   type SeparatedStem,
   type SeparateRequest,
-} from "./audio/separate";
+} from "./lib/audio/separate";
 
 export type WorkerResponse =
   | { type: "progress"; event: ProgressEvent; at: number }

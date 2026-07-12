@@ -4,12 +4,12 @@ import {
   requiredModelFiles,
   type ModelFilename,
   type ModelSource,
-} from "./audio/models";
-import type { SeparateRequest, SeparatedStem } from "./audio/separate";
+} from "./lib/audio/models";
+import type { SeparateRequest, SeparatedStem } from "./lib/audio/separate";
+import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
-import { loadPreferences, savePreferences } from "./preferences";
-import { encodeWavF32 } from "./wav";
+import { encodeWavF32 } from "./lib/wav";
 import type { WorkerResponse } from "./worker";
 
 type DecodedAudio = { left: Float32Array; right: Float32Array };
