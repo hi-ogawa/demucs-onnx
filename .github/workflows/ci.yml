@@ -59,7 +59,7 @@ jobs:
           pnpm cli-separate \
             --name htdemucs \
             --two-stems bass \
-            --method minus \
+            --two-stems-mix minus \
             fixtures/sine-10s.wav data/ci-output
           test -s data/ci-output/bass.wav
           test -s data/ci-output/no_bass.wav
