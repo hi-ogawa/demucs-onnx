@@ -39,6 +39,19 @@ function Web() {
           <button
             className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
             type="button"
+            onClick={() =>
+              setError((current) =>
+                current
+                  ? undefined
+                  : "Audio is available for this session but could not be saved.",
+              )
+            }
+          >
+            {error ? "Clear error" : "Error preview"}
+          </button>
+          <button
+            className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
+            type="button"
             onClick={() => setDark((value) => !value)}
           >
             {dark ? "Light preview" : "Dark preview"}
