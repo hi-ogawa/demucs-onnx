@@ -4,16 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "pnpm typecheck",
     "test": "vitest run",
-    "test:youtube": "pnpm build && playwright test"
+    "test-e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@types/node": "^26.1.1",
-    "typescript": "^6.0.2",
-    "vite": "^8.0.1",
-    "vitest": "^4.0.18"
-  },
-  "packageManager": "pnpm@10.32.1"
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  }
 }

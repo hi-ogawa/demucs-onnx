@@ -21,8 +21,8 @@ pnpm test
 pnpm build
 ```
 
-`pnpm test:youtube` additionally builds and loads the extension in Chromium
-against a real YouTube watch page.
+After building, `pnpm test-e2e` loads the extension in Chromium against a real
+YouTube watch page.
 
 Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**,
 and select this repository's `dist` directory.
