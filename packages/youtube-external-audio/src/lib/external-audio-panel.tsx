@@ -12,6 +12,92 @@ function formatTime(seconds: number | undefined) {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
+interface ExternalAudioPanelViewProps {
+  fileName?: string;
+  enabled: boolean;
+  currentTime?: number;
+  duration?: number;
+  volume: number;
+  error?: string;
+  onChooseFile(file: File | undefined): void;
+  onToggle(): void;
+  onVolumeChange(volume: number): void;
+}
+
+export function ExternalAudioPanelView({
+  fileName,
+  enabled,
+  currentTime,
+  duration,
+  volume,
+  error,
+  onChooseFile,
+  onToggle,
+  onVolumeChange,
+}: ExternalAudioPanelViewProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-foreground shadow-lg">
+      <div className="mb-2 font-semibold">External audio</div>
+      <div className="flex gap-2">
+        <button
+          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45"
+          type="button"
+          onClick={() => inputRef.current?.click()}
+        >
+          Choose file
+        </button>
+        <button
+          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45 data-[active=true]:border-accent-border data-[active=true]:bg-accent data-[active=true]:text-white"
+          type="button"
+          disabled={!fileName}
+          data-active={enabled}
+          onClick={onToggle}
+        >
+          {enabled ? "Disable" : "Enable"}
+        </button>
+      </div>
+      <div className="mt-2 truncate text-muted-foreground">
+        {fileName ?? "No audio selected"}
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>External</span>
+        <span className="ml-auto font-mono tabular-nums">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </span>
+      </div>
+      <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Volume</span>
+        <input
+          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value={volume}
+          disabled={!fileName}
+          aria-label="External audio volume"
+          onChange={(event) => onVolumeChange(Number(event.target.value))}
+        />
+        <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
+      </label>
+      {error && (
+        <div className="mt-2 text-error" role="alert">
+          {error}
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="audio/*"
+        hidden
+        onChange={(event) => onChooseFile(event.target.files?.[0])}
+      />
+    </div>
+  );
+}
+
 export function ExternalAudioPanel({
   getVideo,
 }: {
@@ -20,7 +106,6 @@ export function ExternalAudioPanel({
   // TODO: Add a floating open/close button and persist panel state per video.
   // TODO: Persist the chosen audio per video, following ytsub-v5's per-video
   // state pattern.
-  const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const syncRef = useRef<PlayerSync>(null);
   const objectUrlRef = useRef<string>(null);
@@ -117,62 +202,16 @@ export function ExternalAudioPanel({
   }
 
   return (
-    <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-foreground shadow-lg">
-      <div className="mb-2 font-semibold">External audio</div>
-      <div className="flex gap-2">
-        <button
-          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45"
-          type="button"
-          onClick={() => inputRef.current?.click()}
-        >
-          Choose file
-        </button>
-        <button
-          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45 data-[active=true]:border-accent-border data-[active=true]:bg-accent data-[active=true]:text-white"
-          type="button"
-          disabled={!fileName}
-          data-active={enabled}
-          onClick={toggle}
-        >
-          {enabled ? "Disable" : "Enable"}
-        </button>
-      </div>
-      <div className="mt-2 truncate text-muted-foreground">
-        {fileName ?? "No audio selected"}
-      </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>External</span>
-        <span className="ml-auto font-mono tabular-nums">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </span>
-      </div>
-      <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Volume</span>
-        <input
-          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={volume}
-          disabled={!fileName}
-          aria-label="External audio volume"
-          onChange={(event) => changeVolume(Number(event.target.value))}
-        />
-        <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
-      </label>
-      {error && (
-        <div className="mt-2 text-error" role="alert">
-          {error}
-        </div>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="audio/*"
-        hidden
-        onChange={(event) => chooseFile(event.target.files?.[0])}
-      />
-    </div>
+    <ExternalAudioPanelView
+      fileName={fileName}
+      enabled={enabled}
+      currentTime={currentTime}
+      duration={duration}
+      volume={volume}
+      error={error}
+      onChooseFile={chooseFile}
+      onToggle={toggle}
+      onVolumeChange={changeVolume}
+    />
   );
 }
