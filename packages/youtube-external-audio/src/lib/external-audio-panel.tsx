@@ -18,6 +18,8 @@ export function ExternalAudioPanel({
   getVideo: () => VideoClock | null | undefined;
 }) {
   // TODO: Add a floating open/close button and persist panel state per video.
+  // TODO: Persist the chosen audio per video, following ytsub-v5's per-video
+  // state pattern.
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const syncRef = useRef<PlayerSync>(null);

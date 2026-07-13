@@ -13,6 +13,7 @@ class FakeVideo extends EventTarget implements VideoClock {
 
 const fakeVideo = new FakeVideo();
 
+// TODO: Add Playwright coverage for the standalone panel preview.
 function Web() {
   const [dark, setDark] = useState(false);
 
