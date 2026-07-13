@@ -17,7 +17,6 @@ processing are intentionally out of scope.
 
 ```sh
 pnpm install
-pnpm test
 pnpm build
 ```
 
@@ -32,6 +31,17 @@ On a normal YouTube watch page, choose a local audio file from the control in
 the bottom-right corner and enable replacement audio. YouTube's existing
 controls and keyboard shortcuts continue to control the video; the extension
 follows the resulting media events.
+
+## UI development
+
+Run the standalone panel preview with:
+
+```sh
+pnpm dev-web
+```
+
+The preview uses a fake paused video clock so the extension UI can be styled
+without loading YouTube.
 
 ## Attribution
 

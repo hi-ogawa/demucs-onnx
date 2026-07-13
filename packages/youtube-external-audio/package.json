@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev-web": "vite --config vite.web.config.ts",
     "build": "vite build && cd dist/extension && zip -r ../extension.zip .",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm typecheck",

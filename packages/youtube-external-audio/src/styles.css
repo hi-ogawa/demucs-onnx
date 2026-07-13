@@ -1,0 +1,39 @@
+@import "tailwindcss" source(".");
+
+@theme inline {
+  --color-panel: var(--panel);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-button: var(--button);
+  --color-button-hover: var(--button-hover);
+  --color-button-border: var(--button-border);
+  --color-accent: var(--accent);
+  --color-accent-border: var(--accent-border);
+}
+
+:root,
+:host {
+  --panel: #fff;
+  --foreground: #0f0f0f;
+  --muted-foreground: #606060;
+  --border: #d0d0d0;
+  --button: #f2f2f2;
+  --button-hover: #e5e5e5;
+  --button-border: #c6c6c6;
+  --accent: #065fd4;
+  --accent-border: #3ea6ff;
+}
+
+.dark,
+:host(.dark) {
+  --panel: #212121;
+  --foreground: #f1f1f1;
+  --muted-foreground: #aaa;
+  --border: #555;
+  --button: #3f3f3f;
+  --button-hover: #515151;
+  --button-border: #666;
+  --accent: #065fd4;
+  --accent-border: #3ea6ff;
+}
