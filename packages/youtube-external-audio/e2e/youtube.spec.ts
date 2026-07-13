@@ -24,6 +24,8 @@ function createSilentWav(durationSeconds: number) {
   return buffer;
 }
 
+// TODO: Cover only FAB loading and audio upload; avoid assertions against the
+// real video player's playback state so this test remains stable.
 test("injects, replaces audio, and survives YouTube navigation", async () => {
   const extensionPath = path.resolve("dist/extension");
   const context = await chromium.launchPersistentContext("", {

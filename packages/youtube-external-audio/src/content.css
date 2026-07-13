@@ -3,6 +3,8 @@
 /* YouTube sets :root to 10px, so keep Tailwind's spacing scale pixel-based. */
 @theme inline {
   --spacing: 4px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
   --text-sm: 14px;
   --text-sm--line-height: 20px;
   --color-panel: var(--panel);
