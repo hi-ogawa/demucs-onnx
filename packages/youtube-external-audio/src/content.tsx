@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
+import type { VideoClock } from "./lib/player-sync.ts";
 import { videoStorage } from "./lib/storage.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
 
@@ -10,6 +11,81 @@ const queryClient = new QueryClient();
 
 interface MountedController {
   cleanup(): void;
+}
+
+interface YouTubePlayer extends HTMLElement {
+  isMuted?(): boolean;
+  mute?(): void;
+  unMute?(): void;
+}
+
+// YouTube can overwrite video.muted from its own player state. In MAIN world,
+// this adapter keeps mute state and its UI in sync through #movie_player while
+// continuing to use the native video element as the playback clock.
+class YouTubeVideoClock implements VideoClock {
+  constructor(
+    private video: HTMLVideoElement,
+    private player: YouTubePlayer | null,
+  ) {}
+
+  get currentTime() {
+    return this.video.currentTime;
+  }
+
+  set currentTime(value: number) {
+    this.video.currentTime = value;
+  }
+
+  get muted() {
+    return typeof this.player?.isMuted === "function"
+      ? this.player.isMuted()
+      : this.video.muted;
+  }
+
+  set muted(value: boolean) {
+    const method = value ? this.player?.mute : this.player?.unMute;
+    if (typeof method === "function") {
+      method.call(this.player);
+    } else {
+      this.video.muted = value;
+    }
+  }
+
+  get paused() {
+    return this.video.paused;
+  }
+
+  get playbackRate() {
+    return this.video.playbackRate;
+  }
+
+  set playbackRate(value: number) {
+    this.video.playbackRate = value;
+  }
+
+  addEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ) {
+    if (callback) {
+      this.video.addEventListener(type, callback, options);
+    }
+  }
+
+  removeEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions,
+  ) {
+    if (callback) {
+      this.video.removeEventListener(type, callback, options);
+    }
+  }
+
+  dispatchEvent(event: Event) {
+    return this.video.dispatchEvent(event);
+  }
 }
 
 function isWatchPage() {
@@ -24,9 +100,14 @@ function getVideoId() {
 }
 
 function getMainVideo() {
-  return document.querySelector<HTMLVideoElement>(
+  const video = document.querySelector<HTMLVideoElement>(
     "video.html5-main-video, video",
   );
+  if (!video) {
+    return null;
+  }
+  const player = document.querySelector<YouTubePlayer>("#movie_player");
+  return new YouTubeVideoClock(video, player);
 }
 
 function App({ videoId }: { videoId: string }) {

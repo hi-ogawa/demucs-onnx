@@ -39,8 +39,6 @@ export class PlayerSync {
 
     this.#originalMuted = this.video.muted;
     this.#enabled = true;
-    // TODO: YouTube sometimes clears video.muted during playback. Investigate
-    // how its own mute control keeps the player muted and mirror that behavior.
     this.video.muted = true;
     this.#alignTime();
     this.#alignRate();
