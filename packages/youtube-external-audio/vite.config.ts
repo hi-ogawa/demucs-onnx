@@ -2,9 +2,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   build: {
-    outDir: "dist",
+    outDir: "dist/extension",
     minify: false,
-    copyPublicDir: true,
     rolldownOptions: {
       input: {
         content: "./src/content.ts",

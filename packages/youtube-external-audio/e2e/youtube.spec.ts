@@ -25,7 +25,7 @@ function createSilentWav(durationSeconds: number) {
 }
 
 test("injects, replaces audio, and survives YouTube navigation", async () => {
-  const extensionPath = path.resolve("dist");
+  const extensionPath = path.resolve("dist/extension");
   const context = await chromium.launchPersistentContext("", {
     channel: "chromium",
     args: [
