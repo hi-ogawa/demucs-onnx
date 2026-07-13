@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
-import type { StoredAudio } from "./lib/audio-store.ts";
 import type { VideoClock } from "./lib/player-sync.ts";
+import type { StoredAudio } from "./lib/storage.ts";
 import { ErrorPanel, Fab, Panel } from "./lib/ui.tsx";
 
 class FakeVideo extends EventTarget implements VideoClock {

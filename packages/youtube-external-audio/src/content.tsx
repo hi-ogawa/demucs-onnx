@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
+import { videoStorage } from "./lib/storage.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
-import { getVideoState, updateVideoState } from "./lib/video-state.ts";
 
 const HOST_ID = "youtube-external-audio-host";
 const queryClient = new QueryClient();
@@ -30,13 +30,15 @@ function getMainVideo() {
 }
 
 function App({ videoId }: { videoId: string }) {
-  const [open, setOpen] = useState(() => getVideoState(videoId).panelOpen);
+  const [open, setOpen] = useState(
+    () => videoStorage.getState(videoId).panelOpen,
+  );
   const [error, setError] = useState<string>();
 
   const toggleOpen = () => {
     setOpen((currentOpen) => {
       const nextOpen = !currentOpen;
-      updateVideoState(videoId, { panelOpen: nextOpen });
+      videoStorage.updateState(videoId, { panelOpen: nextOpen });
       return nextOpen;
     });
   };

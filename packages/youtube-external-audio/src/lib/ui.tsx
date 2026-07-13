@@ -1,8 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { storedAudioManager, type StoredAudio } from "./audio-store.ts";
 import { PlayerSync, type VideoClock } from "./player-sync.ts";
-import { getVideoState, updateVideoState } from "./video-state.ts";
+import { type StoredAudio, videoStorage } from "./storage.ts";
 
 export function StoredPanel({
   videoId,
@@ -17,7 +16,7 @@ export function StoredPanel({
     queryKey: ["stored-audio", videoId],
     queryFn: async () => {
       try {
-        return await storedAudioManager.load(videoId);
+        return await videoStorage.loadAudio(videoId);
       } catch (error) {
         console.error(error);
         onError("Saved audio is unavailable. You can still choose a file.");
@@ -27,7 +26,7 @@ export function StoredPanel({
   });
 
   const storeAudioMutation = useMutation({
-    mutationFn: storedAudioManager.store,
+    mutationFn: videoStorage.storeAudio,
     onError: (error) => {
       console.error(error);
       onError("Audio is available for this session but could not be saved.");
@@ -69,7 +68,9 @@ export function Panel({
   const [selectedAudio, setSelectedAudio] = useState(
     initialSelectedAudio ?? undefined,
   );
-  const [volume, setVolume] = useState(() => getVideoState(videoId).volume);
+  const [volume, setVolume] = useState(
+    () => videoStorage.getState(videoId).volume,
+  );
 
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -135,7 +136,7 @@ export function Panel({
 
   function changeVolume(nextVolume: number) {
     setVolume(nextVolume);
-    updateVideoState(videoId, { volume: nextVolume });
+    videoStorage.updateState(videoId, { volume: nextVolume });
     if (audioRef.current) {
       audioRef.current.volume = nextVolume / 100;
     }
