@@ -216,14 +216,22 @@ export function Panel({
   );
 }
 
-export function Fab({ open, onClick }: { open: boolean; onClick(): void }) {
+export function Fab({
+  open,
+  shifted = false,
+  onClick,
+}: {
+  open: boolean;
+  shifted?: boolean;
+  onClick(): void;
+}) {
   const label = open
     ? "Hide external audio controls"
     : "Show external audio controls";
 
   return (
     <button
-      className={`pointer-events-auto fixed right-4 bottom-4 flex size-10 cursor-pointer items-center justify-center rounded-full border-0 shadow-lg ${open ? "bg-accent text-white" : "bg-foreground text-panel"}`}
+      className={`pointer-events-auto fixed bottom-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 shadow-lg ${shifted ? "right-15" : "right-3"} ${open ? "bg-accent text-white" : "bg-foreground text-panel"}`}
       type="button"
       aria-label={label}
       title={label}
@@ -231,7 +239,7 @@ export function Fab({ open, onClick }: { open: boolean; onClick(): void }) {
     >
       <svg
         aria-hidden="true"
-        className="size-5"
+        className="size-8"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"

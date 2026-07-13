@@ -46,7 +46,7 @@ function Web() {
         </div>
         {/* TODO: Replace the fake clock with manual video upload or a YouTube
             IFrame API adapter when transport testing is in scope. */}
-        <div className="pointer-events-none fixed right-4 bottom-18 flex flex-col items-end gap-2">
+        <div className="pointer-events-none fixed right-4 bottom-14 flex flex-col items-end gap-2">
           {error && (
             <ErrorPanel message={error} onClose={() => setError(undefined)} />
           )}

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { StrictMode, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
 import { videoStorage } from "./lib/storage.ts";
@@ -34,6 +34,19 @@ function App({ videoId }: { videoId: string }) {
     () => videoStorage.getState(videoId).panelOpen,
   );
   const [error, setError] = useState<string>();
+  const [zamakPresent, setZamakPresent] = useState(
+    () => document.getElementById("zamak-host") !== null,
+  );
+
+  // Both extensions use the bottom-right slot; move this FAB left when Zamak
+  // is loaded, including when either content script is injected later.
+  useEffect(() => {
+    const update = () =>
+      setZamakPresent(document.getElementById("zamak-host") !== null);
+    const observer = new MutationObserver(update);
+    observer.observe(document.body, { childList: true });
+    return () => observer.disconnect();
+  }, []);
 
   const toggleOpen = () => {
     setOpen((currentOpen) => {
@@ -45,7 +58,7 @@ function App({ videoId }: { videoId: string }) {
 
   return (
     <>
-      <div className="pointer-events-none fixed right-4 bottom-18 flex flex-col items-end gap-2">
+      <div className="pointer-events-none fixed right-4 bottom-14 flex flex-col items-end gap-2">
         {error && (
           <ErrorPanel message={error} onClose={() => setError(undefined)} />
         )}
@@ -57,7 +70,7 @@ function App({ videoId }: { videoId: string }) {
           />
         </div>
       </div>
-      <Fab open={open} onClick={toggleOpen} />
+      <Fab open={open} shifted={zamakPresent} onClick={toggleOpen} />
     </>
   );
 }
