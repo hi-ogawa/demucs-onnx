@@ -1,8 +1,12 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { storedAudioManager, type StoredAudio } from "./audio-store.ts";
 import { PlayerSync, type VideoClock } from "./player-sync.ts";
+import { getVideoState, updateVideoState } from "./video-state.ts";
 
 interface PanelViewProps {
   fileName?: string;
+  loading?: boolean;
   enabled: boolean;
   currentTime?: number;
   duration?: number;
@@ -15,6 +19,7 @@ interface PanelViewProps {
 
 export function PanelView({
   fileName,
+  loading = false,
   enabled,
   currentTime,
   duration,
@@ -33,6 +38,7 @@ export function PanelView({
         <button
           className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45"
           type="button"
+          disabled={loading}
           onClick={() => inputRef.current?.click()}
         >
           Choose file
@@ -40,7 +46,7 @@ export function PanelView({
         <button
           className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45 data-[active=true]:border-accent-border data-[active=true]:bg-accent data-[active=true]:text-white"
           type="button"
-          disabled={!fileName}
+          disabled={loading || !fileName}
           data-active={enabled}
           onClick={onToggle}
         >
@@ -48,7 +54,7 @@ export function PanelView({
         </button>
       </div>
       <div className="mt-2 truncate text-muted-foreground">
-        {fileName ?? "No audio selected"}
+        {loading ? "Loading saved audio..." : (fileName ?? "No audio selected")}
       </div>
       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
         <span>External</span>
@@ -65,7 +71,7 @@ export function PanelView({
           max="100"
           step="1"
           value={volume}
-          disabled={!fileName}
+          disabled={loading || !fileName}
           aria-label="External audio volume"
           onChange={(event) => onVolumeChange(Number(event.target.value))}
         />
@@ -88,20 +94,31 @@ export function PanelView({
 }
 
 export function Panel({
+  videoId,
   getVideo,
 }: {
+  videoId: string;
   getVideo: () => VideoClock | null | undefined;
 }) {
-  // TODO: Persist the chosen audio per video, following ytsub-v5's per-video
-  // state pattern.
+  // TODO: Move query/mutation ownership outside the interactive panel and pass
+  // initialSelectedAudio into a single inner component that web.tsx can preview
+  // directly. Consider async bootstrap or useSuspenseQuery for the initial load.
+  const storedAudioQuery = useQuery({
+    queryKey: ["stored-audio", videoId],
+    queryFn: () => storedAudioManager.load(videoId),
+  });
+  const storeAudioMutation = useMutation({
+    mutationFn: storedAudioManager.store,
+  });
+  const [selectedAudio, setSelectedAudio] = useState<StoredAudio>();
+  const selection = selectedAudio ?? storedAudioQuery.data;
+  const [volume, setVolume] = useState(() => getVideoState(videoId).volume);
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const syncRef = useRef<PlayerSync>(null);
-  const objectUrlRef = useRef<string>(null);
-  const [fileName, setFileName] = useState<string>();
   const [enabled, setEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
-  const [volume, setVolume] = useState(100);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
@@ -125,38 +142,44 @@ export function Panel({
       audio.removeEventListener("durationchange", updateDuration);
       audio.removeAttribute("src");
       audio.load();
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-      }
     };
   }, []);
 
-  function chooseFile(file: File | undefined) {
+  useEffect(() => {
     const audio = audioRef.current;
-    if (!file || !audio) {
+    if (!audio || !selection) {
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(selection.blob);
+    audio.src = objectUrl;
+    audio.load();
+    setCurrentTime(0);
+    setDuration(undefined);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [selection?.blob]);
+
+  function chooseFile(file: File | undefined) {
+    if (!file) {
       return;
     }
 
     syncRef.current?.destroy();
     syncRef.current = null;
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    objectUrlRef.current = objectUrl;
-    audio.src = objectUrl;
-    audio.load();
-
-    setFileName(file.name);
+    const nextAudio = {
+      videoId,
+      blob: file,
+      name: file.name,
+    };
+    setSelectedAudio(nextAudio);
+    storeAudioMutation.mutate(nextAudio);
     setEnabled(false);
-    setCurrentTime(0);
-    setDuration(undefined);
     setError(undefined);
   }
 
   function changeVolume(nextVolume: number) {
     setVolume(nextVolume);
+    updateVideoState(videoId, { volume: nextVolume });
     if (audioRef.current) {
       audioRef.current.volume = nextVolume / 100;
     }
@@ -191,12 +214,20 @@ export function Panel({
 
   return (
     <PanelView
-      fileName={fileName}
+      fileName={selection?.name}
+      loading={storedAudioQuery.isPending && !selectedAudio}
       enabled={enabled}
       currentTime={currentTime}
       duration={duration}
       volume={volume}
-      error={error}
+      error={
+        error ??
+        (storedAudioQuery.error
+          ? `Failed to load saved audio: ${String(storedAudioQuery.error)}`
+          : storeAudioMutation.error
+            ? `Failed to save audio: ${String(storeAudioMutation.error)}`
+            : undefined)
+      }
       onChooseFile={chooseFile}
       onToggle={toggle}
       onVolumeChange={changeVolume}

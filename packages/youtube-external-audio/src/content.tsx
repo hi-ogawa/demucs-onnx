@@ -1,10 +1,12 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
 import { Fab, Panel } from "./lib/ui.tsx";
+import { getVideoState, updateVideoState } from "./lib/video-state.ts";
 
 const HOST_ID = "youtube-external-audio-host";
-const PANEL_OPEN_KEY = "youtube-external-audio:panel-open";
+const queryClient = new QueryClient();
 
 interface MountedController {
   cleanup(): void;
@@ -27,29 +29,13 @@ function getMainVideo() {
   );
 }
 
-function readPanelOpenState() {
-  try {
-    const value = localStorage.getItem(PANEL_OPEN_KEY);
-    return value ? (JSON.parse(value) as Record<string, boolean>) : {};
-  } catch {
-    return {};
-  }
-}
-
 function App({ videoId }: { videoId: string }) {
-  const [open, setOpen] = useState(
-    () => readPanelOpenState()[videoId] ?? false,
-  );
+  const [open, setOpen] = useState(() => getVideoState(videoId).panelOpen);
 
   const toggleOpen = () => {
     setOpen((currentOpen) => {
       const nextOpen = !currentOpen;
-      try {
-        localStorage.setItem(
-          PANEL_OPEN_KEY,
-          JSON.stringify({ ...readPanelOpenState(), [videoId]: nextOpen }),
-        );
-      } catch {}
+      updateVideoState(videoId, { panelOpen: nextOpen });
       return nextOpen;
     });
   };
@@ -61,7 +47,7 @@ function App({ videoId }: { videoId: string }) {
           open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
         }
       >
-        <Panel getVideo={getMainVideo} />
+        <Panel videoId={videoId} getVideo={getMainVideo} />
       </div>
       <Fab open={open} onClick={toggleOpen} />
     </>
@@ -105,7 +91,9 @@ function createUi(videoId: string): MountedController {
   const root = createRoot(container);
   root.render(
     <StrictMode>
-      <App videoId={videoId} />
+      <QueryClientProvider client={queryClient}>
+        <App videoId={videoId} />
+      </QueryClientProvider>
     </StrictMode>,
   );
 

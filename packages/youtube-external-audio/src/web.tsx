@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
@@ -12,6 +13,7 @@ class FakeVideo extends EventTarget implements VideoClock {
 }
 
 const fakeVideo = new FakeVideo();
+const queryClient = new QueryClient();
 
 // TODO: Add Playwright coverage for the standalone panel preview.
 function Web() {
@@ -69,7 +71,7 @@ function Web() {
               open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
             }
           >
-            <Panel getVideo={() => fakeVideo} />
+            <Panel videoId="preview-video" getVideo={() => fakeVideo} />
           </div>
         )}
         <Fab open={open} onClick={() => setOpen((value) => !value)} />
@@ -85,6 +87,8 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <Web />
+    <QueryClientProvider client={queryClient}>
+      <Web />
+    </QueryClientProvider>
   </StrictMode>,
 );

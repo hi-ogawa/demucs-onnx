@@ -78,6 +78,9 @@ importers:
 
   packages/youtube-external-audio:
     dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.101.2
+        version: 5.101.2(react@19.2.7)
       react:
         specifier: ^19.2.3
         version: 19.2.7
