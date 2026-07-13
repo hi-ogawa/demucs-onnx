@@ -76,13 +76,18 @@ function App() {
   }
 
   return (
-    <div className="panel">
-      <div className="title">External audio</div>
-      <div className="actions">
-        <button type="button" onClick={() => inputRef.current?.click()}>
+    <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-foreground shadow-lg">
+      <div className="mb-2 font-semibold">External audio</div>
+      <div className="flex gap-2">
+        <button
+          className="min-w-0 flex-1 cursor-pointer rounded-lg border border-button-border bg-button px-2.5 py-2 text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45"
+          type="button"
+          onClick={() => inputRef.current?.click()}
+        >
           Choose file
         </button>
         <button
+          className="min-w-0 flex-1 cursor-pointer rounded-lg border border-button-border bg-button px-2.5 py-2 text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45 data-[active=true]:border-accent-border data-[active=true]:bg-accent data-[active=true]:text-white"
           type="button"
           disabled={!fileName}
           data-active={enabled}
@@ -91,8 +96,10 @@ function App() {
           {enabled ? "Disable" : "Enable"}
         </button>
       </div>
-      <div className="file-name">{fileName ?? "No audio selected"}</div>
-      <div className="status">{status}</div>
+      <div className="mt-2 truncate text-muted-foreground">
+        {fileName ?? "No audio selected"}
+      </div>
+      <div className="mt-2 truncate text-muted-foreground">{status}</div>
       <input
         ref={inputRef}
         type="file"
@@ -132,6 +139,7 @@ function createUi(): MountedController {
     right: "16px",
     bottom: "72px",
     zIndex: "2147483647",
+    fontFamily: "'Roboto', 'Arial', sans-serif",
   });
 
   const shadow = host.attachShadow({ mode: "open" });
@@ -143,6 +151,19 @@ function createUi(): MountedController {
   shadow.append(container);
   document.body.append(host);
 
+  const applyTheme = () => {
+    host.classList.toggle(
+      "dark",
+      document.documentElement.hasAttribute("dark"),
+    );
+  };
+  applyTheme();
+  const themeObserver = new MutationObserver(applyTheme);
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["dark"],
+  });
+
   const root = createRoot(container);
   root.render(
     <StrictMode>
@@ -152,6 +173,7 @@ function createUi(): MountedController {
 
   return {
     cleanup() {
+      themeObserver.disconnect();
       root.unmount();
       host.remove();
     },
