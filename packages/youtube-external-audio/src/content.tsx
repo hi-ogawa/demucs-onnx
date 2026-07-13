@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
-import { Fab, Panel } from "./lib/ui.tsx";
+import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
 import { getVideoState, updateVideoState } from "./lib/video-state.ts";
 
 const HOST_ID = "youtube-external-audio-host";
@@ -31,6 +31,7 @@ function getMainVideo() {
 
 function App({ videoId }: { videoId: string }) {
   const [open, setOpen] = useState(() => getVideoState(videoId).panelOpen);
+  const [error, setError] = useState<string>();
 
   const toggleOpen = () => {
     setOpen((currentOpen) => {
@@ -42,12 +43,17 @@ function App({ videoId }: { videoId: string }) {
 
   return (
     <>
-      <div
-        className={
-          open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
-        }
-      >
-        <Panel videoId={videoId} getVideo={getMainVideo} />
+      <div className="pointer-events-none fixed right-4 bottom-18 flex flex-col items-end gap-2">
+        {error && (
+          <ErrorPanel message={error} onClose={() => setError(undefined)} />
+        )}
+        <div className={open ? "pointer-events-auto" : "hidden"}>
+          <StoredPanel
+            videoId={videoId}
+            getVideo={getMainVideo}
+            onError={setError}
+          />
+        </div>
       </div>
       <Fab open={open} onClick={toggleOpen} />
     </>

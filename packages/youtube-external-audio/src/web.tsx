@@ -2,8 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
+import type { StoredAudio } from "./lib/audio-store.ts";
 import type { VideoClock } from "./lib/player-sync.ts";
-import { Fab, Panel, PanelView } from "./lib/ui.tsx";
+import { ErrorPanel, Fab, Panel } from "./lib/ui.tsx";
 
 class FakeVideo extends EventTarget implements VideoClock {
   currentTime = 0;
@@ -13,14 +14,18 @@ class FakeVideo extends EventTarget implements VideoClock {
 }
 
 const fakeVideo = new FakeVideo();
+const previewAudio: StoredAudio = {
+  videoId: "preview-video",
+  blob: new Blob(),
+  name: "preview-audio.wav",
+};
 const queryClient = new QueryClient();
 
 // TODO: Add Playwright coverage for the standalone panel preview.
 function Web() {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(true);
-  const [enabledPreview, setEnabledPreview] = useState(false);
-  const [previewVolume, setPreviewVolume] = useState(80);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -34,13 +39,6 @@ function Web() {
           <button
             className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
             type="button"
-            onClick={() => setEnabledPreview((value) => !value)}
-          >
-            {enabledPreview ? "Live preview" : "Enabled preview"}
-          </button>
-          <button
-            className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
-            type="button"
             onClick={() => setDark((value) => !value)}
           >
             {dark ? "Light preview" : "Dark preview"}
@@ -48,32 +46,20 @@ function Web() {
         </div>
         {/* TODO: Replace the fake clock with manual video upload or a YouTube
             IFrame API adapter when transport testing is in scope. */}
-        {enabledPreview ? (
-          <div
-            className={
-              open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
-            }
-          >
-            <PanelView
-              fileName="preview-audio.wav"
-              enabled
-              currentTime={84}
-              duration={258}
-              volume={previewVolume}
-              onChooseFile={() => {}}
-              onToggle={() => setEnabledPreview(false)}
-              onVolumeChange={setPreviewVolume}
+        <div className="pointer-events-none fixed right-4 bottom-18 flex flex-col items-end gap-2">
+          {error && (
+            <ErrorPanel message={error} onClose={() => setError(undefined)} />
+          )}
+          <div className={open ? "pointer-events-auto" : "hidden"}>
+            <Panel
+              videoId="preview-video"
+              getVideo={() => fakeVideo}
+              initialSelectedAudio={previewAudio}
+              onSelectAudio={() => undefined}
+              onError={setError}
             />
           </div>
-        ) : (
-          <div
-            className={
-              open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
-            }
-          >
-            <Panel videoId="preview-video" getVideo={() => fakeVideo} />
-          </div>
-        )}
+        </div>
         <Fab open={open} onClick={() => setOpen((value) => !value)} />
       </div>
     </main>

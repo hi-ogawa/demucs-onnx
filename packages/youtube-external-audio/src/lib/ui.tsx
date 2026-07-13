@@ -4,122 +4,79 @@ import { storedAudioManager, type StoredAudio } from "./audio-store.ts";
 import { PlayerSync, type VideoClock } from "./player-sync.ts";
 import { getVideoState, updateVideoState } from "./video-state.ts";
 
-interface PanelViewProps {
-  fileName?: string;
-  loading?: boolean;
-  enabled: boolean;
-  currentTime?: number;
-  duration?: number;
-  volume: number;
-  error?: string;
-  onChooseFile(file: File | undefined): void;
-  onToggle(): void;
-  onVolumeChange(volume: number): void;
-}
+export function StoredPanel({
+  videoId,
+  getVideo,
+  onError,
+}: {
+  videoId: string;
+  getVideo: () => VideoClock | null | undefined;
+  onError(message: string): void;
+}) {
+  const storedAudioQuery = useQuery({
+    queryKey: ["stored-audio", videoId],
+    queryFn: async () => {
+      try {
+        return await storedAudioManager.load(videoId);
+      } catch (error) {
+        console.error(error);
+        onError("Saved audio is unavailable. You can still choose a file.");
+        return null;
+      }
+    },
+  });
 
-export function PanelView({
-  fileName,
-  loading = false,
-  enabled,
-  currentTime,
-  duration,
-  volume,
-  error,
-  onChooseFile,
-  onToggle,
-  onVolumeChange,
-}: PanelViewProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const storeAudioMutation = useMutation({
+    mutationFn: storedAudioManager.store,
+    onError: (error) => {
+      console.error(error);
+      onError("Audio is available for this session but could not be saved.");
+    },
+  });
+
+  if (storedAudioQuery.isPending) {
+    return (
+      <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-muted-foreground shadow-lg">
+        Loading saved audio...
+      </div>
+    );
+  }
 
   return (
-    <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-foreground shadow-lg">
-      <div className="mb-2 font-semibold">External audio</div>
-      <div className="flex gap-2">
-        <button
-          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45"
-          type="button"
-          disabled={loading}
-          onClick={() => inputRef.current?.click()}
-        >
-          Choose file
-        </button>
-        <button
-          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45 data-[active=true]:border-accent-border data-[active=true]:bg-accent data-[active=true]:text-white"
-          type="button"
-          disabled={loading || !fileName}
-          data-active={enabled}
-          onClick={onToggle}
-        >
-          {enabled ? "Disable" : "Enable"}
-        </button>
-      </div>
-      <div className="mt-2 truncate text-muted-foreground">
-        {loading ? "Loading saved audio..." : (fileName ?? "No audio selected")}
-      </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>External</span>
-        <span className="ml-auto font-mono tabular-nums">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </span>
-      </div>
-      <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Volume</span>
-        <input
-          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={volume}
-          disabled={loading || !fileName}
-          aria-label="External audio volume"
-          onChange={(event) => onVolumeChange(Number(event.target.value))}
-        />
-        <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
-      </label>
-      {error && (
-        <div className="mt-2 text-error" role="alert">
-          {error}
-        </div>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="audio/*"
-        hidden
-        onChange={(event) => onChooseFile(event.target.files?.[0])}
-      />
-    </div>
+    <Panel
+      videoId={videoId}
+      getVideo={getVideo}
+      initialSelectedAudio={storedAudioQuery.data ?? null}
+      onSelectAudio={storeAudioMutation.mutate}
+      onError={onError}
+    />
   );
 }
 
 export function Panel({
   videoId,
   getVideo,
+  initialSelectedAudio,
+  onSelectAudio,
+  onError,
 }: {
   videoId: string;
   getVideo: () => VideoClock | null | undefined;
+  initialSelectedAudio: StoredAudio | null;
+  onSelectAudio(audio: StoredAudio): void;
+  onError(message: string): void;
 }) {
-  // TODO: Move query/mutation ownership outside the interactive panel and pass
-  // initialSelectedAudio into a single inner component that web.tsx can preview
-  // directly. Consider async bootstrap or useSuspenseQuery for the initial load.
-  const storedAudioQuery = useQuery({
-    queryKey: ["stored-audio", videoId],
-    queryFn: () => storedAudioManager.load(videoId),
-  });
-  const storeAudioMutation = useMutation({
-    mutationFn: storedAudioManager.store,
-  });
-  const [selectedAudio, setSelectedAudio] = useState<StoredAudio>();
-  const selection = selectedAudio ?? storedAudioQuery.data;
+  const [selectedAudio, setSelectedAudio] = useState(
+    initialSelectedAudio ?? undefined,
+  );
   const [volume, setVolume] = useState(() => getVideoState(videoId).volume);
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const syncRef = useRef<PlayerSync>(null);
   const [enabled, setEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
-  const [error, setError] = useState<string>();
 
   useEffect(() => {
     const audio = document.createElement("audio");
@@ -147,17 +104,17 @@ export function Panel({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !selection) {
+    if (!audio || !selectedAudio) {
       return;
     }
 
-    const objectUrl = URL.createObjectURL(selection.blob);
+    const objectUrl = URL.createObjectURL(selectedAudio.blob);
     audio.src = objectUrl;
     audio.load();
     setCurrentTime(0);
     setDuration(undefined);
     return () => URL.revokeObjectURL(objectUrl);
-  }, [selection?.blob]);
+  }, [selectedAudio?.blob]);
 
   function chooseFile(file: File | undefined) {
     if (!file) {
@@ -172,9 +129,8 @@ export function Panel({
       name: file.name,
     };
     setSelectedAudio(nextAudio);
-    storeAudioMutation.mutate(nextAudio);
+    onSelectAudio(nextAudio);
     setEnabled(false);
-    setError(undefined);
   }
 
   function changeVolume(nextVolume: number) {
@@ -191,47 +147,79 @@ export function Panel({
       sync.destroy();
       syncRef.current = null;
       setEnabled(false);
-      setError(undefined);
       return;
     }
 
     const video = getVideo();
     const audio = audioRef.current;
     if (!video || !audio) {
-      setError("Video source not found");
+      onError("YouTube video player not found.");
       return;
     }
 
     const nextSync = new PlayerSync(video, audio, (error) => {
-      setError(`Playback failed: ${String(error)}`);
+      console.error(error);
+      onError("External audio playback failed.");
     });
     nextSync.enable();
     syncRef.current = nextSync;
     setCurrentTime(audio.currentTime);
     setEnabled(true);
-    setError(undefined);
   }
 
   return (
-    <PanelView
-      fileName={selection?.name}
-      loading={storedAudioQuery.isPending && !selectedAudio}
-      enabled={enabled}
-      currentTime={currentTime}
-      duration={duration}
-      volume={volume}
-      error={
-        error ??
-        (storedAudioQuery.error
-          ? `Failed to load saved audio: ${String(storedAudioQuery.error)}`
-          : storeAudioMutation.error
-            ? `Failed to save audio: ${String(storeAudioMutation.error)}`
-            : undefined)
-      }
-      onChooseFile={chooseFile}
-      onToggle={toggle}
-      onVolumeChange={changeVolume}
-    />
+    <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-foreground shadow-lg">
+      <div className="mb-2 font-semibold">External audio</div>
+      <div className="flex gap-2">
+        <button
+          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45"
+          type="button"
+          onClick={() => inputRef.current?.click()}
+        >
+          Choose file
+        </button>
+        <button
+          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45 data-[active=true]:border-accent-border data-[active=true]:bg-accent data-[active=true]:text-white"
+          type="button"
+          disabled={!selectedAudio}
+          data-active={enabled}
+          onClick={toggle}
+        >
+          {enabled ? "Disable" : "Enable"}
+        </button>
+      </div>
+      <div className="mt-2 truncate text-muted-foreground">
+        {selectedAudio?.name ?? "No audio selected"}
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>External</span>
+        <span className="ml-auto font-mono tabular-nums">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </span>
+      </div>
+      <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Volume</span>
+        <input
+          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value={volume}
+          disabled={!selectedAudio}
+          aria-label="External audio volume"
+          onChange={(event) => changeVolume(Number(event.target.value))}
+        />
+        <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
+      </label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="audio/*"
+        hidden
+        onChange={(event) => chooseFile(event.target.files?.[0])}
+      />
+    </div>
   );
 }
 
@@ -275,4 +263,40 @@ function formatTime(seconds: number | undefined) {
   const minutes = Math.floor(totalSeconds / 60);
   const remainder = totalSeconds % 60;
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+export function ErrorPanel({
+  message,
+  onClose,
+}: {
+  message: string;
+  onClose(): void;
+}) {
+  return (
+    <div
+      className="pointer-events-auto flex w-75 items-start gap-2 rounded-lg border border-error/40 bg-panel p-2 text-xs text-error shadow-lg"
+      role="alert"
+    >
+      <span className="min-w-0 flex-1">{message}</span>
+      <button
+        className="shrink-0 cursor-pointer rounded p-0.5 text-error hover:bg-button-hover"
+        type="button"
+        aria-label="Dismiss error"
+        onClick={onClose}
+      >
+        <svg
+          aria-hidden="true"
+          className="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <path d="m6 6 12 12" />
+          <path d="m18 6-12 12" />
+        </svg>
+      </button>
+    </div>
+  );
 }
