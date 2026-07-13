@@ -27,7 +27,7 @@ export function ExternalAudioPanel({
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
   const [volume, setVolume] = useState(100);
-  const [status, setStatus] = useState("YouTube audio is active"); // TODO: Reserve status for actionable errors.
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     const audio = document.createElement("audio");
@@ -77,7 +77,7 @@ export function ExternalAudioPanel({
     setEnabled(false);
     setCurrentTime(0);
     setDuration(undefined);
-    setStatus("Ready; YouTube audio is active");
+    setError(undefined);
   }
 
   function changeVolume(nextVolume: number) {
@@ -93,25 +93,25 @@ export function ExternalAudioPanel({
       sync.destroy();
       syncRef.current = null;
       setEnabled(false);
-      setStatus("YouTube audio is active");
+      setError(undefined);
       return;
     }
 
     const video = getVideo();
     const audio = audioRef.current;
     if (!video || !audio) {
-      setStatus("YouTube video element not found");
+      setError("Video source not found");
       return;
     }
 
     const nextSync = new PlayerSync(video, audio, (error) => {
-      setStatus(`Playback failed: ${String(error)}`);
+      setError(`Playback failed: ${String(error)}`);
     });
     nextSync.enable();
     syncRef.current = nextSync;
     setCurrentTime(audio.currentTime);
     setEnabled(true);
-    setStatus("External audio is active");
+    setError(undefined);
   }
 
   return (
@@ -159,7 +159,11 @@ export function ExternalAudioPanel({
         />
         <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
       </label>
-      <div className="mt-2 truncate text-muted-foreground">{status}</div>
+      {error && (
+        <div className="mt-2 text-error" role="alert">
+          {error}
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"

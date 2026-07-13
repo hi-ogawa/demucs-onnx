@@ -10,6 +10,7 @@
   --color-button-border: var(--button-border);
   --color-accent: var(--accent);
   --color-accent-border: var(--accent-border);
+  --color-error: var(--error);
 }
 
 :root,
@@ -23,6 +24,7 @@
   --button-border: #c6c6c6;
   --accent: #065fd4;
   --accent-border: #3ea6ff;
+  --error: #cc0000;
 }
 
 .dark,
@@ -36,4 +38,5 @@
   --button-border: #666;
   --accent: #065fd4;
   --accent-border: #3ea6ff;
+  --error: #ff4e45;
 }
