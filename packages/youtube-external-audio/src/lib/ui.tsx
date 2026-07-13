@@ -1,17 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { PlayerSync, type VideoClock } from "./player-sync.ts";
 
-function formatTime(seconds: number | undefined) {
-  if (seconds === undefined || !Number.isFinite(seconds)) {
-    return "--:--";
-  }
-
-  const totalSeconds = Math.floor(seconds);
-  const minutes = Math.floor(totalSeconds / 60);
-  const remainder = totalSeconds % 60;
-  return `${minutes}:${String(remainder).padStart(2, "0")}`;
-}
-
 interface PanelViewProps {
   fileName?: string;
   enabled: boolean;
@@ -22,37 +11,6 @@ interface PanelViewProps {
   onChooseFile(file: File | undefined): void;
   onToggle(): void;
   onVolumeChange(volume: number): void;
-}
-
-export function Fab({ open, onClick }: { open: boolean; onClick(): void }) {
-  const label = open
-    ? "Hide external audio controls"
-    : "Show external audio controls";
-
-  return (
-    <button
-      className={`pointer-events-auto fixed right-4 bottom-4 flex size-10 cursor-pointer items-center justify-center rounded-full border-0 shadow-lg ${open ? "bg-accent text-white" : "bg-foreground text-panel"}`}
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-    >
-      <svg
-        aria-hidden="true"
-        className="size-5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M11 5 6 9H2v6h4l5 4V5Z" />
-        <path d="M15 9.5a4 4 0 0 1 0 5" />
-        <path d="M18 7a7 7 0 0 1 0 10" />
-      </svg>
-    </button>
-  );
 }
 
 export function PanelView({
@@ -244,4 +202,46 @@ export function Panel({
       onVolumeChange={changeVolume}
     />
   );
+}
+
+export function Fab({ open, onClick }: { open: boolean; onClick(): void }) {
+  const label = open
+    ? "Hide external audio controls"
+    : "Show external audio controls";
+
+  return (
+    <button
+      className={`pointer-events-auto fixed right-4 bottom-4 flex size-10 cursor-pointer items-center justify-center rounded-full border-0 shadow-lg ${open ? "bg-accent text-white" : "bg-foreground text-panel"}`}
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+    >
+      <svg
+        aria-hidden="true"
+        className="size-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+        <path d="M15 9.5a4 4 0 0 1 0 5" />
+        <path d="M18 7a7 7 0 0 1 0 10" />
+      </svg>
+    </button>
+  );
+}
+
+function formatTime(seconds: number | undefined) {
+  if (seconds === undefined || !Number.isFinite(seconds)) {
+    return "--:--";
+  }
+
+  const totalSeconds = Math.floor(seconds);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainder = totalSeconds % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
