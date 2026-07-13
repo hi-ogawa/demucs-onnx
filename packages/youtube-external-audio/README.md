@@ -37,4 +37,4 @@ follows the resulting media events.
 
 The YouTube content-script integration patterns are adapted from
 [Zamak (ytsub-v5)](https://github.com/hi-ogawa/ytsub-v5), as documented next
-to the adapted lifecycle code in `src/content.ts`.
+to the adapted lifecycle code in `src/content.tsx`.
