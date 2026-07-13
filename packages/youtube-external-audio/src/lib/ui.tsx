@@ -12,7 +12,7 @@ function formatTime(seconds: number | undefined) {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
-interface ExternalAudioPanelViewProps {
+interface PanelViewProps {
   fileName?: string;
   enabled: boolean;
   currentTime?: number;
@@ -24,13 +24,7 @@ interface ExternalAudioPanelViewProps {
   onVolumeChange(volume: number): void;
 }
 
-export function ExternalAudioFab({
-  open,
-  onClick,
-}: {
-  open: boolean;
-  onClick(): void;
-}) {
+export function Fab({ open, onClick }: { open: boolean; onClick(): void }) {
   const label = open
     ? "Hide external audio controls"
     : "Show external audio controls";
@@ -61,7 +55,7 @@ export function ExternalAudioFab({
   );
 }
 
-export function ExternalAudioPanelView({
+export function PanelView({
   fileName,
   enabled,
   currentTime,
@@ -71,7 +65,7 @@ export function ExternalAudioPanelView({
   onChooseFile,
   onToggle,
   onVolumeChange,
-}: ExternalAudioPanelViewProps) {
+}: PanelViewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -135,7 +129,7 @@ export function ExternalAudioPanelView({
   );
 }
 
-export function ExternalAudioPanel({
+export function Panel({
   getVideo,
 }: {
   getVideo: () => VideoClock | null | undefined;
@@ -238,7 +232,7 @@ export function ExternalAudioPanel({
   }
 
   return (
-    <ExternalAudioPanelView
+    <PanelView
       fileName={fileName}
       enabled={enabled}
       currentTime={currentTime}

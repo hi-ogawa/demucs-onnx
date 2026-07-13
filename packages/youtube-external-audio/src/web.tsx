@@ -1,12 +1,8 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
-import {
-  ExternalAudioFab,
-  ExternalAudioPanel,
-  ExternalAudioPanelView,
-} from "./lib/external-audio-panel.tsx";
 import type { VideoClock } from "./lib/player-sync.ts";
+import { Fab, Panel, PanelView } from "./lib/ui.tsx";
 
 class FakeVideo extends EventTarget implements VideoClock {
   currentTime = 0;
@@ -56,7 +52,7 @@ function Web() {
               open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
             }
           >
-            <ExternalAudioPanelView
+            <PanelView
               fileName="preview-audio.wav"
               enabled
               currentTime={84}
@@ -73,13 +69,10 @@ function Web() {
               open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
             }
           >
-            <ExternalAudioPanel getVideo={() => fakeVideo} />
+            <Panel getVideo={() => fakeVideo} />
           </div>
         )}
-        <ExternalAudioFab
-          open={open}
-          onClick={() => setOpen((value) => !value)}
-        />
+        <Fab open={open} onClick={() => setOpen((value) => !value)} />
       </div>
     </main>
   );

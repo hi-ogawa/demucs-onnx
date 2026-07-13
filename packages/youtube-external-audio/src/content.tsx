@@ -1,10 +1,7 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
-import {
-  ExternalAudioFab,
-  ExternalAudioPanel,
-} from "./lib/external-audio-panel.tsx";
+import { Fab, Panel } from "./lib/ui.tsx";
 
 const HOST_ID = "youtube-external-audio-host";
 const PANEL_OPEN_KEY = "youtube-external-audio:panel-open";
@@ -64,9 +61,9 @@ function App({ videoId }: { videoId: string }) {
           open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
         }
       >
-        <ExternalAudioPanel getVideo={getMainVideo} />
+        <Panel getVideo={getMainVideo} />
       </div>
-      <ExternalAudioFab open={open} onClick={toggleOpen} />
+      <Fab open={open} onClick={toggleOpen} />
     </>
   );
 }
