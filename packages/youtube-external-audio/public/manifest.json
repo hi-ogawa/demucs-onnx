@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube External Audio Prototype",
+  "version": "0.0.1",
+  "description": "Replace a YouTube video's audio with a synchronized local audio file.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

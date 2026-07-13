@@ -1,0 +1,64 @@
+:host {
+  color-scheme: light dark;
+  font-family: "Roboto", "Arial", sans-serif;
+}
+
+.panel {
+  box-sizing: border-box;
+  width: 300px;
+  padding: 12px;
+  border: 1px solid light-dark(#d0d0d0, #555);
+  border-radius: 10px;
+  background: light-dark(#fff, #212121);
+  color: light-dark(#0f0f0f, #f1f1f1);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 24%);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.title {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.file-name,
+.status {
+  overflow: hidden;
+  margin-top: 8px;
+  color: light-dark(#606060, #aaa);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid light-dark(#c6c6c6, #666);
+  border-radius: 7px;
+  background: light-dark(#f2f2f2, #3f3f3f);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+button:hover:not(:disabled) {
+  background: light-dark(#e5e5e5, #515151);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+button[data-active="true"] {
+  border-color: #3ea6ff;
+  background: #065fd4;
+  color: #fff;
+}
