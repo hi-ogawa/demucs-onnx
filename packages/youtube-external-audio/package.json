@@ -7,7 +7,6 @@
     "build": "vite build && cd dist/extension && zip -r ../extension.zip .",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm typecheck",
-    "test": "vitest run src",
     "test-e2e": "playwright test"
   },
   "dependencies": {

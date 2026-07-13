@@ -3,25 +3,6 @@ import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
 import { PlayerSync } from "./player-sync.ts";
 
-const HOST_ID = "youtube-external-audio-host";
-
-interface MountedController {
-  cleanup(): void;
-}
-
-function isWatchPage() {
-  return (
-    location.pathname === "/watch" &&
-    new URL(location.href).searchParams.has("v")
-  );
-}
-
-function getMainVideo() {
-  return document.querySelector<HTMLVideoElement>(
-    "video.html5-main-video, video",
-  );
-}
-
 function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -120,6 +101,25 @@ function App() {
         onChange={(event) => chooseFile(event.target.files?.[0])}
       />
     </div>
+  );
+}
+
+const HOST_ID = "youtube-external-audio-host";
+
+interface MountedController {
+  cleanup(): void;
+}
+
+function isWatchPage() {
+  return (
+    location.pathname === "/watch" &&
+    new URL(location.href).searchParams.has("v")
+  );
+}
+
+function getMainVideo() {
+  return document.querySelector<HTMLVideoElement>(
+    "video.html5-main-video, video",
   );
 }
 
