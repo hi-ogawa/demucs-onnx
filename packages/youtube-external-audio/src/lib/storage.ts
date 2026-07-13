@@ -8,7 +8,6 @@ export interface StoredAudio {
 
 export interface VideoState {
   panelOpen: boolean;
-  volume: number;
 }
 
 interface StoredVideoStates {
@@ -18,7 +17,6 @@ interface StoredVideoStates {
 const VIDEO_STATE_KEY = "youtube-external-audio:video-state:v1";
 const DEFAULT_VIDEO_STATE: VideoState = {
   panelOpen: false,
-  volume: 100,
 };
 
 const audioStore = new IdbStore<StoredAudio>({

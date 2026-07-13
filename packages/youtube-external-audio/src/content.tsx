@@ -14,6 +14,7 @@ interface MountedController {
 }
 
 interface YouTubePlayer extends HTMLElement {
+  getVolume?(): number;
   isMuted?(): boolean;
   mute?(): void;
   unMute?(): void;
@@ -61,6 +62,13 @@ class YouTubeVideoClock implements VideoClock {
 
   set playbackRate(value: number) {
     this.video.playbackRate = value;
+  }
+
+  get volume() {
+    const volume = this.player?.getVolume?.();
+    return typeof volume === "number"
+      ? Math.max(0, Math.min(1, volume / 100))
+      : this.video.volume;
   }
 
   addEventListener(

@@ -60,9 +60,7 @@ export function Panel({
   const [selectedAudio, setSelectedAudio] = useState(
     initialSelectedAudio ?? undefined,
   );
-  const [volume, setVolume] = useState(
-    () => videoStorage.getState(videoId).volume,
-  );
+  const [volume, setVolume] = useState(100);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -81,15 +79,18 @@ export function Panel({
     const updateDuration = () => {
       setDuration(Number.isFinite(audio.duration) ? audio.duration : undefined);
     };
+    const updateVolume = () => setVolume(Math.round(audio.volume * 100));
     audio.addEventListener("timeupdate", updateTime);
     audio.addEventListener("loadedmetadata", updateDuration);
     audio.addEventListener("durationchange", updateDuration);
+    audio.addEventListener("volumechange", updateVolume);
 
     return () => {
       syncRef.current?.destroy();
       audio.removeEventListener("timeupdate", updateTime);
       audio.removeEventListener("loadedmetadata", updateDuration);
       audio.removeEventListener("durationchange", updateDuration);
+      audio.removeEventListener("volumechange", updateVolume);
       audio.removeAttribute("src");
       audio.load();
     };
@@ -128,7 +129,6 @@ export function Panel({
 
   function changeVolume(nextVolume: number) {
     setVolume(nextVolume);
-    videoStorage.updateState(videoId, { volume: nextVolume });
     if (audioRef.current) {
       audioRef.current.volume = nextVolume / 100;
     }
@@ -156,7 +156,6 @@ export function Panel({
     });
     nextSync.enable();
     syncRef.current = nextSync;
-    setCurrentTime(audio.currentTime);
     setEnabled(true);
   }
 

@@ -3,11 +3,13 @@ export interface VideoClock extends EventTarget {
   muted: boolean;
   paused: boolean;
   playbackRate: number;
+  readonly volume: number;
 }
 
 export interface ReplacementAudio {
   currentTime: number;
   playbackRate: number;
+  volume: number;
   play(): Promise<void>;
   pause(): void;
 }
@@ -39,9 +41,10 @@ export class PlayerSync {
 
     this.#originalMuted = this.video.muted;
     this.#enabled = true;
-    this.video.muted = true;
     this.#alignTime();
     this.#alignRate();
+    this.#alignVolume();
+    this.video.muted = true;
 
     if (!this.video.paused) {
       void this.#play();
@@ -112,6 +115,10 @@ export class PlayerSync {
 
   #alignRate() {
     this.audio.playbackRate = this.video.playbackRate;
+  }
+
+  #alignVolume() {
+    this.audio.volume = this.#originalMuted ? 0 : this.video.volume;
   }
 
   async #play() {

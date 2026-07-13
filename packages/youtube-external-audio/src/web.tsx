@@ -11,6 +11,7 @@ class FakeVideo extends EventTarget implements VideoClock {
   muted = false;
   paused = true;
   playbackRate = 1;
+  volume = 0.8;
 }
 
 const fakeVideo = new FakeVideo();
