@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { PlayerSync, type VideoClock } from "./player-sync.ts";
 import { type StoredAudio, videoStorage } from "./storage.ts";
@@ -12,7 +12,7 @@ export function StoredPanel({
   getVideo: () => VideoClock | null | undefined;
   onError(message: string): void;
 }) {
-  const storedAudioQuery = useQuery({
+  const storedAudioQuery = useSuspenseQuery({
     queryKey: ["stored-audio", videoId],
     queryFn: async () => {
       try {
@@ -33,19 +33,11 @@ export function StoredPanel({
     },
   });
 
-  if (storedAudioQuery.isPending) {
-    return (
-      <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-muted-foreground shadow-lg">
-        Loading saved audio...
-      </div>
-    );
-  }
-
   return (
     <Panel
       videoId={videoId}
       getVideo={getVideo}
-      initialSelectedAudio={storedAudioQuery.data ?? null}
+      initialSelectedAudio={storedAudioQuery.data}
       onSelectAudio={storeAudioMutation.mutate}
       onError={onError}
     />
