@@ -24,9 +24,7 @@ function createSilentWav(durationSeconds: number) {
   return buffer;
 }
 
-// TODO: Cover only FAB loading and audio upload; avoid assertions against the
-// real video player's playback state so this test remains stable.
-test("injects, replaces audio, and survives YouTube navigation", async () => {
+test("loads the FAB, uploads audio, and survives YouTube navigation", async () => {
   const extensionPath = path.resolve("dist/extension");
   const context = await chromium.launchPersistentContext("", {
     channel: "chromium",
@@ -45,6 +43,9 @@ test("injects, replaces audio, and survives YouTube navigation", async () => {
 
     const host = page.locator("#youtube-external-audio-host");
     await expect(host).toBeAttached({ timeout: 15_000 });
+    await host
+      .getByRole("button", { name: "Show external audio controls" })
+      .click();
     await expect(
       host.getByText("External audio", { exact: true }),
     ).toBeVisible();
@@ -54,24 +55,7 @@ test("injects, replaces audio, and survives YouTube navigation", async () => {
       mimeType: "audio/wav",
       buffer: createSilentWav(240),
     });
-
-    const video = page.locator("video.html5-main-video");
-    const originallyMuted = await video.evaluate(
-      (element) => (element as HTMLVideoElement).muted,
-    );
-    await host.getByRole("button", { name: "Enable" }).click();
-    await expect
-      .poll(() =>
-        video.evaluate((element) => (element as HTMLVideoElement).muted),
-      )
-      .toBe(true);
-
-    await host.getByRole("button", { name: "Disable" }).click();
-    await expect
-      .poll(() =>
-        video.evaluate((element) => (element as HTMLVideoElement).muted),
-      )
-      .toBe(originallyMuted);
+    await expect(host.getByText("silent.wav", { exact: true })).toBeVisible();
 
     await page.evaluate(() => {
       document.dispatchEvent(new Event("yt-navigate-start"));
@@ -80,7 +64,7 @@ test("injects, replaces audio, and survives YouTube navigation", async () => {
     });
     await expect(host).toBeAttached();
     await expect(
-      host.getByText("No audio selected", { exact: true }),
+      host.getByRole("button", { name: "Show external audio controls" }),
     ).toBeVisible();
   } finally {
     await context.close();

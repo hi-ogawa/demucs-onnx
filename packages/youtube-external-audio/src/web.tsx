@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import {
+  ExternalAudioFab,
   ExternalAudioPanel,
   ExternalAudioPanelView,
 } from "./lib/external-audio-panel.tsx";
@@ -19,6 +20,7 @@ const fakeVideo = new FakeVideo();
 // TODO: Add Playwright coverage for the standalone panel preview.
 function Web() {
   const [dark, setDark] = useState(false);
+  const [open, setOpen] = useState(true);
   const [enabledPreview, setEnabledPreview] = useState(false);
   const [previewVolume, setPreviewVolume] = useState(80);
 
@@ -49,19 +51,35 @@ function Web() {
         {/* TODO: Replace the fake clock with manual video upload or a YouTube
             IFrame API adapter when transport testing is in scope. */}
         {enabledPreview ? (
-          <ExternalAudioPanelView
-            fileName="preview-audio.wav"
-            enabled
-            currentTime={84}
-            duration={258}
-            volume={previewVolume}
-            onChooseFile={() => {}}
-            onToggle={() => setEnabledPreview(false)}
-            onVolumeChange={setPreviewVolume}
-          />
+          <div
+            className={
+              open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
+            }
+          >
+            <ExternalAudioPanelView
+              fileName="preview-audio.wav"
+              enabled
+              currentTime={84}
+              duration={258}
+              volume={previewVolume}
+              onChooseFile={() => {}}
+              onToggle={() => setEnabledPreview(false)}
+              onVolumeChange={setPreviewVolume}
+            />
+          </div>
         ) : (
-          <ExternalAudioPanel getVideo={() => fakeVideo} />
+          <div
+            className={
+              open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
+            }
+          >
+            <ExternalAudioPanel getVideo={() => fakeVideo} />
+          </div>
         )}
+        <ExternalAudioFab
+          open={open}
+          onClick={() => setOpen((value) => !value)}
+        />
       </div>
     </main>
   );

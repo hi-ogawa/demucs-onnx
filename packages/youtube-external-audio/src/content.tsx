@@ -1,9 +1,13 @@
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
-import { ExternalAudioPanel } from "./lib/external-audio-panel.tsx";
+import {
+  ExternalAudioFab,
+  ExternalAudioPanel,
+} from "./lib/external-audio-panel.tsx";
 
 const HOST_ID = "youtube-external-audio-host";
+const PANEL_OPEN_KEY = "youtube-external-audio:panel-open";
 
 interface MountedController {
   cleanup(): void;
@@ -16,21 +20,66 @@ function isWatchPage() {
   );
 }
 
+function getVideoId() {
+  return new URL(location.href).searchParams.get("v");
+}
+
 function getMainVideo() {
   return document.querySelector<HTMLVideoElement>(
     "video.html5-main-video, video",
   );
 }
 
-function createUi(): MountedController {
+function readPanelOpenState() {
+  try {
+    const value = localStorage.getItem(PANEL_OPEN_KEY);
+    return value ? (JSON.parse(value) as Record<string, boolean>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function App({ videoId }: { videoId: string }) {
+  const [open, setOpen] = useState(
+    () => readPanelOpenState()[videoId] ?? false,
+  );
+
+  const toggleOpen = () => {
+    setOpen((currentOpen) => {
+      const nextOpen = !currentOpen;
+      try {
+        localStorage.setItem(
+          PANEL_OPEN_KEY,
+          JSON.stringify({ ...readPanelOpenState(), [videoId]: nextOpen }),
+        );
+      } catch {}
+      return nextOpen;
+    });
+  };
+
+  return (
+    <>
+      <div
+        className={
+          open ? "pointer-events-auto fixed right-4 bottom-18" : "hidden"
+        }
+      >
+        <ExternalAudioPanel getVideo={getMainVideo} />
+      </div>
+      <ExternalAudioFab open={open} onClick={toggleOpen} />
+    </>
+  );
+}
+
+function createUi(videoId: string): MountedController {
   const host = document.createElement("div");
   host.id = HOST_ID;
   Object.assign(host.style, {
     all: "initial",
     position: "fixed",
-    right: "16px",
-    bottom: "72px",
+    inset: "0",
     zIndex: "2147483647",
+    pointerEvents: "none",
     fontFamily: "'Roboto', 'Arial', sans-serif",
   });
 
@@ -59,7 +108,7 @@ function createUi(): MountedController {
   const root = createRoot(container);
   root.render(
     <StrictMode>
-      <ExternalAudioPanel getVideo={getMainVideo} />
+      <App videoId={videoId} />
     </StrictMode>,
   );
 
@@ -72,7 +121,7 @@ function createUi(): MountedController {
   };
 }
 
-function mountWhenVideoIsReady(): MountedController {
+function mountWhenVideoIsReady(videoId: string): MountedController {
   let mounted: MountedController | undefined;
 
   const mount = () => {
@@ -81,7 +130,7 @@ function mountWhenVideoIsReady(): MountedController {
     }
     if (getMainVideo()) {
       observer.disconnect();
-      mounted = createUi();
+      mounted = createUi(videoId);
     }
   };
 
@@ -109,8 +158,9 @@ function remove() {
 
 function inject() {
   remove();
-  if (isWatchPage()) {
-    current = mountWhenVideoIsReady();
+  const videoId = getVideoId();
+  if (isWatchPage() && videoId) {
+    current = mountWhenVideoIsReady(videoId);
   }
 }
 
