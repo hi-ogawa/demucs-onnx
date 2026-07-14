@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "fallow": "^3.3.0",
-    "pkg-pr-new": "0.0.78",
+    "pkg-pr-new": "0.0.75",
     "typescript": "^7.0.2",
     "vite-plus": "^0.2.4",
     "wasm-pack": "0.15.0",
