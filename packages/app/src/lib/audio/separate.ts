@@ -11,7 +11,6 @@ import {
   MODEL_INPUT_LENGTH,
   MODEL_OUTPUT_LENGTH,
   MODEL_SEGMENT,
-  SOURCES,
 } from "./constants";
 import { readModelFile, type ModelFilename, type ModelSource } from "./models";
 
@@ -151,12 +150,18 @@ export async function separate(
     req.right,
     host,
   );
-  const names = req.twoStems
-    ? [req.twoStems.source, `no_${req.twoStems.source}`]
-    : SOURCES;
-  return names.map((name, index) => ({
+  const stem = (name: string, index: number): SeparatedStem => ({
     name,
     left: tracks[2 * index],
     right: tracks[2 * index + 1],
-  }));
+  });
+  if (req.twoStems) {
+    return [stem(`no_${req.twoStems.source}`, 1), stem(req.twoStems.source, 0)];
+  }
+  return [
+    stem("vocals", 3),
+    stem("drums", 0),
+    stem("bass", 1),
+    stem("other", 2),
+  ];
 }

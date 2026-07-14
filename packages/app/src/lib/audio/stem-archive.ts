@@ -5,22 +5,6 @@ export interface StemFile {
   blob: Blob;
 }
 
-export function orderStemFiles<T extends { name: string }>(
-  stems: T[],
-  twoStemSource: string | null,
-): T[] {
-  if (!twoStemSource) {
-    return stems;
-  }
-
-  const order = [`no_${twoStemSource}`, twoStemSource];
-  const rank = (name: string) => {
-    const index = order.indexOf(name);
-    return index === -1 ? order.length : index;
-  };
-  return [...stems].sort((a, b) => rank(a.name) - rank(b.name));
-}
-
 export function toStemArchiveFilename(inputFilename: string): string {
   const basename = inputFilename.replaceAll(".", "_");
   return `${basename || "demucs"}.stems.zip`;

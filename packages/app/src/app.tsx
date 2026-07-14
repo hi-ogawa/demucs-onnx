@@ -15,7 +15,6 @@ import type { SeparateRequest } from "./lib/audio/separate";
 import {
   createStemArchive,
   downloadBlob,
-  orderStemFiles,
   toStemArchiveFilename,
 } from "./lib/audio/stem-archive";
 import { encodeWavF32 } from "./lib/audio/wav";
@@ -152,8 +151,7 @@ export function App() {
             progress ? updateRunProgress(progress, event, at) : progress,
           ),
       });
-      const orderedOutputs = orderStemFiles(separated, twoStems);
-      const nextOutputs = orderedOutputs.map((output) => {
+      const nextOutputs = separated.map((output) => {
         const blob = encodeWavF32(
           [output.left, output.right],
           AUDIO_SAMPLE_RATE,
