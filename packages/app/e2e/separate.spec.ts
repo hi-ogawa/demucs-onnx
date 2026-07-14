@@ -34,7 +34,7 @@ test("separates a clip fully client-side", async ({ page }) => {
   });
   await expect(page.getByTestId("timing-summary")).toContainText("Inference");
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("sine-2s.stems.zip");
+  expect(download.suggestedFilename()).toBe("sine-2s_wav.stems.zip");
 
   const stems = page.locator("#stems > div");
   await expect(stems).toHaveCount(2);
@@ -44,5 +44,5 @@ test("separates a clip fully client-side", async ({ page }) => {
   await expect(page.locator("#stems a")).toHaveCount(2);
   await expect(
     page.getByRole("link", { name: "Download ZIP" }),
-  ).toHaveAttribute("download", "sine-2s.stems.zip");
+  ).toHaveAttribute("download", "sine-2s_wav.stems.zip");
 });

@@ -21,11 +21,9 @@ export function orderStemFiles<T extends { name: string }>(
   return [...stems].sort((a, b) => rank(a.name) - rank(b.name));
 }
 
-export function stemArchiveFilename(inputFilename: string): string {
-  const extensionIndex = inputFilename.lastIndexOf(".");
-  const basename =
-    extensionIndex > 0 ? inputFilename.slice(0, extensionIndex) : inputFilename;
-  return `${basename || "stems"}.stems.zip`;
+export function toStemArchiveFilename(inputFilename: string): string {
+  const basename = inputFilename.replaceAll(".", "_");
+  return `${basename || "demucs"}.stems.zip`;
 }
 
 export async function createStemArchive(stems: StemFile[]): Promise<Blob> {

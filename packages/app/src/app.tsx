@@ -16,7 +16,7 @@ import {
   createStemArchive,
   downloadBlob,
   orderStemFiles,
-  stemArchiveFilename,
+  toStemArchiveFilename,
 } from "./lib/audio/stem-archive";
 import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
@@ -166,7 +166,7 @@ export function App() {
       const durationMs = performance.now() - started;
       const archiveBlob = await createStemArchive(nextOutputs);
       const archive = {
-        name: stemArchiveFilename(decodedAudio.name),
+        name: toStemArchiveFilename(decodedAudio.name),
         url: URL.createObjectURL(archiveBlob),
       };
       outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
