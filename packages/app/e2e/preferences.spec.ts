@@ -19,7 +19,7 @@ test("restores and updates configuration preferences", async ({ page }) => {
   await expect(page.locator("#method")).toHaveValue("minus");
   await expect(page.locator("#method")).toBeEnabled();
   await expect(page.locator("#outputSummary")).toContainText(
-    "Creates bass.wav and no_bass.wav.",
+    "Creates bass.wav and backing.wav.",
   );
   await expect(page.locator("#shifts")).toHaveValue("3");
   await expect(page.getByLabel("Select htdemucs_ft_bass.onnx")).toBeAttached();
