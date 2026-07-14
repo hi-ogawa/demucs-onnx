@@ -7,3 +7,5 @@ allowBuilds:
   sharp: false
   wasm-pack: true
   workerd: false
+minimumReleaseAgeExclude:
+  - pkg-pr-new@0.0.78
