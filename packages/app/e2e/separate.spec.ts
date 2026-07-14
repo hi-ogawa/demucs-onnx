@@ -19,7 +19,6 @@ test("separates a clip fully client-side", async ({ page }) => {
   ).toHaveCount(2);
   await page.setInputFiles("#file", FIXTURE);
   await expect(page.locator("#audio-status")).toContainText("Decoded: 2.00s");
-  await page.selectOption("#twoStems", "bass");
 
   const downloadPromise = page.waitForEvent("download");
   await page.click("#run");
@@ -37,11 +36,12 @@ test("separates a clip fully client-side", async ({ page }) => {
   expect(download.suggestedFilename()).toBe("sine-2s_wav.stems.zip");
 
   const stems = page.locator("#stems > div");
-  await expect(stems).toHaveCount(2);
-  await expect(stems.nth(0)).toContainText("no_bass");
-  await expect(stems.nth(1)).toContainText("bass");
-  await expect(page.locator("#stems audio")).toHaveCount(2);
-  await expect(page.locator("#stems a")).toHaveCount(2);
+  await expect(stems).toHaveCount(4);
+  for (const name of ["drums", "bass", "other", "vocals"]) {
+    await expect(page.locator("#stems")).toContainText(name);
+  }
+  await expect(page.locator("#stems audio")).toHaveCount(4);
+  await expect(page.locator("#stems a")).toHaveCount(4);
   await expect(
     page.getByRole("link", { name: "Download ZIP" }),
   ).toHaveAttribute("download", "sine-2s_wav.stems.zip");
