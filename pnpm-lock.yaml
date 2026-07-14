@@ -27,6 +27,8 @@ importers:
         specifier: 4.110.0
         version: 4.110.0
 
+  crates/wasm: {}
+
   packages/app:
     dependencies:
       '@tanstack/react-query':
@@ -51,6 +53,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@hiogawa/demucs-onnx-wasm':
+        specifier: workspace:*
+        version: link:../../crates/wasm
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1

@@ -1,0 +1,9 @@
+{
+  "name": "@hiogawa/demucs-onnx-wasm",
+  "version": "0.0.0",
+  "files": [
+    "pkg"
+  ],
+  "type": "module",
+  "exports": "./pkg/demucs_wasm.js"
+}
