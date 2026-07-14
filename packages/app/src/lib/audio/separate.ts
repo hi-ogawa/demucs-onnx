@@ -150,18 +150,20 @@ export async function separate(
     req.right,
     host,
   );
-  const stem = (name: string, index: number): SeparatedStem => ({
+  const stemOrder: { name: string; index: number }[] = req.twoStems
+    ? [
+        { name: `no_${req.twoStems.source}`, index: 1 },
+        { name: req.twoStems.source, index: 0 },
+      ]
+    : [
+        { name: "vocals", index: 3 },
+        { name: "drums", index: 0 },
+        { name: "bass", index: 1 },
+        { name: "other", index: 2 },
+      ];
+  return stemOrder.map(({ name, index }) => ({
     name,
     left: tracks[2 * index],
     right: tracks[2 * index + 1],
-  });
-  if (req.twoStems) {
-    return [stem(`no_${req.twoStems.source}`, 1), stem(req.twoStems.source, 0)];
-  }
-  return [
-    stem("vocals", 3),
-    stem("drums", 0),
-    stem("bass", 1),
-    stem("other", 2),
-  ];
+  }));
 }
