@@ -8,5 +8,8 @@
   "exports": "./pkg/demucs_wasm.js",
   "scripts": {
     "build": "wasm-pack build . --target web --no-pack --release && rm -f pkg/.gitignore"
+  },
+  "devDependencies": {
+    "wasm-pack": "0.15.0"
   }
 }
