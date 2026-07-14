@@ -1,4 +1,4 @@
-import { downloadZip } from "client-zip";
+import JSZip from "jszip";
 
 export interface StemFile {
   name: string;
@@ -29,12 +29,11 @@ export function stemArchiveFilename(inputFilename: string): string {
 }
 
 export async function createStemArchive(stems: StemFile[]): Promise<Blob> {
-  return downloadZip(
-    stems.map((stem) => ({
-      name: `${stem.name}.wav`,
-      input: stem.blob,
-    })),
-  ).blob();
+  const zip = new JSZip();
+  for (const stem of stems) {
+    zip.file(`${stem.name}.wav`, stem.blob, { compression: "STORE" });
+  }
+  return zip.generateAsync({ type: "blob", compression: "STORE" });
 }
 
 export function downloadBlob(url: string, filename: string): void {
