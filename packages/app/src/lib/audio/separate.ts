@@ -1,12 +1,12 @@
+import init, {
+  separate as separateWasm,
+  type Host,
+} from "@hiogawa/demucs-onnx-wasm";
 import ortWasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.mjs?url";
 import ortWasmUrl from "onnxruntime-web/ort-wasm-simd-threaded.wasm?url";
 // Browser capabilities plugged into the Rust/WASM separation driver. The worker owns
 // messaging; this module owns fetch and onnxruntime-web only.
 import * as ort from "onnxruntime-web/wasm";
-import init, {
-  separate as separateWasm,
-  type Host,
-} from "../../../../../crates/wasm/pkg/demucs_wasm.js";
 import {
   MODEL_INPUT_LENGTH,
   MODEL_OUTPUT_LENGTH,
