@@ -21,7 +21,7 @@ test("separates a clip fully client-side", async ({ page }) => {
   await expect(page.locator("#audio-status")).toContainText("Decoded: 2.00s");
   await page.selectOption("#twoStems", "bass");
 
-  const downloadPromise = page.waitForEvent("download", { timeout: 300_000 });
+  const downloadPromise = page.waitForEvent("download");
   await page.click("#run");
   await expect(
     page.getByRole("progressbar", { name: "Overall separation progress" }),
