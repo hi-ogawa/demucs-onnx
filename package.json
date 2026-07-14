@@ -15,11 +15,15 @@
     "build-cf": "(command -v cargo >/dev/null || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal) && PATH=\"$HOME/.cargo/bin:$PATH\" pnpm build",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
-    "lint": "cargo fmt --all && vp check --fix && pnpm -C packages/app lint",
-    "lint-check": "cargo fmt --all -- --check && vp check && pnpm -C packages/app lint",
+    "typecheck": "tsc -b packages/app",
+    "lint-dead-code": "fallow dead-code --root packages/app --unused-exports --unused-types",
+    "lint": "cargo fmt --all && vp check --fix && pnpm lint-dead-code && pnpm typecheck",
+    "lint-check": "cargo fmt --all -- --check && vp check && pnpm lint-dead-code && pnpm typecheck",
     "test-e2e": "pnpm -C packages/app test-e2e"
   },
   "devDependencies": {
+    "fallow": "^3.3.0",
+    "typescript": "^7.0.2",
     "vite-plus": "^0.2.4",
     "wasm-pack": "0.15.0",
     "wrangler": "4.110.0"
