@@ -1,6 +1,7 @@
 import { AUDIO_SAMPLE_RATE } from "./constants";
 
 export interface DecodedAudio {
+  name: string;
   left: Float32Array;
   right: Float32Array;
   duration: number;
@@ -19,6 +20,7 @@ export async function decodeAudioFile(file: File): Promise<DecodedAudio> {
   const right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
 
   return {
+    name: file.name,
     left,
     right,
     duration: buffer.duration,

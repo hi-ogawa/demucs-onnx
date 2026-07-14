@@ -20,6 +20,7 @@ test("separates a clip fully client-side", async ({ page }) => {
   await page.setInputFiles("#file", FIXTURE);
   await expect(page.locator("#audio-status")).toContainText("Decoded: 2.00s");
 
+  const downloadPromise = page.waitForEvent("download");
   await page.click("#run");
   await expect(
     page.getByRole("progressbar", { name: "Overall separation progress" }),
@@ -31,6 +32,8 @@ test("separates a clip fully client-side", async ({ page }) => {
     timeout: 300_000,
   });
   await expect(page.getByTestId("timing-summary")).toContainText("Inference");
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("sine-2s_wav.stems.zip");
 
   const stems = page.locator("#stems > div");
   await expect(stems).toHaveCount(4);
@@ -39,4 +42,7 @@ test("separates a clip fully client-side", async ({ page }) => {
   }
   await expect(page.locator("#stems audio")).toHaveCount(4);
   await expect(page.locator("#stems a")).toHaveCount(4);
+  await expect(
+    page.getByRole("link", { name: "Download ZIP" }),
+  ).toHaveAttribute("download", "sine-2s_wav.stems.zip");
 });

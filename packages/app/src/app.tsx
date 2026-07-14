@@ -12,6 +12,11 @@ import {
   type ModelSource,
 } from "./lib/audio/models";
 import type { SeparateRequest } from "./lib/audio/separate";
+import {
+  createStemArchive,
+  downloadBlob,
+  toStemArchiveFilename,
+} from "./lib/audio/stem-archive";
 import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
@@ -104,14 +109,9 @@ export function App() {
         : "";
 
   const handleAudioFileMutation = useMutation({
-    mutationFn: async (file: File | undefined) => {
-      if (file) {
-        return decodeAudioFile(file);
-      }
-      return null;
-    },
+    mutationFn: decodeAudioFile,
   });
-  const decodedAudio = handleAudioFileMutation.data ?? null;
+  const decodedAudio = handleAudioFileMutation.data;
 
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
@@ -156,12 +156,22 @@ export function App() {
           [output.left, output.right],
           AUDIO_SAMPLE_RATE,
         );
-        return { ...output, url: URL.createObjectURL(blob) };
+        return { ...output, blob, url: URL.createObjectURL(blob) };
       });
       outputCleanupRef.current = nextOutputs.map(
         (output) => () => URL.revokeObjectURL(output.url),
       );
-      return { outputs: nextOutputs, durationMs: performance.now() - started };
+      const durationMs = performance.now() - started;
+      const archiveBlob = await createStemArchive(nextOutputs);
+      const archive = {
+        name: toStemArchiveFilename(decodedAudio.name),
+        url: URL.createObjectURL(archiveBlob),
+      };
+      outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
+      return { outputs: nextOutputs, archive, durationMs };
+    },
+    onSuccess: ({ archive }) => {
+      downloadBlob(archive.url, archive.name);
     },
     onSettled: (_data, error) => {
       if (error) {
@@ -218,9 +228,12 @@ export function App() {
                 type="file"
                 id="file"
                 accept="audio/*"
-                onChange={(event) =>
-                  handleAudioFileMutation.mutate(event.target.files?.[0])
-                }
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    handleAudioFileMutation.mutate(file);
+                  }
+                }}
               />
               {audioFileStatusText && (
                 <p className="text-muted mt-3.5 text-sm" id="audio-status">
@@ -304,10 +317,10 @@ export function App() {
                     }
                   >
                     <option value="">off</option>
+                    <option>vocals</option>
                     <option>drums</option>
                     <option>bass</option>
                     <option>other</option>
-                    <option>vocals</option>
                   </select>
                 </div>
                 <div className="grid gap-2">
@@ -441,16 +454,25 @@ export function App() {
             className="bg-surface shadow-card min-w-0 rounded-lg border px-5 py-6 sm:p-9"
             aria-labelledby="results-title"
           >
-            <div className="mb-7">
-              <p className="text-primary-strong mb-2.5 text-xs font-extrabold tracking-[0.14em] uppercase">
-                Separation complete
-              </p>
-              <h2
-                className="text-3xl font-semibold tracking-[-0.025em]"
-                id="results-title"
+            <div className="mb-7 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-primary-strong mb-2.5 text-xs font-extrabold tracking-[0.14em] uppercase">
+                  Separation complete
+                </p>
+                <h2
+                  className="text-3xl font-semibold tracking-[-0.025em]"
+                  id="results-title"
+                >
+                  Your stems
+                </h2>
+              </div>
+              <a
+                className="text-primary hover:text-accent shrink-0 text-sm font-semibold underline underline-offset-3"
+                href={handleRunMutation.data?.archive.url}
+                download={handleRunMutation.data?.archive.name}
               >
-                Your stems
-              </h2>
+                Download ZIP
+              </a>
             </div>
             <div className="grid gap-3.5" id="stems">
               {outputs.map((output) => (

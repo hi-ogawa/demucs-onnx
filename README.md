@@ -81,6 +81,8 @@ pnpm dev
 
 Open `http://localhost:5173`, choose a local audio file and the required model files from `data/onnx-lean/`, then run separation. Audio and models stay in the browser.
 
+When separation finishes, the app automatically downloads all generated stems as a source-named archive such as `song_wav.stems.zip`. Individual stem previews and WAV downloads remain available in the results.
+
 Build the static app with:
 
 ```bash
