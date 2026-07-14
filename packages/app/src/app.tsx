@@ -110,14 +110,9 @@ export function App() {
         : "";
 
   const handleAudioFileMutation = useMutation({
-    mutationFn: async (file: File | undefined) => {
-      if (file) {
-        return decodeAudioFile(file);
-      }
-      return null;
-    },
+    mutationFn: decodeAudioFile,
   });
-  const decodedAudio = handleAudioFileMutation.data ?? null;
+  const decodedAudio = handleAudioFileMutation.data;
 
   const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
 
@@ -171,9 +166,7 @@ export function App() {
       const durationMs = performance.now() - started;
       const archiveBlob = await createStemArchive(nextOutputs);
       const archive = {
-        name: stemArchiveFilename(
-          handleAudioFileMutation.variables?.name ?? "stems",
-        ),
+        name: stemArchiveFilename(decodedAudio.name),
         url: URL.createObjectURL(archiveBlob),
       };
       outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
@@ -237,9 +230,12 @@ export function App() {
                 type="file"
                 id="file"
                 accept="audio/*"
-                onChange={(event) =>
-                  handleAudioFileMutation.mutate(event.target.files?.[0])
-                }
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    handleAudioFileMutation.mutate(file);
+                  }
+                }}
               />
               {audioFileStatusText && (
                 <p className="text-muted mt-3.5 text-sm" id="audio-status">
