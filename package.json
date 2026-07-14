@@ -16,7 +16,7 @@
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
     "typecheck": "tsc -b packages/app",
-    "lint-dead-code": "fallow dead-code --root packages/app --unused-exports --unused-types",
+    "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
     "lint": "cargo fmt --all && vp check --fix && pnpm lint-dead-code && pnpm typecheck",
     "lint-check": "cargo fmt --all -- --check && vp check && pnpm lint-dead-code && pnpm typecheck",
     "test-e2e": "pnpm -C packages/app test-e2e"
