@@ -317,10 +317,10 @@ export function App() {
                     }
                   >
                     <option value="">off</option>
+                    <option>vocals</option>
                     <option>drums</option>
                     <option>bass</option>
                     <option>other</option>
-                    <option>vocals</option>
                   </select>
                 </div>
                 <div className="grid gap-2">
