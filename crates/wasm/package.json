@@ -5,5 +5,8 @@
     "pkg"
   ],
   "type": "module",
-  "exports": "./pkg/demucs_wasm.js"
+  "exports": "./pkg/demucs_wasm.js",
+  "scripts": {
+    "build": "wasm-pack build . --target web --no-pack --release && rm -f pkg/.gitignore"
+  }
 }
