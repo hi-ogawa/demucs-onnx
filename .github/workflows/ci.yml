@@ -62,7 +62,7 @@ jobs:
             --two-stems-mix minus \
             fixtures/sine-10s.wav data/ci-output/native
           test -s data/ci-output/native/bass.wav
-          test -s data/ci-output/native/no_bass.wav
+          test -s data/ci-output/native/backing.wav
 
       - run: pnpm build-wasm
 

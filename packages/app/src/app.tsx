@@ -355,7 +355,7 @@ export function App() {
                   {twoStems ? (
                     <>
                       Creates <strong>{twoStems}.wav</strong> and{" "}
-                      <strong>no_{twoStems}.wav</strong>.
+                      <strong>backing.wav</strong>.
                     </>
                   ) : (
                     <>
@@ -481,7 +481,7 @@ export function App() {
                   key={output.name}
                 >
                   <b className="text-xl font-semibold capitalize">
-                    {output.name}
+                    {stemLabel(output.name, twoStems)}
                   </b>
                   <audio
                     className="col-span-full w-full"
@@ -503,6 +503,13 @@ export function App() {
       </div>
     </main>
   );
+}
+
+function stemLabel(name: string, source: string | null): string {
+  if (name === "backing" && source) {
+    return `Backing track (without ${source})`;
+  }
+  return name;
 }
 
 function ModelFileSlot({

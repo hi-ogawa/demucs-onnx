@@ -152,7 +152,7 @@ export async function separate(
   );
   const stemOrder: { name: string; index: number }[] = req.twoStems
     ? [
-        { name: `no_${req.twoStems.source}`, index: 1 },
+        { name: "backing", index: 1 },
         { name: req.twoStems.source, index: 0 },
       ]
     : [

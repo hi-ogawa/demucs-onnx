@@ -39,7 +39,7 @@ pnpm model-release download models-2026-07-11 htdemucs_ft_bass
 pnpm cli-separate --name htdemucs_ft --two-stems bass --two-stems-mix minus data/input/song.wav data/output/song
 ```
 
-This creates `bass.wav` and `no_bass.wav`.
+This creates `bass.wav` and `backing.wav`.
 
 Run the same separation flow through the Rust/WASM driver and
 `onnxruntime-web`'s Node WASM runtime with:

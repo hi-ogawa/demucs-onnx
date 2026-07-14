@@ -83,7 +83,7 @@ impl Source {
 }
 
 /// What a separation yields, exactly; each track is stereo, `[channel][sample]`.
-/// How tracks are spelled (e.g. `no_bass.wav`) is the driver's concern.
+/// How tracks are spelled (e.g. `backing.wav`) is the driver's concern.
 pub enum Outputs {
     /// All four stems, in [`Source::ALL`] order.
     Full([[Vec<f32>; CHANNELS]; NUM_SOURCES]),
