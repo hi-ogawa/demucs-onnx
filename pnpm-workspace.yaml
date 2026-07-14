@@ -1,6 +1,6 @@
 packages:
   - packages/*
-  - crates/wasm/
+  - crates/wasm
 verifyDepsBeforeRun: false
 allowBuilds:
   esbuild: false
