@@ -6,6 +6,7 @@ import { AUDIO_SAMPLE_RATE } from "./lib/audio/constants";
 import { decodeAudioFile } from "./lib/audio/decode";
 import {
   isModelFilename,
+  modelAssetUrl,
   requiredModelFiles,
   type ModelArtifact,
   type ModelFilename,
@@ -360,16 +361,7 @@ export function App() {
                 3. Add models
               </h2>
               <p className="text-muted mb-5.5 leading-relaxed">
-                Download model assets from the{" "}
-                <a
-                  className="text-primary hover:text-accent font-semibold underline underline-offset-3"
-                  href="https://github.com/hi-ogawa/demucs-onnx/releases"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  GitHub Releases page
-                </a>
-                , then select the required files.
+                Download each required model, then select the downloaded file.
               </p>
               <div className="grid gap-2.5">
                 {requiredFiles.map((filename) => (
@@ -496,8 +488,8 @@ function ModelFileSlot({
 }) {
   return (
     <div data-testid="model-file-slot">
-      <label
-        className={`flex min-h-13 cursor-pointer items-center gap-3 rounded-md border px-4 py-3 transition-colors ${
+      <div
+        className={`flex min-h-13 items-center gap-3 rounded-md border px-4 py-3 transition-colors ${
           ready
             ? "border-success-border bg-success-surface hover:bg-success-surface-hover"
             : "border-border-strong bg-surface-muted hover:border-drop-border-hover hover:bg-drop-surface-hover border-dashed"
@@ -516,20 +508,26 @@ function ModelFileSlot({
         <code className="text-foreground min-w-0 flex-1 overflow-hidden text-sm font-semibold text-ellipsis">
           {filename}
         </code>
-        <span className="text-primary-strong shrink-0 text-sm font-bold">
+        <a
+          className="text-primary hover:text-accent shrink-0 text-sm font-semibold underline underline-offset-3"
+          href={modelAssetUrl(filename)}
+        >
+          Download
+        </a>
+        <label className="text-primary-strong shrink-0 cursor-pointer text-sm font-bold">
           {ready ? "Ready" : "Choose file"}
-        </span>
-        <input
-          className="sr-only"
-          type="file"
-          aria-label={`Select ${filename}`}
-          accept={filename.endsWith(".onnx") ? ".onnx" : ".bin"}
-          onChange={(event) => {
-            onSelect([...(event.target.files ?? [])]);
-            event.target.value = "";
-          }}
-        />
-      </label>
+          <input
+            className="sr-only"
+            type="file"
+            aria-label={`Select ${filename}`}
+            accept={filename.endsWith(".onnx") ? ".onnx" : ".bin"}
+            onChange={(event) => {
+              onSelect([...(event.target.files ?? [])]);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
       {error && <p className="text-danger mt-1.5 text-sm">{error}</p>}
     </div>
   );

@@ -7,6 +7,8 @@ const MODEL_FILENAMES = [
   "htdemucs_ft_vocals.onnx",
 ] as const;
 
+const MODEL_RELEASE_TAG = "models-2026-07-11";
+
 export type ModelFilename = (typeof MODEL_FILENAMES)[number];
 
 export type ModelArtifact = { name: ModelFilename; blob: Blob };
@@ -14,6 +16,10 @@ export type ModelSource = { artifacts: ModelArtifact[] };
 
 export function isModelFilename(name: string): name is ModelFilename {
   return MODEL_FILENAMES.includes(name as ModelFilename);
+}
+
+export function modelAssetUrl(filename: ModelFilename): string {
+  return `https://github.com/hi-ogawa/demucs-onnx/releases/download/${MODEL_RELEASE_TAG}/${filename}`;
 }
 
 export function requiredModelFiles(
