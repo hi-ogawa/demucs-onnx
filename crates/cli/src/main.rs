@@ -129,7 +129,7 @@ fn separate(args: SeparateArgs) -> Result<()> {
             complement,
         } => vec![
             (source.name().to_string(), target),
-            (format!("no_{}", source.name()), complement),
+            ("backing".to_string(), complement),
         ],
     };
     std::fs::create_dir_all(&args.out_dir)?;

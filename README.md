@@ -39,7 +39,7 @@ pnpm model-release download models-2026-07-11 htdemucs_ft_bass
 pnpm cli-separate --name htdemucs_ft --two-stems bass --two-stems-mix minus data/input/song.wav data/output/song
 ```
 
-This creates `bass.wav` and `no_bass.wav`.
+This creates `bass.wav` and `backing.wav`.
 
 Run the same separation flow through the Rust/WASM driver and
 `onnxruntime-web`'s Node WASM runtime with:
@@ -80,6 +80,8 @@ pnpm dev
 ```
 
 Open `http://localhost:5173`, choose a local audio file and the required model files from `data/onnx-lean/`, then run separation. Audio and models stay in the browser.
+
+When separation finishes, the app automatically downloads all generated stems as a source-named archive such as `song_wav.stems.zip`. Individual stem previews and WAV downloads remain available in the results.
 
 Build the static app with:
 

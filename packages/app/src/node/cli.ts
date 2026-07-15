@@ -154,9 +154,7 @@ async function main() {
     right,
     host,
   );
-  const names = args.twoStems
-    ? [args.twoStems, `no_${args.twoStems}`]
-    : SOURCES;
+  const names = args.twoStems ? [args.twoStems, "backing"] : SOURCES;
   await mkdir(args.outDir, { recursive: true });
   for (const [index, name] of names.entries()) {
     const path = join(args.outDir, `${name}.wav`);

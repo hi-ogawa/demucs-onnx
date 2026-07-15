@@ -9,19 +9,23 @@
     "build-model": "uv run python tools/model-export/build_models.py",
     "verify-parity": "uv run python tools/model-export/verify_parity.py",
     "model-release": "uv run --no-sync tools/model_release.py",
-    "build-wasm": "wasm-pack build crates/wasm --target web --release",
+    "build-wasm": "pnpm -C crates/wasm build",
     "wasm-separate": "pnpm -C packages/app wasm-separate",
     "build": "pnpm build-wasm && pnpm -C packages/app build",
     "build-cf": "(command -v cargo >/dev/null || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal) && PATH=\"$HOME/.cargo/bin:$PATH\" pnpm build",
     "cli-separate": "cargo run --release -p demucs-cli -- separate --models data/onnx-lean",
     "dev": "pnpm -C packages/app dev",
-    "lint": "cargo fmt --all && vp check --fix && pnpm -C packages/app lint",
-    "lint-check": "cargo fmt --all -- --check && vp check && pnpm -C packages/app lint",
+    "typecheck": "tsc -b packages/app",
+    "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
+    "lint": "cargo fmt --all && vp check --fix && pnpm lint-dead-code && pnpm typecheck",
+    "lint-check": "cargo fmt --all -- --check && vp check && pnpm lint-dead-code && pnpm typecheck",
     "test-e2e": "pnpm -C packages/app test-e2e"
   },
   "devDependencies": {
+    "fallow": "^3.3.0",
+    "pkg-pr-new": "0.0.75",
+    "typescript": "^7.0.2",
     "vite-plus": "^0.2.4",
-    "wasm-pack": "0.15.0",
     "wrangler": "4.110.0"
   },
   "packageManager": "pnpm@11.11.0+sha512.4463f65fd80ed80d69bc1d4bf163ee94f605c7380fc318bb5b2ebe15f8cd12d49c51a4d59e951b401e764d3b6ca751cbf51bc50ed7001a6bcb4935e684c34882"

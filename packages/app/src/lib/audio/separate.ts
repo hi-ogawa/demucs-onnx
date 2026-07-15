@@ -1,17 +1,16 @@
+import init, {
+  separate as separateWasm,
+  type Host,
+} from "@hiogawa/demucs-onnx-wasm";
 import ortWasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.mjs?url";
 import ortWasmUrl from "onnxruntime-web/ort-wasm-simd-threaded.wasm?url";
 // Browser capabilities plugged into the Rust/WASM separation driver. The worker owns
 // messaging; this module owns fetch and onnxruntime-web only.
 import * as ort from "onnxruntime-web/wasm";
-import init, {
-  separate as separateWasm,
-  type Host,
-} from "../../../../../crates/wasm/pkg/demucs_wasm.js";
 import {
   MODEL_INPUT_LENGTH,
   MODEL_OUTPUT_LENGTH,
   MODEL_SEGMENT,
-  SOURCES,
 } from "./constants";
 import { readModelFile, type ModelFilename, type ModelSource } from "./models";
 
@@ -151,10 +150,18 @@ export async function separate(
     req.right,
     host,
   );
-  const names = req.twoStems
-    ? [req.twoStems.source, `no_${req.twoStems.source}`]
-    : SOURCES;
-  return names.map((name, index) => ({
+  const stemOrder: { name: string; index: number }[] = req.twoStems
+    ? [
+        { name: "backing", index: 1 },
+        { name: req.twoStems.source, index: 0 },
+      ]
+    : [
+        { name: "vocals", index: 3 },
+        { name: "drums", index: 0 },
+        { name: "bass", index: 1 },
+        { name: "other", index: 2 },
+      ];
+  return stemOrder.map(({ name, index }) => ({
     name,
     left: tracks[2 * index],
     right: tracks[2 * index + 1],

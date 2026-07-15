@@ -5,14 +5,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "tsc -b",
-    "lint": "pnpm lint-dead-code && pnpm typecheck",
-    "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
     "test-e2e": "playwright test",
     "wasm-separate": "tsx src/node/cli.ts separate"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
@@ -20,17 +18,16 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@hiogawa/demucs-onnx-wasm": "workspace:*",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
-    "fallow": "^3.3.0",
     "onnxruntime-web": "^1.27.0",
     "tailwindcss": "^4.3.2",
     "tsx": "^4.23.0",
-    "typescript": "^7.0.2",
     "vite": "^8.1.4"
   }
 }
