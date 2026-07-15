@@ -374,7 +374,8 @@ export function App() {
                 3. Add models
               </h2>
               <p className="text-muted mb-5.5 leading-relaxed">
-                Download each required model, then select the downloaded file.
+                Download each required model, then drop or select the downloaded
+                file.
               </p>
               <div className="grid gap-2.5">
                 {requiredFiles.map((filename) => (
@@ -515,14 +516,36 @@ function ModelFileSlot({
   error?: string;
   onSelect: (files: File[]) => void;
 }) {
+  const [dragging, setDragging] = useState(false);
+
   return (
     <div data-testid="model-file-slot">
       <div
         className={`flex min-h-13 items-center gap-3 rounded-md border px-4 py-3 transition-colors ${
-          ready
-            ? "border-success-border bg-success-surface hover:bg-success-surface-hover"
-            : "border-border-strong bg-surface-muted hover:border-drop-border-hover hover:bg-drop-surface-hover border-dashed"
+          dragging
+            ? "border-drop-border-hover bg-drop-surface-hover"
+            : ready
+              ? "border-success-border bg-success-surface hover:bg-success-surface-hover"
+              : "border-border-strong bg-surface-muted hover:border-drop-border-hover hover:bg-drop-surface-hover border-dashed"
         }`}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+            setDragging(false);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          const file = event.dataTransfer.files[0];
+          if (file) {
+            onSelect([file]);
+          }
+        }}
       >
         <span
           className={`flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
