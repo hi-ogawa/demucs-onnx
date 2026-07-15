@@ -2,6 +2,9 @@ name: pkg.pr.new
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
 
 concurrency:
   group: pkg-pr-new-${{ github.event.pull_request.number }}
