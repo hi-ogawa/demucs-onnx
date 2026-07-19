@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
@@ -20,10 +19,6 @@ const runTimeout = Math.max(15_000, Number(expectedDuration) * 3_000);
 test.setTimeout(runs * runTimeout + 15_000);
 
 test("benchmarks Chromium WASM inference", async ({ page }) => {
-  for (const path of [model, dft, fixture]) {
-    expect(existsSync(path), `missing benchmark input at ${path}`).toBe(true);
-  }
-
   await page.goto("/?benchmark=1");
   await page.setInputFiles("#modelFiles", [dft, model]);
   await page.setInputFiles("#file", fixture);
