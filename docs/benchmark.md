@@ -80,3 +80,11 @@ Measured on Linux x64 with an Intel Core i7-12650H (10 physical cores, 16 logica
 | Chromium WASM |      runtime-managed |          36.167s |       3.3% |
 
 Sixteen native threads were fastest on this machine and ran inference about 3.04 times faster than Chromium WASM. The ONNX Runtime default was within 5% of the fastest result, while the CLI's conservative four-thread default was about 14% slower than the fastest result.
+
+### Timing Breakdown
+
+Inference dominates both backends. At four native threads, the median 14.507-second comparable total was approximately 0.2% audio preparation, 3.9% model loading, 95.8% inference, and 0.1% finalization. At 16 native threads, inference remained about 95.2% of the 12.506-second total. WAV writing took roughly 40 to 70 milliseconds and is excluded from the comparable total.
+
+For Chromium WASM, the median 37.183-second total was approximately 2.3% model loading, 97.3% inference, less than 0.1% finalization, and 0.4% other preparation and dispatch.
+
+`inferenceMs` is broader than ONNX Runtime model execution alone. On native it includes chunk input preparation, tensor-view construction, `Session::run`, output extraction and validation, overlap-add processing, and progress callbacks. In the browser it additionally includes WASM-to-JavaScript host calls, tensor wrapper creation, copying each model output into WASM memory, and progress event dispatch. A future benchmark can time `Session::run` separately to distinguish graph execution from orchestration and memory-copy overhead.
