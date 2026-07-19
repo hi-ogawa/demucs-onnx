@@ -14,6 +14,10 @@ const expectedDuration = process.env.BENCHMARK_DURATION ?? "30.00";
 const output = process.env.BENCHMARK_OUTPUT ?? "web";
 const warmupRuns = readCount("BENCHMARK_WARMUP_RUNS", 1);
 const measuredRuns = readCount("BENCHMARK_MEASURED_RUNS", 3);
+const runs = warmupRuns + measuredRuns;
+const runTimeout = Math.max(15_000, Number(expectedDuration) * 3_000);
+
+test.setTimeout(runs * runTimeout + 15_000);
 
 test("benchmarks Chromium WASM inference", async ({ page }) => {
   for (const path of [model, dft, fixture]) {
@@ -27,15 +31,11 @@ test("benchmarks Chromium WASM inference", async ({ page }) => {
     `Decoded: ${expectedDuration}s`,
   );
 
-  for (let index = 0; index < warmupRuns + measuredRuns; index++) {
+  const runButton = page.locator("#run");
+  for (let index = 0; index < runs; index++) {
     await page.evaluate(() => delete window.__demucsBenchmarkResult);
-    await page.click("#run");
-    await page.waitForFunction(
-      () => window.__demucsBenchmarkResult !== undefined,
-      {
-        timeout: 15 * 60_000,
-      },
-    );
+    await runButton.click();
+    await expect(runButton).toBeEnabled({ timeout: runTimeout });
     const result = await page.evaluate(() => window.__demucsBenchmarkResult!);
     await writeFile(
       resolve(root, `data/benchmark/${output}-run-${index}.json`),
