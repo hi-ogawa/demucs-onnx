@@ -20,27 +20,13 @@ import {
 } from "./lib/audio/stem-archive";
 import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
+import { createBenchmarkRecorder, isBenchmarkMode } from "./lib/benchmark";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
-import type { ChunkTiming } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 
-declare global {
-  interface Window {
-    __demucsBenchmarkResult?: BenchmarkResult;
-  }
-}
-
-interface BenchmarkResult {
-  loadMs: number;
-  inferenceMs: number;
-  finalizeMs: number;
-  totalMs: number;
-  chunks: ChunkTiming[];
-}
-
 export function App() {
-  const benchmarkMode = new URLSearchParams(location.search).has("benchmark");
+  const benchmarkMode = isBenchmarkMode();
   // synchronize preferences with localStorage
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
@@ -153,18 +139,8 @@ export function App() {
         models: [],
         finalizeMs: 0,
       });
-      if (benchmarkMode) {
-        delete window.__demucsBenchmarkResult;
-      }
       const started = performance.now();
-      let benchmarkProgress: RunProgress | null = {
-        phase: "preparing",
-        startedAt,
-        done: 0,
-        total: 0,
-        models: [],
-        finalizeMs: 0,
-      };
+      const recordBenchmark = createBenchmarkRecorder(startedAt);
       const request: SeparateRequest = {
         left: decodedAudio.left.slice(),
         right: decodedAudio.right.slice(),
@@ -175,33 +151,10 @@ export function App() {
       };
       const separated = await separateInWorker(request, {
         onProgress: (event, at) => {
-          if (benchmarkProgress) {
-            benchmarkProgress = updateRunProgress(benchmarkProgress, event, at);
-          }
+          recordBenchmark?.(event, at);
           setRunProgress((progress) =>
             progress ? updateRunProgress(progress, event, at) : progress,
           );
-          if (
-            benchmarkMode &&
-            event.type === "finalized" &&
-            benchmarkProgress
-          ) {
-            window.__demucsBenchmarkResult = {
-              loadMs: benchmarkProgress.models.reduce(
-                (sum, item) => sum + (item.loadMs ?? 0),
-                0,
-              ),
-              inferenceMs: benchmarkProgress.models.reduce(
-                (sum, item) => sum + (item.inferenceMs ?? 0),
-                0,
-              ),
-              finalizeMs: benchmarkProgress.finalizeMs,
-              totalMs: at - benchmarkProgress.startedAt,
-              chunks: benchmarkProgress.models.flatMap(
-                (item) => item.chunkTimings,
-              ),
-            };
-          }
         },
       });
       const nextOutputs = separated.map((output) => {
