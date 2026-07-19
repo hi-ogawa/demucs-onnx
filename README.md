@@ -70,6 +70,16 @@ pnpm build-model htdemucs
 
 Run `pnpm build-model --all` to build the standard model and all fine-tuned specialists.
 
+## Benchmark
+
+Compare native ONNX Runtime inference with Chromium's ONNX Runtime WASM backend using a deterministic 30-second workload:
+
+```bash
+pnpm benchmark
+```
+
+See [`docs/benchmark.md`](docs/benchmark.md) for the workload, timing boundaries, and generated results.
+
 ## Web App
 
 Build the WASM binding and start the fully client-side app:

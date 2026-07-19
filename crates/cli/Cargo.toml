@@ -13,6 +13,8 @@ clap = { version = "4", features = ["derive"] }
 console = "0.16"
 demucs-core = { path = "../core" }
 indicatif = "0.18"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 # default features with tls-native swapped for tls-rustls, so the binary downloader
 # doesn't need system OpenSSL headers
 ort = { version = "2.0.0-rc.10", default-features = false, features = [

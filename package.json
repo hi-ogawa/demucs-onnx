@@ -19,12 +19,15 @@
     "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
     "lint": "cargo fmt --all && vp check --fix && pnpm lint-dead-code && pnpm typecheck",
     "lint-check": "cargo fmt --all -- --check && vp check && pnpm lint-dead-code && pnpm typecheck",
-    "test-e2e": "pnpm -C packages/app test-e2e"
+    "test-e2e": "pnpm -C packages/app test-e2e",
+    "benchmark:fixture": "tsx tools/generate-benchmark-fixture.ts",
+    "benchmark": "tsx tools/benchmark.ts"
   },
   "devDependencies": {
     "fallow": "^3.3.0",
     "pkg-pr-new": "0.0.75",
     "typescript": "^7.0.2",
+    "tsx": "^4.23.0",
     "vite-plus": "^0.2.4",
     "wrangler": "4.110.0"
   },

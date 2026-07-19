@@ -24,7 +24,21 @@ import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 
+declare global {
+  interface Window {
+    __demucsBenchmarkResult?: BenchmarkResult;
+  }
+}
+
+export interface BenchmarkResult {
+  loadMs: number;
+  inferenceMs: number;
+  finalizeMs: number;
+  totalMs: number;
+}
+
 export function App() {
+  const benchmarkMode = new URLSearchParams(location.search).has("benchmark");
   // synchronize preferences with localStorage
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
@@ -137,7 +151,18 @@ export function App() {
         models: [],
         finalizeMs: 0,
       });
+      if (benchmarkMode) {
+        delete window.__demucsBenchmarkResult;
+      }
       const started = performance.now();
+      let benchmarkProgress: RunProgress | null = {
+        phase: "preparing",
+        startedAt,
+        done: 0,
+        total: 0,
+        models: [],
+        finalizeMs: 0,
+      };
       const request: SeparateRequest = {
         left: decodedAudio.left.slice(),
         right: decodedAudio.right.slice(),
@@ -147,10 +172,32 @@ export function App() {
         modelSource,
       };
       const separated = await separateInWorker(request, {
-        onProgress: (event, at) =>
+        onProgress: (event, at) => {
+          if (benchmarkProgress) {
+            benchmarkProgress = updateRunProgress(benchmarkProgress, event, at);
+          }
           setRunProgress((progress) =>
             progress ? updateRunProgress(progress, event, at) : progress,
-          ),
+          );
+          if (
+            benchmarkMode &&
+            event.type === "finalized" &&
+            benchmarkProgress
+          ) {
+            window.__demucsBenchmarkResult = {
+              loadMs: benchmarkProgress.models.reduce(
+                (sum, item) => sum + (item.loadMs ?? 0),
+                0,
+              ),
+              inferenceMs: benchmarkProgress.models.reduce(
+                (sum, item) => sum + (item.inferenceMs ?? 0),
+                0,
+              ),
+              finalizeMs: benchmarkProgress.finalizeMs,
+              totalMs: at - benchmarkProgress.startedAt,
+            };
+          }
+        },
       });
       const nextOutputs = separated.map((output) => {
         const blob = encodeWavF32(
@@ -172,7 +219,9 @@ export function App() {
       return { outputs: nextOutputs, archive, durationMs };
     },
     onSuccess: ({ archive }) => {
-      downloadBlob(archive.url, archive.name);
+      if (!benchmarkMode) {
+        downloadBlob(archive.url, archive.name);
+      }
     },
     onSettled: (_data, error) => {
       if (error) {

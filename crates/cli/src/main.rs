@@ -4,6 +4,7 @@ use clap::{Args, Parser, Subcommand};
 use console::style;
 use demucs_core as core;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::Serialize;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -68,6 +69,10 @@ struct SeparateArgs {
         long_help = "Trade speed for separation quality by averaging N processing passes. Runtime grows roughly in proportion. Default: 1"
     )]
     shifts: u32,
+
+    /// Write machine-readable phase timings to this JSON file
+    #[arg(long, value_name = "FILE")]
+    timings_json: Option<PathBuf>,
 
     /// Input WAV file
     #[arg(value_name = "INPUT.WAV")]
@@ -150,7 +155,34 @@ fn separate(args: SeparateArgs) -> Result<()> {
         format_duration(progress.finalize_elapsed),
         format_duration(write_elapsed),
     );
+    if let Some(path) = args.timings_json {
+        let timings = Timings {
+            prepare_ms: millis(prepare_elapsed),
+            load_ms: millis(progress.load_elapsed),
+            inference_ms: millis(progress.inference_elapsed),
+            finalize_ms: millis(progress.finalize_elapsed),
+            write_ms: millis(write_elapsed),
+            total_ms: millis(total_elapsed),
+        };
+        std::fs::write(&path, serde_json::to_vec_pretty(&timings)?)
+            .with_context(|| format!("write {}", path.display()))?;
+    }
     Ok(())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Timings {
+    prepare_ms: f64,
+    load_ms: f64,
+    inference_ms: f64,
+    finalize_ms: f64,
+    write_ms: f64,
+    total_ms: f64,
+}
+
+fn millis(duration: Duration) -> f64 {
+    duration.as_secs_f64() * 1000.0
 }
 
 // Interactive layouts stay model-oriented while the overall row remains stable:
