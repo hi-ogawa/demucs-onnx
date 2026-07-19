@@ -12,7 +12,7 @@ interface Timing {
 }
 
 async function main() {
-  const nativeRuns = await readRuns("native.json");
+  const nativeRuns = await readNativeRuns();
   const webRuns = await readRuns("web.json");
   const result = {
     fixture: { durationSeconds: 30, sampleRate: 44_100, channels: 2 },
@@ -33,6 +33,25 @@ async function main() {
     web: result.web.median,
   });
   console.log(`Results: ${output}`);
+}
+
+async function readNativeRuns() {
+  return await Promise.all(
+    [1, 2, 3].map(async (index) => {
+      const result = JSON.parse(
+        await readFile(resolve(data, `native-run-${index}.json`), "utf8"),
+      ) as Timing & { prepareMs: number };
+      return {
+        ...result,
+        endToEndMs: result.totalMs,
+        totalMs:
+          result.prepareMs +
+          result.loadMs +
+          result.inferenceMs +
+          result.finalizeMs,
+      };
+    }),
+  );
 }
 
 async function readRuns(file: string) {

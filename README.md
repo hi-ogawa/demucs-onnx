@@ -78,7 +78,13 @@ Compare native ONNX Runtime inference with Chromium's ONNX Runtime WASM backend 
 pnpm tsx tools/generate-benchmark-fixture.ts
 cargo build --release -p demucs-cli
 pnpm build-wasm
-pnpm tsx tools/benchmark-native.ts
+for run in 0 1 2 3; do
+  rm -rf "data/benchmark/native-run-$run"
+  target/release/demucs separate \
+    --models data/onnx-lean \
+    --timings-json "data/benchmark/native-run-$run.json" \
+    data/benchmark/input-30s.wav "data/benchmark/native-run-$run"
+done
 pnpm -C packages/app benchmark
 pnpm tsx tools/benchmark-summary.ts
 ```
