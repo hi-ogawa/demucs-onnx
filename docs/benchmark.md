@@ -60,6 +60,11 @@ Generated fixtures, stems, and results remain under the gitignored `data/` direc
 
 - `loadMs` covers ONNX session creation and model loading.
 - `inferenceMs` covers all model chunk runs for the selected workload.
+- Each run retains one raw timing record per chunk with its member, shift, and chunk index.
+- `prepareInputMs` covers chunk input materialization and native tensor-view setup.
+- `ortRunMs` covers only the chunk's ONNX Runtime `Session::run` call.
+- `outputCopyMs` covers the chunk's browser copy from ONNX Runtime output into WASM memory; it is zero for native inference.
+- `processOutputMs` covers the chunk's output extraction, validation, and overlap-add processing.
 - `finalizeMs` covers stem finalization after inference.
 - `totalMs` covers preparation through finalization, but excludes WAV encoding, ZIP creation, and output writing for cross-backend comparability.
 
@@ -87,4 +92,4 @@ Inference dominates both backends. At four native threads, the median 14.507-sec
 
 For Chromium WASM, the median 37.183-second total was approximately 2.3% model loading, 97.3% inference, less than 0.1% finalization, and 0.4% other preparation and dispatch.
 
-`inferenceMs` is broader than ONNX Runtime model execution alone. On native it includes chunk input preparation, tensor-view construction, `Session::run`, output extraction and validation, overlap-add processing, and progress callbacks. In the browser it additionally includes WASM-to-JavaScript host calls, tensor wrapper creation, copying each model output into WASM memory, and progress event dispatch. A future benchmark can time `Session::run` separately to distinguish graph execution from orchestration and memory-copy overhead.
+`inferenceMs` remains the wall-clock user-facing duration. Raw chunk records preserve variance, first-chunk effects, and component correlations; the summary derives aggregate component totals later. Component sums may differ slightly from wall time because they exclude progress dispatch and host-boundary overhead, and they will not represent elapsed time if chunk inference becomes concurrent in the future.

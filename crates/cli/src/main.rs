@@ -169,6 +169,7 @@ fn separate(args: SeparateArgs) -> Result<()> {
             prepare_ms: millis(prepare_elapsed),
             load_ms: millis(progress.load_elapsed),
             inference_ms: millis(progress.inference_elapsed),
+            chunks: progress.chunks,
             finalize_ms: millis(progress.finalize_elapsed),
             write_ms: millis(write_elapsed),
             total_ms: millis(total_elapsed),
@@ -185,9 +186,22 @@ struct Timings {
     prepare_ms: f64,
     load_ms: f64,
     inference_ms: f64,
+    chunks: Vec<ChunkTiming>,
     finalize_ms: f64,
     write_ms: f64,
     total_ms: f64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ChunkTiming {
+    member: usize,
+    shift: usize,
+    chunk: usize,
+    prepare_input_ms: f64,
+    ort_run_ms: f64,
+    output_copy_ms: f64,
+    process_output_ms: f64,
 }
 
 fn millis(duration: Duration) -> f64 {
@@ -206,6 +220,7 @@ struct CliProgress {
     phase: Option<ProgressBar>,
     load_elapsed: Duration,
     inference_elapsed: Duration,
+    chunks: Vec<ChunkTiming>,
     finalize_elapsed: Duration,
     loaded: usize,
     eta: Option<Duration>,
@@ -222,6 +237,7 @@ impl CliProgress {
             phase: None,
             load_elapsed: Duration::ZERO,
             inference_elapsed: Duration::ZERO,
+            chunks: Vec::new(),
             finalize_elapsed: Duration::ZERO,
             loaded: 0,
             eta: None,
@@ -298,9 +314,22 @@ impl CliProgress {
                 shift,
                 shifts,
                 member_done,
+                member,
                 elapsed,
+                prepare_elapsed,
+                run_elapsed,
+                process_elapsed,
             } => {
                 self.inference_elapsed += elapsed;
+                self.chunks.push(ChunkTiming {
+                    member,
+                    shift,
+                    chunk: member_done,
+                    prepare_input_ms: millis(prepare_elapsed),
+                    ort_run_ms: millis(run_elapsed),
+                    output_copy_ms: 0.0,
+                    process_output_ms: millis(process_elapsed),
+                });
                 self.overall.set_length(total as u64);
                 self.overall.set_position(done as u64);
                 if let Some(phase) = &self.phase {

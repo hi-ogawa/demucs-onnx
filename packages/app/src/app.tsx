@@ -22,6 +22,7 @@ import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
+import type { ChunkTiming } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 
 declare global {
@@ -35,6 +36,7 @@ export interface BenchmarkResult {
   inferenceMs: number;
   finalizeMs: number;
   totalMs: number;
+  chunks: ChunkTiming[];
 }
 
 export function App() {
@@ -195,6 +197,9 @@ export function App() {
               ),
               finalizeMs: benchmarkProgress.finalizeMs,
               totalMs: at - benchmarkProgress.startedAt,
+              chunks: benchmarkProgress.models.flatMap(
+                (item) => item.chunkTimings,
+              ),
             };
           }
         },

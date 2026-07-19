@@ -13,6 +13,17 @@ export type ModelProgress = {
   inferenceStartedAt?: number;
   loadMs?: number;
   inferenceMs?: number;
+  chunkTimings: ChunkTiming[];
+};
+
+export type ChunkTiming = {
+  member: number;
+  shift: number;
+  chunk: number;
+  prepareInputMs: number;
+  ortRunMs: number;
+  outputCopyMs: number;
+  processOutputMs: number;
 };
 
 export type RunProgress = {
@@ -52,6 +63,7 @@ export function updateRunProgress(
             shifts: 1,
             phase: "loading",
             loadStartedAt: at,
+            chunkTimings: [],
           },
         ],
       };
@@ -72,6 +84,15 @@ export function updateRunProgress(
       current.shift = event.shift;
       current.shifts = event.shifts;
       current.inferenceMs = at - (current.inferenceStartedAt ?? at);
+      current.chunkTimings.push({
+        member: current.index,
+        shift: event.shift,
+        chunk: event.memberDone,
+        prepareInputMs: event.prepareMs,
+        ortRunMs: event.runMs,
+        outputCopyMs: event.copyMs,
+        processOutputMs: event.processMs,
+      });
       return { ...progress, done: event.done, total: event.total, models };
     case "model-complete":
       if (!current) {

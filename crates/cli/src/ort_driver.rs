@@ -22,10 +22,14 @@ pub enum Progress<'a> {
         done: usize,
         total: usize,
         members: usize,
+        member: usize,
         shift: usize,
         shifts: usize,
         member_done: usize,
         elapsed: Duration,
+        prepare_elapsed: Duration,
+        run_elapsed: Duration,
+        process_elapsed: Duration,
     },
     MemberFinished {
         chunks: usize,
@@ -109,31 +113,41 @@ pub fn run_all(
             let mut chunk_processor = separation.plan.create_chunk_processor(shift);
             for &chunk in &shift.chunks {
                 let chunk_started = Instant::now();
+                let prepare_started = Instant::now();
                 chunk_processor.prepare_input(chunk, &mut input)?;
                 let value = ort::value::TensorRef::from_array_view((
                     [1usize, core::CHANNELS, core::SEGMENT],
                     input.as_slice(),
                 ))
                 .map_err(ort_err)?;
+                let prepare_elapsed = prepare_started.elapsed();
+                let run_started = Instant::now();
                 let run = session
                     .run(ort::inputs!["input" => value])
                     .map_err(ort_err)?;
+                let run_elapsed = run_started.elapsed();
+                let process_started = Instant::now();
                 let (shape, data) = run["output"].try_extract_tensor::<f32>().map_err(ort_err)?;
                 let dims: Vec<usize> = shape.iter().map(|&d| d as usize).collect();
                 if dims != [1, core::NUM_SOURCES, core::CHANNELS, core::SEGMENT] {
                     bail!("unexpected output shape {dims:?}");
                 }
                 chunk_processor.process_output(chunk, data)?;
+                let process_elapsed = process_started.elapsed();
                 done += 1;
                 member_done += 1;
                 on_progress(Progress::Inference {
                     done,
                     total,
                     members: members.len(),
+                    member: member_index + 1,
                     shift: shift_index + 1,
                     shifts: member_plan.shifts.len(),
                     member_done,
                     elapsed: chunk_started.elapsed(),
+                    prepare_elapsed,
+                    run_elapsed,
+                    process_elapsed,
                 });
             }
             shift_merger.add(chunk_processor.finish());

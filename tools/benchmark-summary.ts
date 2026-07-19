@@ -9,6 +9,14 @@ interface Timing {
   inferenceMs: number;
   finalizeMs: number;
   totalMs: number;
+  chunks: ChunkTiming[];
+}
+
+interface ChunkTiming {
+  prepareInputMs: number;
+  ortRunMs: number;
+  outputCopyMs: number;
+  processOutputMs: number;
 }
 
 async function main() {
@@ -84,8 +92,16 @@ function summarize(runs: Timing[]) {
       inferenceMs: median(runs.map((run) => run.inferenceMs)),
       finalizeMs: median(runs.map((run) => run.finalizeMs)),
       totalMs: median(runs.map((run) => run.totalMs)),
+      prepareInputMs: median(runs.map((run) => sum(run, "prepareInputMs"))),
+      ortRunMs: median(runs.map((run) => sum(run, "ortRunMs"))),
+      outputCopyMs: median(runs.map((run) => sum(run, "outputCopyMs"))),
+      processOutputMs: median(runs.map((run) => sum(run, "processOutputMs"))),
     },
   };
+}
+
+function sum(run: Timing, field: keyof ChunkTiming) {
+  return run.chunks.reduce((total, chunk) => total + chunk[field], 0);
 }
 
 function median(values: number[]) {
