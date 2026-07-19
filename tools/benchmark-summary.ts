@@ -12,7 +12,14 @@ interface Timing {
 }
 
 async function main() {
-  const nativeRuns = await readNativeRuns();
+  const native = Object.fromEntries(
+    await Promise.all(
+      ["default", "1", "2", "4", "8", "16"].map(async (threads) => [
+        threads,
+        summarize(await readNativeRuns(threads)),
+      ]),
+    ),
+  );
   const webRuns = await readRuns("web.json");
   const result = {
     fixture: { durationSeconds: 30, sampleRate: 44_100, channels: 2 },
@@ -21,25 +28,32 @@ async function main() {
       platform: process.platform,
       arch: process.arch,
       logicalCpus: availableParallelism(),
-      nativeIntraThreads: 4,
     },
-    native: summarize(nativeRuns),
+    native,
     web: summarize(webRuns),
   };
   const output = resolve(data, "summary.json");
   await writeFile(output, JSON.stringify(result, null, 2));
-  console.table({
-    native: result.native.median,
-    web: result.web.median,
-  });
+  console.table(
+    Object.fromEntries([
+      ...Object.entries(result.native).map(([threads, summary]) => [
+        `native-${threads}`,
+        summary.median,
+      ]),
+      ["web", result.web.median],
+    ]),
+  );
   console.log(`Results: ${output}`);
 }
 
-async function readNativeRuns() {
+async function readNativeRuns(threads: string) {
   return await Promise.all(
     [1, 2, 3].map(async (index) => {
       const result = JSON.parse(
-        await readFile(resolve(data, `native-run-${index}.json`), "utf8"),
+        await readFile(
+          resolve(data, `native-threads-${threads}-run-${index}.json`),
+          "utf8",
+        ),
       ) as Timing & { prepareMs: number };
       return {
         ...result,

@@ -81,12 +81,18 @@ ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=30" \
   -c:a pcm_f32le -y data/benchmark/input-30s.wav
 cargo build --release -p demucs-cli
 pnpm build-wasm
-for run in 0 1 2 3; do
-  rm -rf "data/benchmark/native-run-$run"
-  target/release/demucs separate \
-    --models data/onnx-lean \
-    --timings-json "data/benchmark/native-run-$run.json" \
-    data/benchmark/input-30s.wav "data/benchmark/native-run-$run"
+for threads in 0 1 2 4 8 16; do
+  label=$threads
+  test "$threads" = 0 && label=default
+  for run in 0 1 2 3; do
+    rm -rf "data/benchmark/native-threads-$label-run-$run"
+    target/release/demucs separate \
+      --models data/onnx-lean \
+      --threads "$threads" \
+      --timings-json "data/benchmark/native-threads-$label-run-$run.json" \
+      data/benchmark/input-30s.wav \
+      "data/benchmark/native-threads-$label-run-$run"
+  done
 done
 pnpm -C packages/app benchmark
 pnpm tsx tools/benchmark-summary.ts

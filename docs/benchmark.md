@@ -10,11 +10,12 @@ The initial benchmark deliberately fixes the workload:
 - `htdemucs`
 - Full four-stem output
 - One shift
-- One unreported warm-up and three measured runs per backend
+- Native ONNX Runtime default, 1, 2, 4, 8, and 16 intra-op threads
+- One unreported warm-up and three measured runs per configuration
 
 The inference graph receives fixed-size chunks, so the synthetic signal is suitable for measuring runtime. It is not intended to measure separation quality.
 
-Native inference currently sets ONNX Runtime to four intra-op threads. Chromium uses the threaded WASM build under cross-origin isolation. These settings represent current product behavior rather than a controlled thread-scaling comparison.
+The CLI defaults to four intra-op threads. Passing `--threads 0` leaves thread selection to ONNX Runtime. Chromium uses the threaded WASM build under cross-origin isolation.
 
 ## Run
 
@@ -29,18 +30,24 @@ ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=30" \
   -c:a pcm_f32le -y data/benchmark/input-30s.wav
 cargo build --release -p demucs-cli
 pnpm build-wasm
-for run in 0 1 2 3; do
-  rm -rf "data/benchmark/native-run-$run"
-  target/release/demucs separate \
-    --models data/onnx-lean \
-    --timings-json "data/benchmark/native-run-$run.json" \
-    data/benchmark/input-30s.wav "data/benchmark/native-run-$run"
+for threads in 0 1 2 4 8 16; do
+  label=$threads
+  test "$threads" = 0 && label=default
+  for run in 0 1 2 3; do
+    rm -rf "data/benchmark/native-threads-$label-run-$run"
+    target/release/demucs separate \
+      --models data/onnx-lean \
+      --threads "$threads" \
+      --timings-json "data/benchmark/native-threads-$label-run-$run.json" \
+      data/benchmark/input-30s.wav \
+      "data/benchmark/native-threads-$label-run-$run"
+  done
 done
 pnpm -C packages/app benchmark
 pnpm tsx tools/benchmark-summary.ts
 ```
 
-Each command is independent and should be run in order. Native run 0 is the warm-up; runs 1 through 3 are summarized. Results are written under `data/benchmark/`:
+Each command is independent and should be run in order. Run 0 of each native thread configuration is the warm-up; runs 1 through 3 are summarized. Results are written under `data/benchmark/`:
 
 ```text
 web.json

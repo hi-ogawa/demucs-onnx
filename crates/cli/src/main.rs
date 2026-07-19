@@ -70,6 +70,10 @@ struct SeparateArgs {
     )]
     shifts: u32,
 
+    /// ONNX Runtime intra-op threads; 0 uses the runtime default
+    #[arg(long, default_value_t = 4, value_name = "N", hide_default_value = true)]
+    threads: usize,
+
     /// Write machine-readable phase timings to this JSON file
     #[arg(long, value_name = "FILE")]
     timings_json: Option<PathBuf>,
@@ -117,9 +121,14 @@ fn separate(args: SeparateArgs) -> Result<()> {
 
     eprintln!("prepared audio in {}", format_duration(prepare_elapsed));
     let mut progress = CliProgress::new();
-    let outputs = ort_driver::run_all(&args.models_dir, &members, wav, opts, |event| {
-        progress.update(event)
-    })?;
+    let outputs = ort_driver::run_all(
+        &args.models_dir,
+        &members,
+        wav,
+        opts,
+        args.threads,
+        |event| progress.update(event),
+    )?;
     progress.finish();
 
     let named: Vec<(String, [Vec<f32>; core::CHANNELS])> = match outputs {

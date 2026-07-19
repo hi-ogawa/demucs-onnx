@@ -57,6 +57,7 @@ pub fn run_all(
     members: &[core::vocab::Member],
     wav: [Vec<f32>; core::CHANNELS],
     opts: core::Options,
+    threads: usize,
     mut on_progress: impl FnMut(Progress<'_>),
 ) -> Result<core::Outputs> {
     let mut separation = core::Separation::new(wav, opts)?;
@@ -90,10 +91,11 @@ pub fn run_all(
         });
         let path = models_dir.join(file);
         let load_started = Instant::now();
-        let mut session = ort::session::Session::builder()
-            .map_err(ort_err)?
-            .with_intra_threads(4)
-            .map_err(ort_err)?
+        let mut builder = ort::session::Session::builder().map_err(ort_err)?;
+        if threads > 0 {
+            builder = builder.with_intra_threads(threads).map_err(ort_err)?;
+        }
+        let mut session = builder
             .commit_from_file(&path)
             .map_err(ort_err)
             .with_context(|| format!("load {}", path.display()))?;
