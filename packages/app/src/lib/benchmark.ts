@@ -23,18 +23,11 @@ let progress: RunProgress | null = null;
 
 export const benchmark = {
   enabled: new URLSearchParams(location.search).has("benchmark"),
-  start(startedAt: number) {
+  start(initialProgress: RunProgress) {
     if (!this.enabled) {
       return;
     }
-    progress = {
-      phase: "preparing",
-      startedAt,
-      done: 0,
-      total: 0,
-      models: [],
-      finalizeMs: 0,
-    };
+    progress = initialProgress;
   },
   record(event: ProgressEvent, at: number) {
     if (!progress) {

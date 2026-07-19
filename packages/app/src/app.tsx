@@ -130,16 +130,17 @@ export function App() {
       outputCleanupRef.current = [];
 
       const startedAt = Date.now();
-      setRunProgress({
+      const initialProgress: RunProgress = {
         phase: "preparing",
         startedAt,
         done: 0,
         total: 0,
         models: [],
         finalizeMs: 0,
-      });
+      };
+      setRunProgress(initialProgress);
       const started = performance.now();
-      benchmark.start(startedAt);
+      benchmark.start(initialProgress);
       const request: SeparateRequest = {
         left: decodedAudio.left.slice(),
         right: decodedAudio.right.slice(),
