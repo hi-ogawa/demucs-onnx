@@ -93,3 +93,17 @@ Inference dominates both backends. At four native threads, the median 14.507-sec
 For Chromium WASM, the median 37.183-second total was approximately 2.3% model loading, 97.3% inference, less than 0.1% finalization, and 0.4% other preparation and dispatch.
 
 `inferenceMs` remains the wall-clock user-facing duration. Raw chunk records preserve variance, first-chunk effects, and component correlations; the summary derives aggregate component totals later. Component sums may differ slightly from wall time because they exclude progress dispatch and host-boundary overhead, and they will not represent elapsed time if chunk inference becomes concurrent in the future.
+
+### Chunk Components
+
+A single follow-up run retained all six chunks for the 30-second workload. Native used four intra-op threads.
+
+| Component           |  Native | Chromium WASM |
+| ------------------- | ------: | ------------: |
+| Inference wall time | 13.048s |       31.795s |
+| ONNX Runtime runs   | 13.037s |       31.716s |
+| Input preparation   |   4.1ms |           6ms |
+| Output copy         |       0 |         6.3ms |
+| Output processing   |   6.8ms |          12ms |
+
+ONNX Runtime graph execution accounted for 99.92% of native inference time and 99.75% of browser inference time. Native chunk run times ranged from 2.095 to 2.254 seconds, while browser chunks ranged from 5.141 to 5.421 seconds. JavaScript/WASM boundaries, output copying, and overlap-add were negligible in this sample, so the native/browser performance gap is overwhelmingly within ONNX Runtime graph execution. External chunk concurrency may still be useful as an alternative ONNX Runtime scheduling strategy, but not primarily to hide orchestration overhead.
