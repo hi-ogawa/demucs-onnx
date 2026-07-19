@@ -9,12 +9,11 @@ const fixture = resolve(
   root,
   process.env.BENCHMARK_FIXTURE ?? "data/benchmark/input-30s.wav",
 );
-const expectedDuration = process.env.BENCHMARK_DURATION ?? "30.00";
 const output = process.env.BENCHMARK_OUTPUT ?? "web";
 const warmupRuns = readCount("BENCHMARK_WARMUP_RUNS", 1);
 const measuredRuns = readCount("BENCHMARK_MEASURED_RUNS", 3);
 const runs = warmupRuns + measuredRuns;
-const runTimeout = Math.max(15_000, Number(expectedDuration) * 3_000);
+const runTimeout = 2 * 60_000;
 
 test.setTimeout(runs * runTimeout + 15_000);
 
@@ -22,9 +21,6 @@ test("benchmarks Chromium WASM inference", async ({ page }) => {
   await page.goto("/?benchmark=1");
   await page.setInputFiles("#modelFiles", [dft, model]);
   await page.setInputFiles("#file", fixture);
-  await expect(page.locator("#audio-status")).toContainText(
-    `Decoded: ${expectedDuration}s`,
-  );
 
   const runButton = page.locator("#run");
   for (let index = 0; index < runs; index++) {

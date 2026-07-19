@@ -113,7 +113,7 @@ BENCHMARK_MEASURED_RUNS=1 \
 pnpm -C packages/app benchmark
 ```
 
-The Chromium benchmark defaults to the 30-second fixture, prefix `web`, one warm-up, and three measured runs. `BENCHMARK_FIXTURE`, `BENCHMARK_DURATION`, `BENCHMARK_OUTPUT`, `BENCHMARK_WARMUP_RUNS`, and `BENCHMARK_MEASURED_RUNS` override those values. Every run is retained as a separate JSON file; run 0 is the default warm-up and runs 1 through 3 feed the summary.
+The Chromium benchmark defaults to the 30-second fixture, prefix `web`, one warm-up, and three measured runs. `BENCHMARK_FIXTURE`, `BENCHMARK_OUTPUT`, `BENCHMARK_WARMUP_RUNS`, and `BENCHMARK_MEASURED_RUNS` override those values. Every run is retained as a separate JSON file; run 0 is the default warm-up and runs 1 through 3 feed the summary.
 
 | Component           |  Native | Chromium WASM |
 | ------------------- | ------: | ------------: |
