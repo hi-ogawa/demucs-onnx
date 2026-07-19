@@ -24,10 +24,15 @@ test("benchmarks Chromium WASM inference", async ({ page }) => {
 
   const runButton = page.locator("#run");
   for (let index = 0; index < runs; index++) {
-    await page.evaluate(() => delete window.__demucsBenchmarkResult);
+    const resultIndex = await page.evaluate(
+      () => window.__demucsBenchmarkResults?.length ?? 0,
+    );
     await runButton.click();
     await expect(runButton).toBeEnabled({ timeout: runTimeout });
-    const result = await page.evaluate(() => window.__demucsBenchmarkResult!);
+    const result = await page.evaluate(
+      (index) => window.__demucsBenchmarkResults![index],
+      resultIndex,
+    );
     await writeFile(
       resolve(root, `data/benchmark/${output}-run-${index}.json`),
       JSON.stringify(result, null, 2),

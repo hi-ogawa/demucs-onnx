@@ -7,7 +7,7 @@ import {
 
 declare global {
   interface Window {
-    __demucsBenchmarkResult?: BenchmarkResult;
+    __demucsBenchmarkResults?: BenchmarkResult[];
   }
 }
 
@@ -27,7 +27,6 @@ export const benchmark = {
     if (!this.enabled) {
       return;
     }
-    delete window.__demucsBenchmarkResult;
     progress = {
       phase: "preparing",
       startedAt,
@@ -43,7 +42,7 @@ export const benchmark = {
     }
     progress = updateRunProgress(progress, event, at);
     if (event.type === "finalized") {
-      window.__demucsBenchmarkResult = {
+      const result = {
         loadMs: progress.models.reduce(
           (sum, item) => sum + (item.loadMs ?? 0),
           0,
@@ -56,6 +55,7 @@ export const benchmark = {
         totalMs: at - progress.startedAt,
         chunks: progress.models.flatMap((item) => item.chunkTimings),
       };
+      (window.__demucsBenchmarkResults ??= []).push(result);
       progress = null;
     }
   },
