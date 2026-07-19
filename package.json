@@ -24,7 +24,6 @@
   "devDependencies": {
     "fallow": "^3.3.0",
     "pkg-pr-new": "0.0.75",
-    "tsx": "^4.23.0",
     "typescript": "^7.0.2",
     "vite-plus": "^0.2.4",
     "wrangler": "4.110.0"

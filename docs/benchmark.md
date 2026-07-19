@@ -23,7 +23,10 @@ Download the standard model first:
 ```bash
 pnpm install
 pnpm model-release download models-2026-07-11 htdemucs
-pnpm tsx tools/generate-benchmark-fixture.ts
+mkdir -p data/benchmark
+ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=30" \
+  -filter_complex "[0:a]asplit=2[left][right];[left][right]join=inputs=2:channel_layout=stereo" \
+  -c:a pcm_f32le -y data/benchmark/input-30s.wav
 cargo build --release -p demucs-cli
 pnpm build-wasm
 for run in 0 1 2 3; do
