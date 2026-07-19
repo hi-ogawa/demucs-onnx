@@ -56,4 +56,7 @@ function writeAscii(view: DataView, offset: number, value: string) {
   }
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

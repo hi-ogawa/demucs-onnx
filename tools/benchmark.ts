@@ -126,4 +126,7 @@ function median(values: number[]) {
     : sorted[middle];
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
