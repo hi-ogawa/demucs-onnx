@@ -56,6 +56,10 @@ export type ProgressEvent =
       memberTotal: number;
       shift: number;
       shifts: number;
+      prepareMs: number;
+      runMs: number;
+      copyMs: number;
+      processMs: number;
     };
 
 export interface SeparateCallbacks {
@@ -93,6 +97,10 @@ export async function separate(
             memberTotal: event[4],
             shift: event[5],
             shifts: event[6],
+            prepareMs: event[7],
+            runMs: event[8],
+            copyMs: event[9],
+            processMs: event[10],
           });
           break;
         default:
@@ -127,13 +135,17 @@ export async function separate(
       const feeds = {
         input: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
       };
+      const runStarted = performance.now();
       const result = await (session as ort.InferenceSession).run(feeds);
+      const runMs = performance.now() - runStarted;
+      const copyStarted = performance.now();
       const output = new Float32Array(
         wasm.memory.buffer,
         outputPtr,
         MODEL_OUTPUT_LENGTH,
       );
       output.set(result.output.data as Float32Array);
+      return { runMs, copyMs: performance.now() - copyStarted };
     },
 
     async releaseModel(session) {

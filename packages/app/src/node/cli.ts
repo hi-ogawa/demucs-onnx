@@ -130,15 +130,19 @@ async function main() {
         inputPtr,
         MODEL_INPUT_LENGTH,
       );
+      const runStarted = performance.now();
       const result = await (session as ort.InferenceSession).run({
         input: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
       });
+      const runMs = performance.now() - runStarted;
+      const copyStarted = performance.now();
       const output = new Float32Array(
         wasm.memory.buffer,
         outputPtr,
         MODEL_OUTPUT_LENGTH,
       );
       output.set(result.output.data as Float32Array);
+      return { runMs, copyMs: performance.now() - copyStarted };
     },
     async releaseModel(session) {
       await (session as ort.InferenceSession).release();

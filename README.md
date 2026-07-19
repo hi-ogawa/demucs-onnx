@@ -70,6 +70,36 @@ pnpm build-model htdemucs
 
 Run `pnpm build-model --all` to build the standard model and all fine-tuned specialists.
 
+## Benchmark
+
+Compare native ONNX Runtime inference with Chromium's ONNX Runtime WASM backend using a deterministic 30-second workload:
+
+```bash
+mkdir -p data/benchmark
+ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=30" \
+  -filter_complex "[0:a]asplit=2[left][right];[left][right]join=inputs=2:channel_layout=stereo" \
+  -c:a pcm_f32le -y data/benchmark/input-30s.wav
+cargo build --release -p demucs-cli
+pnpm build-wasm
+for threads in 0 1 2 4 8 16; do
+  label=$threads
+  test "$threads" = 0 && label=default
+  for run in 0 1 2 3; do
+    rm -rf "data/benchmark/native-threads-$label-run-$run"
+    target/release/demucs separate \
+      --models data/onnx-lean \
+      --threads "$threads" \
+      --timings-json "data/benchmark/native-threads-$label-run-$run.json" \
+      data/benchmark/input-30s.wav \
+      "data/benchmark/native-threads-$label-run-$run"
+  done
+done
+pnpm -C packages/app benchmark
+pnpm tsx tools/benchmark-summary.ts
+```
+
+See [`docs/benchmark.md`](docs/benchmark.md) for the workload, timing boundaries, and generated results.
+
 ## Web App
 
 Build the WASM binding and start the fully client-side app:

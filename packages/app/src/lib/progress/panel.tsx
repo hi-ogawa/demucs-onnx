@@ -34,6 +34,12 @@ export function RunProgressPanel({ progress }: { progress: RunProgress }) {
     (sum, model) => sum + (model.inferenceMs ?? 0),
     0,
   );
+  const ortRunMs = progress.models.reduce(
+    (sum, model) =>
+      sum +
+      model.chunkTimings.reduce((total, chunk) => total + chunk.ortRunMs, 0),
+    0,
+  );
   const loaded = progress.models.filter(
     (model) => model.loadMs !== undefined,
   ).length;
@@ -147,7 +153,8 @@ export function RunProgressPanel({ progress }: { progress: RunProgress }) {
       {progress.phase === "complete" && (
         <p className="text-muted text-sm" data-testid="timing-summary">
           Load {formatSeconds(loadMs)} · Inference {formatSeconds(inferenceMs)}{" "}
-          · Finalize {formatSeconds(progress.finalizeMs)}
+          (ORT {formatSeconds(ortRunMs)}) · Finalize{" "}
+          {formatSeconds(progress.finalizeMs)}
         </p>
       )}
     </section>

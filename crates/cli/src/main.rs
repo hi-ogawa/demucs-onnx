@@ -4,6 +4,7 @@ use clap::{Args, Parser, Subcommand};
 use console::style;
 use demucs_core as core;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::Serialize;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -69,6 +70,14 @@ struct SeparateArgs {
     )]
     shifts: u32,
 
+    /// ONNX Runtime intra-op threads; 0 uses the runtime default
+    #[arg(long, default_value_t = 4, value_name = "N", hide_default_value = true)]
+    threads: usize,
+
+    /// Write machine-readable phase timings to this JSON file
+    #[arg(long, value_name = "FILE")]
+    timings_json: Option<PathBuf>,
+
     /// Input WAV file
     #[arg(value_name = "INPUT.WAV")]
     input: String,
@@ -112,9 +121,14 @@ fn separate(args: SeparateArgs) -> Result<()> {
 
     eprintln!("prepared audio in {}", format_duration(prepare_elapsed));
     let mut progress = CliProgress::new();
-    let outputs = ort_driver::run_all(&args.models_dir, &members, wav, opts, |event| {
-        progress.update(event)
-    })?;
+    let outputs = ort_driver::run_all(
+        &args.models_dir,
+        &members,
+        wav,
+        opts,
+        args.threads,
+        |event| progress.update(event),
+    )?;
     progress.finish();
 
     let named: Vec<(String, [Vec<f32>; core::CHANNELS])> = match outputs {
@@ -150,7 +164,48 @@ fn separate(args: SeparateArgs) -> Result<()> {
         format_duration(progress.finalize_elapsed),
         format_duration(write_elapsed),
     );
+    if let Some(path) = args.timings_json {
+        let timings = Timings {
+            prepare_ms: millis(prepare_elapsed),
+            load_ms: millis(progress.load_elapsed),
+            inference_ms: millis(progress.inference_elapsed),
+            chunks: progress.chunks,
+            finalize_ms: millis(progress.finalize_elapsed),
+            write_ms: millis(write_elapsed),
+            total_ms: millis(total_elapsed),
+        };
+        std::fs::write(&path, serde_json::to_vec_pretty(&timings)?)
+            .with_context(|| format!("write {}", path.display()))?;
+    }
     Ok(())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Timings {
+    prepare_ms: f64,
+    load_ms: f64,
+    inference_ms: f64,
+    chunks: Vec<ChunkTiming>,
+    finalize_ms: f64,
+    write_ms: f64,
+    total_ms: f64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ChunkTiming {
+    member: usize,
+    shift: usize,
+    chunk: usize,
+    prepare_input_ms: f64,
+    ort_run_ms: f64,
+    output_copy_ms: f64,
+    process_output_ms: f64,
+}
+
+fn millis(duration: Duration) -> f64 {
+    duration.as_secs_f64() * 1000.0
 }
 
 // Interactive layouts stay model-oriented while the overall row remains stable:
@@ -165,6 +220,7 @@ struct CliProgress {
     phase: Option<ProgressBar>,
     load_elapsed: Duration,
     inference_elapsed: Duration,
+    chunks: Vec<ChunkTiming>,
     finalize_elapsed: Duration,
     loaded: usize,
     eta: Option<Duration>,
@@ -181,6 +237,7 @@ impl CliProgress {
             phase: None,
             load_elapsed: Duration::ZERO,
             inference_elapsed: Duration::ZERO,
+            chunks: Vec::new(),
             finalize_elapsed: Duration::ZERO,
             loaded: 0,
             eta: None,
@@ -257,9 +314,22 @@ impl CliProgress {
                 shift,
                 shifts,
                 member_done,
+                member,
                 elapsed,
+                prepare_elapsed,
+                run_elapsed,
+                process_elapsed,
             } => {
                 self.inference_elapsed += elapsed;
+                self.chunks.push(ChunkTiming {
+                    member,
+                    shift,
+                    chunk: member_done,
+                    prepare_input_ms: millis(prepare_elapsed),
+                    ort_run_ms: millis(run_elapsed),
+                    output_copy_ms: 0.0,
+                    process_output_ms: millis(process_elapsed),
+                });
                 self.overall.set_length(total as u64);
                 self.overall.set_position(done as u64);
                 if let Some(phase) = &self.phase {

@@ -40,6 +40,10 @@ extern "C" {
         member_total: usize,
         shift: usize,
         shifts: usize,
+        prepare_ms: f64,
+        run_ms: f64,
+        copy_ms: f64,
+        process_ms: f64,
     );
 
     #[wasm_bindgen(method, structural, catch)]
@@ -67,11 +71,11 @@ export interface Host {
     | [type: "started", total: number]
     | [type: "model-loading", index: number, total: number, chunks: number, file: string]
     | [type: "model-loaded" | "model-complete" | "finalizing" | "finalized"]
-    | [type: "inference", done: number, total: number, memberDone: number, memberTotal: number, shift: number, shifts: number]
+    | [type: "inference", done: number, total: number, memberDone: number, memberTotal: number, shift: number, shifts: number, prepareMs: number, runMs: number, copyMs: number, processMs: number]
   ): void;
   initialize(): Promise<void>;
   loadModel(model: string, source?: string): Promise<unknown>;
-  runModel(session: unknown, inputPtr: number, outputPtr: number): Promise<void>;
+  runModel(session: unknown, inputPtr: number, outputPtr: number): Promise<{ runMs: number; copyMs: number }>;
   releaseModel(session: unknown): Promise<void>;
 }
 
@@ -89,6 +93,7 @@ pub async fn separate(
     right: Vec<f32>,
     host: &Host,
 ) -> Result<Vec<Float32Array>, JsValue> {
+    let now = || js_sys::Date::now();
     let mode = demucs::Mode::parse(two_stems.as_deref(), method.as_deref()).map_err(js_err)?;
     let (members, bag) = demucs::vocab::select(model, mode).map_err(js_err)?;
     let opts = demucs::Options { bag, shifts, mode };
@@ -136,18 +141,28 @@ pub async fn separate(
         for (shift_index, shift) in member_plan.shifts.iter().enumerate() {
             let mut chunk_processor = separation.plan.create_chunk_processor(shift);
             for &chunk in &shift.chunks {
+                let prepare_started = now();
                 chunk_processor
                     .prepare_input(chunk, &mut model_input)
                     .map_err(js_err)?;
-                JsFuture::from(host.run_model(
+                let prepare_ms = now() - prepare_started;
+                let timing = JsFuture::from(host.run_model(
                     &session,
                     model_input.as_ptr() as usize,
                     output.as_mut_ptr() as usize,
                 )?)
                 .await?;
+                let run_ms = js_sys::Reflect::get(&timing, &JsValue::from_str("runMs"))?
+                    .as_f64()
+                    .unwrap_or_default();
+                let copy_ms = js_sys::Reflect::get(&timing, &JsValue::from_str("copyMs"))?
+                    .as_f64()
+                    .unwrap_or_default();
+                let process_started = now();
                 chunk_processor
                     .process_output(chunk, &output)
                     .map_err(js_err)?;
+                let process_ms = now() - process_started;
                 done += 1;
                 member_done += 1;
                 host.inference_event(
@@ -158,6 +173,10 @@ pub async fn separate(
                     member_total,
                     shift_index + 1,
                     member_plan.shifts.len(),
+                    prepare_ms,
+                    run_ms,
+                    copy_ms,
+                    process_ms,
                 );
             }
             shift_merger.add(chunk_processor.finish());

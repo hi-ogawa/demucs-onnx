@@ -20,6 +20,7 @@ import {
 } from "./lib/audio/stem-archive";
 import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
+import { benchmark } from "./lib/benchmark";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
@@ -129,15 +130,17 @@ export function App() {
       outputCleanupRef.current = [];
 
       const startedAt = Date.now();
-      setRunProgress({
+      const initialProgress: RunProgress = {
         phase: "preparing",
         startedAt,
         done: 0,
         total: 0,
         models: [],
         finalizeMs: 0,
-      });
+      };
+      setRunProgress(initialProgress);
       const started = performance.now();
+      benchmark.start(initialProgress);
       const request: SeparateRequest = {
         left: decodedAudio.left.slice(),
         right: decodedAudio.right.slice(),
@@ -147,10 +150,12 @@ export function App() {
         modelSource,
       };
       const separated = await separateInWorker(request, {
-        onProgress: (event, at) =>
+        onProgress: (event, at) => {
+          benchmark.record(event, at);
           setRunProgress((progress) =>
             progress ? updateRunProgress(progress, event, at) : progress,
-          ),
+          );
+        },
       });
       const nextOutputs = separated.map((output) => {
         const blob = encodeWavF32(
@@ -172,7 +177,9 @@ export function App() {
       return { outputs: nextOutputs, archive, durationMs };
     },
     onSuccess: ({ archive }) => {
-      downloadBlob(archive.url, archive.name);
+      if (!benchmark.enabled) {
+        downloadBlob(archive.url, archive.name);
+      }
     },
     onSettled: (_data, error) => {
       if (error) {
