@@ -31,7 +31,7 @@ declare global {
   }
 }
 
-export interface BenchmarkResult {
+interface BenchmarkResult {
   loadMs: number;
   inferenceMs: number;
   finalizeMs: number;

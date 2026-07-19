@@ -50,7 +50,10 @@ pnpm tsx tools/benchmark-summary.ts
 Each command is independent and should be run in order. Run 0 of each native thread configuration is the warm-up; runs 1 through 3 are summarized. Results are written under `data/benchmark/`:
 
 ```text
-web.json
+web-run-0.json
+web-run-1.json
+web-run-2.json
+web-run-3.json
 summary.json
 ```
 
@@ -96,7 +99,7 @@ For Chromium WASM, the median 37.183-second total was approximately 2.3% model l
 
 ### Chunk Components
 
-A single follow-up run retained all six chunks for the 30-second workload. Native used four intra-op threads. Reproduce the raw `small-native.json` and `small-web.json` artifacts with:
+A single follow-up run retained all six chunks for the 30-second workload. Native used four intra-op threads. Reproduce the raw `small-native.json` and `small-web-run-0.json` artifacts with:
 
 ```bash
 rm -rf data/benchmark/small-native
@@ -105,9 +108,13 @@ target/release/demucs separate \
   --threads 4 \
   --timings-json data/benchmark/small-native.json \
   data/benchmark/input-30s.wav data/benchmark/small-native
-pnpm -C packages/app exec playwright test \
-  --config benchmark/playwright.config.ts benchmark/e2e/small.spec.ts
+BENCHMARK_OUTPUT=small-web \
+BENCHMARK_WARMUP_RUNS=0 \
+BENCHMARK_MEASURED_RUNS=1 \
+pnpm -C packages/app benchmark
 ```
+
+The Chromium benchmark defaults to the 30-second fixture, prefix `web`, one warm-up, and three measured runs. `BENCHMARK_FIXTURE`, `BENCHMARK_DURATION`, `BENCHMARK_OUTPUT`, `BENCHMARK_WARMUP_RUNS`, and `BENCHMARK_MEASURED_RUNS` override those values. Every run is retained as a separate JSON file; run 0 is the default warm-up and runs 1 through 3 feed the summary.
 
 | Component           |  Native | Chromium WASM |
 | ------------------- | ------: | ------------: |

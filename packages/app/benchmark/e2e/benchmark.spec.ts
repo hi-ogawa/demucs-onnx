@@ -2,14 +2,18 @@ import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
-import type { BenchmarkResult } from "../../src/app";
 
 const root = resolve(import.meta.dirname, "../../../..");
 const model = resolve(root, "data/onnx-lean/htdemucs.onnx");
 const dft = resolve(root, "data/onnx-lean/dft.bin");
-const fixture = resolve(root, "data/benchmark/input-30s.wav");
-const output = resolve(root, "data/benchmark/web.json");
-const measuredRuns = 3;
+const fixture = resolve(
+  root,
+  process.env.BENCHMARK_FIXTURE ?? "data/benchmark/input-30s.wav",
+);
+const expectedDuration = process.env.BENCHMARK_DURATION ?? "30.00";
+const output = process.env.BENCHMARK_OUTPUT ?? "web";
+const warmupRuns = readCount("BENCHMARK_WARMUP_RUNS", 1);
+const measuredRuns = readCount("BENCHMARK_MEASURED_RUNS", 3);
 
 test("benchmarks Chromium WASM inference", async ({ page }) => {
   for (const path of [model, dft, fixture]) {
@@ -19,10 +23,11 @@ test("benchmarks Chromium WASM inference", async ({ page }) => {
   await page.goto("/?benchmark=1");
   await page.setInputFiles("#modelFiles", [dft, model]);
   await page.setInputFiles("#file", fixture);
-  await expect(page.locator("#audio-status")).toContainText("Decoded: 30.00s");
+  await expect(page.locator("#audio-status")).toContainText(
+    `Decoded: ${expectedDuration}s`,
+  );
 
-  const runs: BenchmarkResult[] = [];
-  for (let index = 0; index <= measuredRuns; index++) {
+  for (let index = 0; index < warmupRuns + measuredRuns; index++) {
     await page.evaluate(() => delete window.__demucsBenchmarkResult);
     await page.click("#run");
     await page.waitForFunction(
@@ -32,10 +37,17 @@ test("benchmarks Chromium WASM inference", async ({ page }) => {
       },
     );
     const result = await page.evaluate(() => window.__demucsBenchmarkResult!);
-    if (index > 0) {
-      runs.push(result);
-    }
+    await writeFile(
+      resolve(root, `data/benchmark/${output}-run-${index}.json`),
+      JSON.stringify(result, null, 2),
+    );
   }
-
-  await writeFile(output, JSON.stringify({ backend: "web", runs }, null, 2));
 });
+
+function readCount(name: string, fallback: number) {
+  const value = Number(process.env[name] ?? fallback);
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`${name} must be a non-negative integer`);
+  }
+  return value;
+}

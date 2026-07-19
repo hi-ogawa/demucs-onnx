@@ -28,7 +28,7 @@ async function main() {
       ]),
     ),
   );
-  const webRuns = await readRuns("web.json");
+  const webRuns = await readWebRuns();
   const result = {
     fixture: { durationSeconds: 30, sampleRate: 44_100, channels: 2 },
     settings: { model: "htdemucs", mode: "full", shifts: 1 },
@@ -76,12 +76,14 @@ async function readNativeRuns(threads: string) {
   );
 }
 
-async function readRuns(file: string) {
-  return (
-    JSON.parse(await readFile(resolve(data, file), "utf8")) as {
-      runs: Timing[];
-    }
-  ).runs;
+async function readWebRuns() {
+  return await Promise.all(
+    [1, 2, 3].map(async (index) =>
+      JSON.parse(
+        await readFile(resolve(data, `web-run-${index}.json`), "utf8"),
+      ),
+    ),
+  );
 }
 
 function summarize(runs: Timing[]) {
