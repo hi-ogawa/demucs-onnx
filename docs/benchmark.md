@@ -23,11 +23,12 @@ Download the standard model first:
 ```bash
 pnpm install
 pnpm model-release download models-2026-07-11 htdemucs
-pnpm benchmark:fixture
-pnpm benchmark:build
-pnpm benchmark:native
-pnpm benchmark:web
-pnpm benchmark:summary
+pnpm tsx tools/generate-benchmark-fixture.ts
+cargo build --release -p demucs-cli
+pnpm build-wasm
+pnpm tsx tools/benchmark-native.ts
+pnpm -C packages/app benchmark
+pnpm tsx tools/benchmark-summary.ts
 ```
 
 Each command is independent and should be run in order. They generate the fixture, build the native and WASM targets, run both backends, and produce a median summary. Results are written under `data/benchmark/`:
