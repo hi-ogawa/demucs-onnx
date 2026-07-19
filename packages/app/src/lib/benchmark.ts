@@ -19,21 +19,28 @@ interface BenchmarkResult {
   chunks: ChunkTiming[];
 }
 
-export function createBenchmarkRecorder(startedAt: number) {
-  if (!new URLSearchParams(location.search).has("benchmark")) {
-    return null;
-  }
+let progress: RunProgress | null = null;
 
-  delete window.__demucsBenchmarkResult;
-  let progress: RunProgress = {
-    phase: "preparing",
-    startedAt,
-    done: 0,
-    total: 0,
-    models: [],
-    finalizeMs: 0,
-  };
-  return (event: ProgressEvent, at: number) => {
+export const benchmark = {
+  enabled: new URLSearchParams(location.search).has("benchmark"),
+  start(startedAt: number) {
+    if (!this.enabled) {
+      return;
+    }
+    delete window.__demucsBenchmarkResult;
+    progress = {
+      phase: "preparing",
+      startedAt,
+      done: 0,
+      total: 0,
+      models: [],
+      finalizeMs: 0,
+    };
+  },
+  record(event: ProgressEvent, at: number) {
+    if (!progress) {
+      return;
+    }
     progress = updateRunProgress(progress, event, at);
     if (event.type === "finalized") {
       window.__demucsBenchmarkResult = {
@@ -49,10 +56,7 @@ export function createBenchmarkRecorder(startedAt: number) {
         totalMs: at - progress.startedAt,
         chunks: progress.models.flatMap((item) => item.chunkTimings),
       };
+      progress = null;
     }
-  };
-}
-
-export function isBenchmarkMode() {
-  return new URLSearchParams(location.search).has("benchmark");
-}
+  },
+};

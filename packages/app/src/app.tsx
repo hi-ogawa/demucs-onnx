@@ -20,13 +20,12 @@ import {
 } from "./lib/audio/stem-archive";
 import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
-import { createBenchmarkRecorder, isBenchmarkMode } from "./lib/benchmark";
+import { benchmark } from "./lib/benchmark";
 import { loadPreferences, savePreferences } from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 
 export function App() {
-  const benchmarkMode = isBenchmarkMode();
   // synchronize preferences with localStorage
   const [preferences, setPreferences] = useState(loadPreferences);
   useEffect(() => savePreferences(preferences), [preferences]);
@@ -140,7 +139,7 @@ export function App() {
         finalizeMs: 0,
       });
       const started = performance.now();
-      const recordBenchmark = createBenchmarkRecorder(startedAt);
+      benchmark.start(startedAt);
       const request: SeparateRequest = {
         left: decodedAudio.left.slice(),
         right: decodedAudio.right.slice(),
@@ -151,7 +150,7 @@ export function App() {
       };
       const separated = await separateInWorker(request, {
         onProgress: (event, at) => {
-          recordBenchmark?.(event, at);
+          benchmark.record(event, at);
           setRunProgress((progress) =>
             progress ? updateRunProgress(progress, event, at) : progress,
           );
@@ -177,7 +176,7 @@ export function App() {
       return { outputs: nextOutputs, archive, durationMs };
     },
     onSuccess: ({ archive }) => {
-      if (!benchmarkMode) {
+      if (!benchmark.enabled) {
         downloadBlob(archive.url, archive.name);
       }
     },
