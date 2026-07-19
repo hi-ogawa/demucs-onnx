@@ -23,10 +23,14 @@ Download the standard model first:
 ```bash
 pnpm install
 pnpm model-release download models-2026-07-11 htdemucs
-pnpm benchmark
+pnpm benchmark:fixture
+pnpm benchmark:build
+pnpm benchmark:native
+pnpm benchmark:web
+pnpm benchmark:summary
 ```
 
-The command generates `data/benchmark/input-30s.wav`, builds the release CLI once, and runs both backends. It writes raw runs and a median summary under `data/benchmark/`:
+Each command is independent and should be run in order. They generate the fixture, build the native and WASM targets, run both backends, and produce a median summary. Results are written under `data/benchmark/`:
 
 ```text
 native.json

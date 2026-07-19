@@ -21,13 +21,16 @@
     "lint-check": "cargo fmt --all -- --check && vp check && pnpm lint-dead-code && pnpm typecheck",
     "test-e2e": "pnpm -C packages/app test-e2e",
     "benchmark:fixture": "tsx tools/generate-benchmark-fixture.ts",
-    "benchmark": "tsx tools/benchmark.ts"
+    "benchmark:build": "cargo build --release -p demucs-cli && pnpm build-wasm",
+    "benchmark:native": "tsx tools/benchmark-native.ts",
+    "benchmark:web": "pnpm -C packages/app benchmark",
+    "benchmark:summary": "tsx tools/benchmark-summary.ts"
   },
   "devDependencies": {
     "fallow": "^3.3.0",
     "pkg-pr-new": "0.0.75",
-    "typescript": "^7.0.2",
     "tsx": "^4.23.0",
+    "typescript": "^7.0.2",
     "vite-plus": "^0.2.4",
     "wrangler": "4.110.0"
   },

@@ -75,7 +75,11 @@ Run `pnpm build-model --all` to build the standard model and all fine-tuned spec
 Compare native ONNX Runtime inference with Chromium's ONNX Runtime WASM backend using a deterministic 30-second workload:
 
 ```bash
-pnpm benchmark
+pnpm benchmark:fixture
+pnpm benchmark:build
+pnpm benchmark:native
+pnpm benchmark:web
+pnpm benchmark:summary
 ```
 
 See [`docs/benchmark.md`](docs/benchmark.md) for the workload, timing boundaries, and generated results.
