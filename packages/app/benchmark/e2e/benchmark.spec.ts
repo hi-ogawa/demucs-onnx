@@ -2,9 +2,9 @@ import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
-import type { BenchmarkResult } from "../src/app";
+import type { BenchmarkResult } from "../../src/app";
 
-const root = resolve(import.meta.dirname, "../../..");
+const root = resolve(import.meta.dirname, "../../../..");
 const model = resolve(root, "data/onnx-lean/htdemucs.onnx");
 const dft = resolve(root, "data/onnx-lean/dft.bin");
 const fixture = resolve(root, "data/benchmark/input-30s.wav");

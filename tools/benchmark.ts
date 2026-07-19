@@ -77,7 +77,7 @@ async function main() {
 
   await exec(
     "pnpm",
-    ["-C", "packages/app", "playwright", "test", "e2e/benchmark.spec.ts"],
+    ["-C", "packages/app", "benchmark"],
     { cwd: root, maxBuffer: 10 * 1024 * 1024 },
   );
   const webRuns = (
