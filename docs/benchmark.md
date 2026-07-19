@@ -64,3 +64,19 @@ Generated fixtures, stems, and results remain under the gitignored `data/` direc
 - `totalMs` covers preparation through finalization, but excludes WAV encoding, ZIP creation, and output writing for cross-backend comparability.
 
 The native raw result additionally records output writing and complete process-level work as `writeMs` and `endToEndMs`. Its comparable `totalMs` is preparation through finalization, matching the web boundary. The benchmark preserves all raw records for inspection.
+
+## Results
+
+Measured on Linux x64 with an Intel Core i7-12650H (10 physical cores, 16 logical CPUs). Each configuration used one warm-up and three measured runs.
+
+| Backend       |     Intra-op threads | Inference median | Run spread |
+| ------------- | -------------------: | ---------------: | ---------: |
+| Native        |                    1 |          32.507s |       0.7% |
+| Native        |                    2 |          19.614s |       3.0% |
+| Native        |                    4 |          13.903s |       3.5% |
+| Native        |                    8 |          12.327s |       1.7% |
+| Native        |                   16 |          11.905s |       1.8% |
+| Native        | ONNX Runtime default |          12.495s |       2.2% |
+| Chromium WASM |      runtime-managed |          36.167s |       3.3% |
+
+Sixteen native threads were fastest on this machine and ran inference about 3.04 times faster than Chromium WASM. The ONNX Runtime default was within 5% of the fastest result, while the CLI's conservative four-thread default was about 14% slower than the fastest result.
