@@ -96,7 +96,18 @@ For Chromium WASM, the median 37.183-second total was approximately 2.3% model l
 
 ### Chunk Components
 
-A single follow-up run retained all six chunks for the 30-second workload. Native used four intra-op threads.
+A single follow-up run retained all six chunks for the 30-second workload. Native used four intra-op threads. Reproduce the raw `small-native.json` and `small-web.json` artifacts with:
+
+```bash
+rm -rf data/benchmark/small-native
+target/release/demucs separate \
+  --models data/onnx-lean \
+  --threads 4 \
+  --timings-json data/benchmark/small-native.json \
+  data/benchmark/input-30s.wav data/benchmark/small-native
+pnpm -C packages/app exec playwright test \
+  --config benchmark/playwright.config.ts benchmark/e2e/small.spec.ts
+```
 
 | Component           |  Native | Chromium WASM |
 | ------------------- | ------: | ------------: |
