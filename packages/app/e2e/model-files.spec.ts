@@ -31,6 +31,7 @@ test("coordinates individual model file slots", async ({ page }) => {
     page.getByTestId("model-file-slot").getByText("Ready"),
   ).toHaveCount(2);
 
+  await page.getByText("Advanced settings", { exact: true }).click();
   await page.locator("#model").selectOption("htdemucs_ft");
   await expect(page.getByTestId("model-file-slot")).toHaveCount(5);
   await expect(page.getByLabel("Select dft.bin").locator("..")).toContainText(
