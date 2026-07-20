@@ -15,7 +15,9 @@ test("restores and updates configuration preferences", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.locator("#model")).toHaveValue("htdemucs_ft");
-  await expect(page.locator("#twoStems")).toHaveValue("bass");
+  await expect(
+    page.getByRole("radio", { name: /Bass \+ backing/ }),
+  ).toBeChecked();
   await expect(page.locator("#method")).toHaveValue("minus");
   await expect(page.locator("#method")).toBeEnabled();
   await expect(page.locator("#outputSummary")).toContainText(
@@ -24,7 +26,7 @@ test("restores and updates configuration preferences", async ({ page }) => {
   await expect(page.locator("#shifts")).toHaveValue("3");
   await expect(page.getByLabel("Select htdemucs_ft_bass.onnx")).toBeAttached();
 
-  await page.locator("#twoStems").selectOption("");
+  await page.getByRole("radio", { name: /Four stems/ }).check();
   await expect(page.locator("#method")).toBeDisabled();
   await expect(page.locator("#outputSummary")).toContainText(
     "Creates vocals.wav, drums.wav, bass.wav, and other.wav.",
@@ -34,4 +36,12 @@ test("restores and updates configuration preferences", async ({ page }) => {
       page.evaluate(() => localStorage.getItem("demucs-onnx:main:v2")),
     )
     .toContain('"twoStems":null');
+});
+
+test("uses the default output configuration", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("radio", { name: /Four stems/ })).toBeChecked();
+  await expect(page.locator("#method")).toHaveValue("minus");
+  await expect(page.locator("#method")).toBeDisabled();
 });

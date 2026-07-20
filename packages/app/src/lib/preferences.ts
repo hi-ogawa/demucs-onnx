@@ -14,7 +14,7 @@ export type Preferences = z.infer<typeof preferencesSchema>;
 const DEFAULT_PREFERENCES: Preferences = {
   model: "htdemucs",
   twoStems: null,
-  method: "add",
+  method: "minus",
   shifts: 1,
 };
 

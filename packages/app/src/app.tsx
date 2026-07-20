@@ -21,7 +21,11 @@ import {
 import { encodeWavF32 } from "./lib/audio/wav";
 import { separateInWorker } from "./lib/audio/worker-client";
 import { benchmark } from "./lib/benchmark";
-import { loadPreferences, savePreferences } from "./lib/preferences";
+import {
+  loadPreferences,
+  savePreferences,
+  type Preferences,
+} from "./lib/preferences";
 import { updateRunProgress, type RunProgress } from "./lib/progress/model";
 import { RunProgressPanel } from "./lib/progress/panel";
 
@@ -253,127 +257,18 @@ export function App() {
 
           <aside className="grid gap-6">
             <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
-              <h2 className="text-foreground mb-5 text-xl font-semibold">
-                2. Configure
+              <h2 className="text-foreground mb-2 text-xl font-semibold">
+                2. Choose output
               </h2>
-              <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                    <label htmlFor="model">Model</label>
-                    <FieldHelp>
-                      Choose the standard general-purpose model or the
-                      fine-tuned source-specialist models.
-                    </FieldHelp>
-                  </div>
-                  <select
-                    className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
-                    id="model"
-                    value={model}
-                    onChange={(event) =>
-                      setPreferences((current) => ({
-                        ...current,
-                        model: event.target.value as typeof current.model,
-                      }))
-                    }
-                  >
-                    <option>htdemucs</option>
-                    <option>htdemucs_ft</option>
-                  </select>
-                </div>
-                <div className="grid gap-2">
-                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                    <label htmlFor="shifts">Shifts</label>
-                    <FieldHelp>
-                      Trade speed for separation quality by averaging multiple
-                      processing passes. Runtime grows roughly in proportion.
-                    </FieldHelp>
-                  </div>
-                  <input
-                    className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
-                    type="number"
-                    id="shifts"
-                    value={shifts}
-                    min="1"
-                    max="4"
-                    onChange={(event) =>
-                      setPreferences((current) => ({
-                        ...current,
-                        shifts: Number(event.target.value),
-                      }))
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                    <label htmlFor="twoStems">Two-stems</label>
-                    <FieldHelp>
-                      Output the selected source and a mix without it. Other
-                      contains instruments not classified as vocals, drums, or
-                      bass.
-                    </FieldHelp>
-                  </div>
-                  <select
-                    className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
-                    id="twoStems"
-                    value={twoStems ?? ""}
-                    onChange={(event) =>
-                      setPreferences((current) => ({
-                        ...current,
-                        twoStems: (event.target.value ||
-                          null) as typeof current.twoStems,
-                      }))
-                    }
-                  >
-                    <option value="">off</option>
-                    <option>vocals</option>
-                    <option>drums</option>
-                    <option>bass</option>
-                    <option>other</option>
-                  </select>
-                </div>
-                <div className="grid gap-2">
-                  <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
-                    <label htmlFor="method">Method</label>
-                    <FieldHelp>
-                      Add combines the other separated stems. Minus subtracts
-                      the source from the original and, with htdemucs_ft, runs
-                      about four times faster. Results vary by track.
-                    </FieldHelp>
-                  </div>
-                  <select
-                    className="border-border-control text-foreground disabled:bg-surface-disabled disabled:text-disabled min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base disabled:cursor-not-allowed"
-                    id="method"
-                    value={method}
-                    disabled={!twoStems}
-                    onChange={(event) =>
-                      setPreferences((current) => ({
-                        ...current,
-                        method: event.target.value as typeof current.method,
-                      }))
-                    }
-                  >
-                    <option>add</option>
-                    <option>minus</option>
-                  </select>
-                </div>
-                <p
-                  className="bg-surface-note text-copy rounded-md px-3 py-2.5 text-sm leading-relaxed sm:col-span-2"
-                  id="outputSummary"
-                >
-                  {twoStems ? (
-                    <>
-                      Creates <strong>{twoStems}.wav</strong> and{" "}
-                      <strong>backing.wav</strong>.
-                    </>
-                  ) : (
-                    <>
-                      Creates <strong>vocals.wav</strong>,{" "}
-                      <strong>drums.wav</strong>, <strong>bass.wav</strong>, and{" "}
-                      <strong>other.wav</strong>.
-                    </>
-                  )}
-                </p>
-              </div>
+              <p className="text-muted mb-5.5 leading-relaxed">
+                Choose which tracks to create. “Other instruments” includes
+                guitars, keys, and anything not classified as vocals, drums, or
+                bass.
+              </p>
+              <OutputConfiguration
+                configuration={preferences}
+                onChange={setPreferences}
+              />
             </section>
 
             <section className="bg-surface shadow-card min-w-0 rounded-lg border px-5 pt-4 pb-5 sm:px-7 sm:pt-5 sm:pb-7">
@@ -502,6 +397,210 @@ export function App() {
         )}
       </div>
     </main>
+  );
+}
+
+const OUTPUT_OPTIONS: {
+  value: Preferences["twoStems"];
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: null,
+    label: "Four stems",
+    description: "Create vocals, drums, bass, and “other” stems",
+  },
+  {
+    value: "vocals",
+    label: "Vocals + backing",
+    description: "Create a vocals stem and a backing track without vocals",
+  },
+  {
+    value: "drums",
+    label: "Drums + backing",
+    description: "Create a drums stem and a backing track without drums",
+  },
+  {
+    value: "bass",
+    label: "Bass + backing",
+    description: "Create a bass stem and a backing track without bass",
+  },
+  {
+    value: "other",
+    label: "Other instruments + backing",
+    description: "Create an “other” stem and a backing track without it",
+  },
+];
+
+function OutputConfiguration({
+  configuration,
+  onChange,
+}: {
+  configuration: Preferences;
+  onChange(configuration: Preferences): void;
+}) {
+  return (
+    <>
+      <fieldset>
+        <legend className="sr-only">Stem output</legend>
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {OUTPUT_OPTIONS.map((option) => (
+            <OutputOption
+              key={option.label}
+              option={option}
+              selected={configuration.twoStems === option.value}
+              onSelect={() =>
+                onChange({ ...configuration, twoStems: option.value })
+              }
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      <details className="bg-surface-muted border-border-control group mt-3 rounded-lg border">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+          <span className="text-muted text-lg leading-none transition-transform group-open:rotate-90">
+            ›
+          </span>
+          <span className="shrink-0">Advanced settings</span>
+          <span className="text-muted ml-auto min-w-0 truncate text-right text-xs font-normal">
+            {configuration.model} · {configuration.shifts} shift
+            {configuration.shifts === 1 ? "" : "s"} ·{" "}
+            {configuration.method === "minus"
+              ? "subtract source"
+              : "combine other stems"}
+          </span>
+        </summary>
+        <div className="border-border-control grid gap-4 border-t p-3 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
+              <label htmlFor="model">Model</label>
+              <FieldHelp>
+                Choose a standard general-purpose model or a fine-tuned model
+                specialized for a source.
+              </FieldHelp>
+            </div>
+            <select
+              className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
+              id="model"
+              value={configuration.model}
+              onChange={(event) =>
+                onChange({
+                  ...configuration,
+                  model: event.target.value as Preferences["model"],
+                })
+              }
+            >
+              <option>htdemucs</option>
+              <option>htdemucs_ft</option>
+            </select>
+          </div>
+          <div className="grid gap-2">
+            <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
+              <label htmlFor="shifts">Shifts</label>
+              <FieldHelp>
+                Choose how many processing passes to average. More shifts can
+                improve separation quality, but runtime increases roughly in
+                proportion.
+              </FieldHelp>
+            </div>
+            <input
+              className="border-border-control text-foreground min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base normal-case"
+              type="number"
+              id="shifts"
+              value={configuration.shifts}
+              min="1"
+              max="4"
+              onChange={(event) =>
+                onChange({
+                  ...configuration,
+                  shifts: Number(event.target.value),
+                })
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="text-muted flex items-center justify-between text-xs font-bold tracking-[0.04em] uppercase">
+              <label htmlFor="method">Backing mix</label>
+              <FieldHelp>
+                Subtract source removes the selected source from the original.
+                With htdemucs_ft, it runs about four times faster than Combine
+                other stems. Combine other stems mixes the other separated
+                stems. Results vary by track.
+              </FieldHelp>
+            </div>
+            <select
+              className="border-border-control text-foreground disabled:bg-surface-disabled disabled:text-disabled min-h-11 w-full rounded-md border bg-white px-2.5 py-2 text-base disabled:cursor-not-allowed"
+              id="method"
+              value={configuration.method}
+              disabled={!configuration.twoStems}
+              onChange={(event) =>
+                onChange({
+                  ...configuration,
+                  method: event.target.value as Preferences["method"],
+                })
+              }
+            >
+              <option value="minus">Subtract source</option>
+              <option value="add">Combine other stems</option>
+            </select>
+          </div>
+        </div>
+      </details>
+      <p
+        className="bg-surface-note text-copy mt-4 rounded-md px-3 py-2.5 text-sm leading-relaxed"
+        id="outputSummary"
+      >
+        {configuration.twoStems ? (
+          <>
+            Creates <strong>{configuration.twoStems}.wav</strong> and{" "}
+            <strong>backing.wav</strong>.
+          </>
+        ) : (
+          <>
+            Creates <strong>vocals.wav</strong>, <strong>drums.wav</strong>,{" "}
+            <strong>bass.wav</strong>, and <strong>other.wav</strong>.
+          </>
+        )}
+      </p>
+    </>
+  );
+}
+
+function OutputOption({
+  option,
+  selected,
+  onSelect,
+}: {
+  option: (typeof OUTPUT_OPTIONS)[number];
+  selected: boolean;
+  onSelect(): void;
+}) {
+  return (
+    <label
+      className={`flex min-h-18 cursor-pointer gap-3 rounded-lg border p-3 transition-colors ${
+        option.value === null ? "sm:col-span-2" : ""
+      } ${
+        selected
+          ? "border-primary-border bg-primary-soft ring-primary-border ring-1"
+          : "border-border-control hover:bg-surface-muted bg-white"
+      }`}
+    >
+      <input
+        className="accent-primary mt-0.5 size-4 shrink-0"
+        type="radio"
+        name="output"
+        value={option.value ?? ""}
+        checked={selected}
+        onChange={onSelect}
+      />
+      <span>
+        <strong className="block text-sm font-semibold">{option.label}</strong>
+        <span className="text-muted mt-1 block text-sm leading-snug">
+          {option.description}
+        </span>
+      </span>
+    </label>
   );
 }
 
